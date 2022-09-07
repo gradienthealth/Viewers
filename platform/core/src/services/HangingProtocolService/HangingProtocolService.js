@@ -1,6 +1,7 @@
 import pubSubServiceInterface from '../_shared/pubSubServiceInterface';
 import sortBy from '../../utils/sortBy.js';
 import ProtocolEngine from './ProtocolEngine';
+import { utilities as csToolsUtils } from '@cornerstonejs/tools';
 
 const EVENTS = {
   STAGE_CHANGE: 'event::hanging_protocol_stage_change',
@@ -10,8 +11,9 @@ const EVENTS = {
 };
 
 class HangingProtocolService {
-  constructor(commandsManager) {
+  constructor(commandsManager, servicesManager) {
     this._commandsManager = commandsManager;
+    this.servicesManager = servicesManager;
     this.protocols = [];
     this.ProtocolEngine = undefined;
     this.protocol = undefined;
@@ -281,6 +283,16 @@ class HangingProtocolService {
   }
 
   _updateViewports() {
+    if(!this.cornerstoneViewportReady) {
+      this.cornerstoneViewportReady = new Promise((resolve,reject)=>{
+        const { CornerstoneViewportService } = this.servicesManager.services;
+        CornerstoneViewportService.subscribe(
+          CornerstoneViewportService.EVENTS.VIEWPORT_INFO_CREATED,
+          viewportInfo => resolve(viewportInfo)
+        );
+      })
+    }
+
     // Make sure we have an active protocol with a non-empty array of display sets
     if (!this._getNumProtocolStages()) {
       return;
@@ -336,13 +348,13 @@ class HangingProtocolService {
     stageModel.viewports.forEach((viewport, viewportIndex) => {
       const { viewportOptions } = viewport;
       this.hpAlreadyApplied.push(false);
+      const { CornerstoneViewportService } = this.servicesManager.services;
 
       // DisplaySets for the viewport, Note: this is not the actual displaySet,
       // but it is a info to locate the displaySet from the displaySetService
       let displaySetsInfo = [];
       viewport.displaySets.forEach(({ id, options: displaySetOptions }) => {
         const viewportDisplaySet = this.displaySetMatchDetails.get(id);
-
         if (viewportDisplaySet) {
           const { SeriesInstanceUID } = viewportDisplaySet;
 
@@ -360,6 +372,14 @@ class HangingProtocolService {
             `
           );
         }
+
+        this.cornerstoneViewportReady.then(()=>{
+          const viewportElement = CornerstoneViewportService.viewportsInfo.get(viewportIndex).element
+          csToolsUtils.jumpToSlice(viewportElement, {
+            imageIndex: viewportDisplaySet.InstanceNumber,
+            debounceLoading: true,
+          })
+        })
       });
 
       this.matchDetails[viewportIndex] = {
@@ -377,7 +397,7 @@ class HangingProtocolService {
     // level matching needs to be added in future
 
     // Todo: handle fusion viewports by not taking the first displaySet rule for the viewport
-    const { studyMatchingRules, seriesMatchingRules } = displaySet;
+    const { studyMatchingRules, seriesMatchingRules, imageMatchingRules } = displaySet;
 
     const matchingScores = [];
     let highestStudyMatchingScore = 0;
@@ -415,6 +435,34 @@ class HangingProtocolService {
 
         highestSeriesMatchingScore = seriesMatchDetails.score;
 
+        // We cannot use the actual validation / matching engine here
+        // Only works for "contains"
+        let imageMatches = []
+        aSeries.instances.forEach((instance, instanceIndex) => {
+
+          let score = 0
+
+          imageMatchingRules.forEach((rule) => {
+            if(instance[rule.attribute] == rule.constraint.contains.value) {
+              score = score + rule.weight;
+            }
+            const match = JSON.stringify(instance[rule.attribute]).indexOf(rule.constraint.contains.value) > -1
+            if(match) {
+              score = score + rule.weight;
+            }
+          });
+
+          imageMatches.push({ score: score, instance: instance, instanceIndex: instanceIndex })
+        });
+
+        // Zero if no matches, otherwise the index of the best match
+        let bestMatchIndex = 0;
+        if(imageMatches.length){
+          const bestImageMatches = imageMatches.sort((a,b) => b.score - a.score);
+          bestMatchIndex = bestImageMatches[0].instanceIndex;
+        }
+        
+
         const matchDetails = {
           passed: [],
           failed: [],
@@ -440,6 +488,7 @@ class HangingProtocolService {
         const imageDetails = {
           StudyInstanceUID: study.StudyInstanceUID,
           SeriesInstanceUID: aSeries.SeriesInstanceUID,
+          InstanceNumber: bestMatchIndex,
           matchingScore: totalMatchScore,
           matchDetails: matchDetails,
           sortingInfo: {

@@ -8,7 +8,7 @@ function initDefaultToolGroup(
   );
 
   const { toolNames, Enums } = utilityModule.exports;
-
+  
   const tools = {
     active: [
       {
@@ -26,6 +26,7 @@ function initDefaultToolGroup(
       { toolName: toolNames.StackScrollMouseWheel, bindings: [] },
     ],
     passive: [
+      { toolName: toolNames.PlanarFreehandROI },
       { toolName: toolNames.Length },
       { toolName: toolNames.ArrowAnnotate },
       { toolName: toolNames.Bidirectional },

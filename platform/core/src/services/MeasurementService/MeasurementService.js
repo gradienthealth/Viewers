@@ -486,6 +486,7 @@ class MeasurementService {
     }
 
     let measurement = {};
+    
     try {
       const sourceMappings = this.mappings[source.uid];
       const { toMeasurementSchema } = sourceMappings.find(

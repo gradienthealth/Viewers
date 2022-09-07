@@ -17,19 +17,57 @@ import ReactDOM from 'react-dom';
  */
 import loadDynamicImports from './pluginImports.js';
 
-loadDynamicImports().then(() => {
-  /**
-   * Combine our appConfiguration with installed extensions and modes.
-   * In the future appConfiguration may contain modes added at runtime.
-   *  */
+const loadDynamicConfigPromise = async ()=>{
+  let query = new URLSearchParams(window.location.search)
+  let config_url = query.get('config_url')
+
+  if(!config_url){
+    const obj = JSON.parse(
+      sessionStorage.getItem('ohif-redirect-to')
+    );
+    if(obj){
+      const query = new URLSearchParams(obj.search)
+      config_url = query.get('config_url')
+    }
+  }
+
+  if(config_url){
+    const response = await fetch(config_url)
+    return response.json()
+  }
+
+  return null
+}
+
+Promise.all([loadDynamicImports(), loadDynamicConfigPromise()]).then((arr)=>{
+  const [a, config_json] = arr
+  if(config_json !== null){
+    window.config = config_json
+    window.config.whiteLabeling = {
+      createLogoComponentFn: function (React) {
+        return React.createElement(
+          'a',
+          {
+            target: '_self',
+            rel: 'noopener noreferrer',
+            className: 'text-purple-600 line-through',
+            href: '/',
+          },
+          React.createElement('img',
+            {
+              src: './assets/gradient.svg',
+            }
+          ))
+      },
+    }
+  }
+
   const appProps = {
     config: window ? window.config : {},
     defaultExtensions: window.extensions,
     defaultModes: window.modes,
   };
 
-  /** Create App */
   const app = React.createElement(App, appProps, null);
-  /** Render */
   ReactDOM.render(app, document.getElementById('root'));
 });

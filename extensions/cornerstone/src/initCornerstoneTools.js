@@ -1,4 +1,5 @@
 import {
+  PlanarFreehandROITool,
   PanTool,
   WindowLevelTool,
   StackScrollTool,
@@ -40,6 +41,7 @@ export default function initCornerstoneTools(configuration = {}) {
   addTool(MagnifyTool);
   addTool(CrosshairsTool);
   addTool(SegmentationDisplayTool);
+  addTool(PlanarFreehandROITool);
 
   // Modify annotation tools to use dashed lines on SR
   const annotationStyle = {
@@ -74,6 +76,7 @@ const toolNames = {
   Magnify: MagnifyTool.toolName,
   Crosshairs: CrosshairsTool.toolName,
   SegmentationDisplay: SegmentationDisplayTool.toolName,
+  PlanarFreehandROI: PlanarFreehandROITool.toolName,
 };
 
 export { toolNames };

@@ -187,6 +187,21 @@ const toolbarButtons = [
           ],
           'Ellipse Tool'
         ),
+        _createToolButton(
+          'PlanarFreehandROI',
+          'pencil',
+          'FreehandROI',
+          [
+            {
+              commandName: 'setToolActive',
+              commandOptions: {
+                toolName: 'PlanarFreehandROI',
+              },
+              context: 'CORNERSTONE',
+            },
+          ],
+          'FreehandROI Tool'
+        ),
       ],
     },
   },

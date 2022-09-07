@@ -27,6 +27,10 @@
     {
       "packageName": "@ohif/extension-tmtv",
       "version": "3.0.0"
+    },
+    {
+      "packageName": "gradienthealth",
+      "version": "3.0.0"
     }
   ],
   "modes": [
@@ -37,6 +41,14 @@
     {
       "packageName": "@ohif/mode-tmtv",
       "version": "3.0.0"
+    },
+    {
+      "packageName": "breast-density-mode",
+      "version": "3.0.0"
+    },
+    {
+      "packageName": "ngt-mode",
+      "version": "0.0.1"
     }
   ],
   "modesFactory": [],

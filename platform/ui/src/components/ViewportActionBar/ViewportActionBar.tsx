@@ -7,9 +7,9 @@ import { useTranslation } from 'react-i18next';
 
 const classes = {
   infoHeader: 'text-base text-primary-light',
-  infoText: 'text-base text-white max-w-24 truncate',
+  infoText: 'text-base ml-2 text-white max-w-24 truncate',
   firstRow: 'flex flex-col',
-  row: 'flex flex-col ml-4',
+  row: 'flex',
 };
 
 const ViewportActionBar = ({
@@ -305,7 +305,7 @@ const ViewportActionBar = ({
           <CinePlayer {...cineProps} />
         </div>
       )}
-      <div className="flex h-8 mt-2 ml-4 mr-2" onClick={onPatientInfoClick}>
+      <div className="flex h-8 mt-2 mr-1" onClick={onPatientInfoClick}>
         <PatientInfo
           showPatientInfoRef={showPatientInfoRef}
           isOpen={showPatientInfo}
@@ -385,9 +385,6 @@ function PatientInfo({
         content={
           isOpen && (
             <div className="flex py-2">
-              <div className="flex pt-1">
-                <Icon name="info-link" className="w-4 text-primary-main" />
-              </div>
               <div className="flex flex-col ml-2">
                 <span
                   className="text-base font-bold text-white"
@@ -395,40 +392,47 @@ function PatientInfo({
                 >
                   {patientName}
                 </span>
-                <div className="flex pb-4 mt-4 mb-4 border-b border-secondary-main">
-                  <div className={classnames(classes.firstRow)}>
-                    <span className={classnames(classes.infoHeader)}>
-                      {t('Sex')}
-                    </span>
-                    <span
-                      className={classnames(classes.infoText)}
-                      title={patientSex}
-                    >
-                      {patientSex}
-                    </span>
-                  </div>
-                  <div className={classnames(classes.row)}>
-                    <span className={classnames(classes.infoHeader)}>
-                      {t('Age')}
-                    </span>
-                    <span
-                      className={classnames(classes.infoText)}
-                      title={patientAge}
-                    >
-                      {patientAge}
-                    </span>
-                  </div>
-                  <div className={classnames(classes.row)}>
-                    <span className={classnames(classes.infoHeader)}>
-                      {t('MRN')}
-                    </span>
-                    <span className={classnames(classes.infoText)} title={MRN}>
-                      {MRN}
-                    </span>
-                  </div>
+                <div className="pb-4 mt-4 mb-4 border-b border-secondary-main">
+                  { !patientSex ? null:
+                    <div className={classnames(classes.row)}>
+                      <span className={classnames(classes.infoHeader)}>
+                        {t('Sex')}
+                      </span>
+                      <span
+                        className={classnames(classes.infoText)}
+                        title={patientSex}
+                      >
+                        {patientSex}
+                      </span>
+                    </div> 
+                  }
+                  { !patientAge ? null:
+                    <div className={classnames(classes.row)}>
+                      <span className={classnames(classes.infoHeader)}>
+                        {t('Age')}
+                      </span>
+                      <span
+                        className={classnames(classes.infoText)}
+                        title={patientAge}
+                      >
+                        {patientAge}
+                      </span>
+                    </div>
+                  }
+                  { !MRN ? null: 
+                    <div className={classnames(classes.row)}>
+                      <span className={classnames(classes.infoHeader)}>
+                        {t('MRN')}
+                      </span>
+                      <span className={classnames(classes.infoText)} title={MRN}>
+                        {MRN}
+                      </span>
+                    </div>
+                  }
                 </div>
-                <div className="flex">
-                  <div className={classnames(classes.firstRow)}>
+                <div>
+                { !thickness ? null: 
+                  <div className={classnames(classes.row)}>
                     <span className={classnames(classes.infoHeader)}>
                       {t('Thickness')}
                     </span>
@@ -439,6 +443,8 @@ function PatientInfo({
                       {thickness}
                     </span>
                   </div>
+                }
+                { !spacing ? null: 
                   <div className={classnames(classes.row)}>
                     <span className={classnames(classes.infoHeader)}>
                       {t('Spacing')}
@@ -450,6 +456,8 @@ function PatientInfo({
                       {spacing}
                     </span>
                   </div>
+                }
+                { !scanner ? null: 
                   <div className={classnames(classes.row)}>
                     <span className={classnames(classes.infoHeader)}>
                       {t('Scanner')}
@@ -461,6 +469,7 @@ function PatientInfo({
                       {scanner}
                     </span>
                   </div>
+                 }
                 </div>
               </div>
             </div>

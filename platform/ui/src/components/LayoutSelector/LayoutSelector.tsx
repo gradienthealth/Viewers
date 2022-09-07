@@ -3,11 +3,11 @@ import PropTypes from 'prop-types';
 
 function LayoutSelector({ onSelection }) {
   const [hoveredIndex, setHoveredIndex] = useState();
-  const hoverX = hoveredIndex % 3;
-  const hoverY = Math.floor(hoveredIndex / 3);
+  const hoverX = hoveredIndex % 4;
+  const hoverY = Math.floor(hoveredIndex / 4);
   const isHovered = index => {
-    const x = index % 3;
-    const y = Math.floor(index / 3);
+    const x = index % 4;
+    const y = Math.floor(index / 4);
 
     return x <= hoverX && y <= hoverY;
   };
@@ -16,13 +16,13 @@ function LayoutSelector({ onSelection }) {
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: '20px 20px 20px',
-        gridTemplateRows: '20px 20px 20px',
+        gridTemplateColumns: '20px 20px 20px 20px',
+        gridTemplateRows: '20px 20px 20px 20px',
         backgroundColor: '#090c29', // primary-dark
       }}
       className="p-2"
     >
-      {[0, 1, 2, 3, 4, 5, 6, 7, 8].map(index => (
+      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map(index => (
         <div
           key={index}
           style={{
@@ -31,8 +31,8 @@ function LayoutSelector({ onSelection }) {
           }}
           className="cursor-pointer"
           onClick={() => {
-            const x = index % 3;
-            const y = Math.floor(index / 3);
+            const x = index % 4;
+            const y = Math.floor(index / 4);
 
             onSelection({
               numRows: y + 1,
