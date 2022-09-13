@@ -15,8 +15,25 @@ import ReactDOM from 'react-dom';
  * to the window for processing.
  */
 import loadDynamicImports, { loadRuntimeImports } from './pluginImports.js';
+import loadDynamicConfig from './loadDynamicConfig';
 
-loadDynamicImports().then(() => {
+Promise.all([loadDynamicImports(), loadDynamicConfig()]).then(arr => {
+  /**
+   * Combine our appConfiguration with installed extensions and modes.
+   * In the future appConfiguration may contain modes added at runtime.
+   *  */
+  const [_, config_json] = arr;
+  if (config_json !== null) {
+    /**
+     * Whitelabeling is passed via app config because it is a react
+     * component. It may be better to simply take in a uri path to an asset
+     * instead to simplify the API
+     */
+    const whiteLabeling = window.config.whiteLabeling;
+    window.config = config_json;
+    window.config.whiteLabeling = whiteLabeling;
+  }
+
   loadRuntimeImports(window.config).then(() => {
     /**
      * Combine our appConfiguration with installed extensions and modes.
