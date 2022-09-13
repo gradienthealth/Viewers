@@ -37,7 +37,15 @@ function ViewerLayout({
   const navigate = useNavigate();
 
   const onClickReturnButton = () => {
-    navigate('/');
+    let query = new URLSearchParams(window.location.search)
+    let configUrl = query.get('configUrl')
+    if(configUrl){
+      let newQuery = new URLSearchParams();
+      newQuery.append('configUrl', configUrl)
+      navigate(`/?${decodeURIComponent(newQuery.toString())}`);
+    } else {
+      navigate('/');
+    }
   };
 
   const { t } = useTranslation();
