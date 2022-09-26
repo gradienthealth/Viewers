@@ -15,6 +15,8 @@ const ViewportActionBar = ({
   onArrowsClick,
   onDoubleClick,
   getStatusComponent,
+  //
+  showPatientInfoIcon,
 }) => {
   const [showPatientInfo, setShowPatientInfo] = useState(patientInfoVisibility);
 
@@ -64,7 +66,7 @@ const ViewportActionBar = ({
 
   return (
     <div
-      className="flex flex-wrap items-center p-2 -mt-2 border-b select-none"
+      className="flex flex-no-wrap items-center p-2 -mt-2 border-b select-none"
       style={{
         borderColor: borderColor,
         backgroundColor: backgroundColor,
@@ -77,7 +79,7 @@ const ViewportActionBar = ({
           <span className="mr-2 text-white text-large">{label}</span>
           {showStatus && getStatusComponent()}
         </div>
-        <div className="flex flex-col justify-start ml-4">
+        <div className="flex flex-col justify-start ml-2">
           <div className="flex">
             <span className="text-base text-white">{studyDate}</span>
             <span className="pl-2 ml-2 text-base border-l border-primary-light text-primary-light">
@@ -125,19 +127,21 @@ const ViewportActionBar = ({
           <CinePlayer {...cineProps} />
         </div>
       )}
-      <div className="flex h-8 mt-2 ml-4 mr-2" onClick={onPatientInfoClick}>
-        <PatientInfo
-          showPatientInfoRef={showPatientInfoRef}
-          isOpen={showPatientInfo}
-          patientName={patientName}
-          patientSex={patientSex}
-          patientAge={patientAge}
-          MRN={MRN}
-          thickness={thickness}
-          spacing={spacing}
-          scanner={scanner}
-        />
-      </div>
+      {showPatientInfoIcon && (
+        <div className="flex h-8 mt-2 mr-1" onClick={onPatientInfoClick}>
+          <PatientInfo
+            showPatientInfoRef={showPatientInfoRef}
+            isOpen={showPatientInfo}
+            patientName={patientName}
+            patientSex={patientSex}
+            patientAge={patientAge}
+            MRN={MRN}
+            thickness={thickness}
+            spacing={spacing}
+            scanner={scanner}
+          />
+        </div>
+      )}
     </div>
   );
 };
@@ -148,6 +152,7 @@ ViewportActionBar.propTypes = {
   showCine: PropTypes.bool,
   cineProps: PropTypes.object,
   showPatientInfo: PropTypes.bool,
+  showPatientInfoIcon: PropTypes.bool,
   studyData: PropTypes.shape({
     //
     useAltStyling: PropTypes.bool,
@@ -175,6 +180,7 @@ ViewportActionBar.defaultProps = {
   showStatus: true,
   showNavArrows: true,
   showPatientInfo: false,
+  showPatientInfoIcon: true,
 };
 
 export default ViewportActionBar;
