@@ -76,7 +76,7 @@ function ViewerLayout({
       onClick: () =>
         show({
           content: AboutModal,
-          title: 'About OHIF Viewer',
+          title: 'About Gradient OHIF Viewer',
           contentProps: { versionNumber, buildNumber },
         }),
     },

@@ -58,19 +58,19 @@ const AboutModal = ({ buildNumber, versionNumber }) => {
     <div>
       {renderRowTitle('Important Links')}
       <div className="flex mb-8">
-        <Link href="https://community.ohif.org/" showIcon={true}>
+        <Link href="https://github.com/gradienthealth" showIcon={true}>
           Visit the forum
         </Link>
         <span className="ml-4">
           <Link
-            href="https://github.com/OHIF/Viewers/issues/new/choose"
+            href="https://github.com/gradienthealth/Viewers/issues/new/choose"
             showIcon={true}
           >
             Report an issue
           </Link>
         </span>
         <span className="ml-4">
-          <Link href="https://ohif.org/" showIcon={true}>
+          <Link href="https://gradienthealth.io/" showIcon={true}>
             More details
           </Link>
         </span>
@@ -80,14 +80,9 @@ const AboutModal = ({ buildNumber, versionNumber }) => {
       <div className="flex flex-col">
         <Row
           title="Repository URL"
-          value="https://github.com/OHIF/Viewers/tree/v3-stable"
-          link="https://github.com/OHIF/Viewers/tree/v3-stable"
+          value="https://github.com/gradienthealth/Viewers/tree/main"
+          link="https://github.com/gradienthealth/Viewers/tree/main"
         />
-        {/* <Row
-          title="Last Master Commits"
-          value="https://github.com/OHIF/Viewers/tree/v3-stable"
-          link="https://github.com/OHIF/Viewers/tree/v3-stable"
-        /> */}
         <Row title="Version number" value={versionNumber} />
         <Row title="Build number" value={buildNumber} />
         <Row title="Browser" value={browser} />
