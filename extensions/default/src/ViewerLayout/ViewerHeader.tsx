@@ -53,7 +53,7 @@ function ViewerHeader({ hotkeysManager, extensionManager, servicesManager }) {
       onClick: () =>
         show({
           content: AboutModal,
-          title: t('AboutModal:About OHIF Viewer'),
+          title: 'About Gradient OHIF Viewer',
           contentProps: { versionNumber, commitHash },
         }),
     },
