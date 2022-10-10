@@ -18,7 +18,9 @@ function LoadingIndicatorProgress({ className, textBlock, progress }) {
         className
       )}
     >
-      <Icon name="loading-ohif-mark" className="text-white w-12 h-12" />
+      <div className="text-white">
+        <img src="/assets/gradient.svg" alt="Gradient Health" />
+      </div>
       <div className="loading">
         {progress === undefined || progress === null ? (
           <div className="infinite-loading-bar bg-primary-light"></div>
