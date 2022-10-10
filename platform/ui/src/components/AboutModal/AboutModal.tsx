@@ -76,14 +76,14 @@ const AboutModal = ({ buildNumber, versionNumber, commitHash }) => {
       {renderRowTitle('Important Links')}
       <div className="mb-8 flex">
         <Link
-          href="https://community.ohif.org/"
+          href="https://github.com/gradienthealth"
           showIcon={true}
         >
           Visit the forum
         </Link>
         <span className="ml-4">
           <Link
-            href="https://github.com/OHIF/Viewers/issues/new/choose"
+            href="https://github.com/gradienthealth/Viewers/issues/new/choose"
             showIcon={true}
           >
             Report an issue
@@ -91,7 +91,7 @@ const AboutModal = ({ buildNumber, versionNumber, commitHash }) => {
         </span>
         <span className="ml-4">
           <Link
-            href="https://ohif.org/"
+            href="https://gradienthealth.io/"
             showIcon={true}
           >
             More details
@@ -103,19 +103,14 @@ const AboutModal = ({ buildNumber, versionNumber, commitHash }) => {
       <div className="flex flex-col">
         <Row
           title="Repository URL"
-          value="https://github.com/OHIF/Viewers/"
-          link="https://github.com/OHIF/Viewers/"
+          value="https://github.com/gradienthealth/Viewers/tree/main"
+          link="https://github.com/gradienthealth/Viewers/tree/main"
         />
-        <Row
+        {/*<Row
           title="Data Citation"
-          value="https://github.com/OHIF/Viewers/blob/master/DATACITATION.md"
-          link="https://github.com/OHIF/Viewers/blob/master/DATACITATION.md"
-        />
-        {/* <Row
-          title="Last Master Commits"
-          value="https://github.com/OHIF/Viewers/"
-          link="https://github.com/OHIF/Viewers/"
-        /> */}
+          value="https://github.com/gradienthealth/Viewers/blob/master/DATACITATION.md"
+          link="https://github.com/gradienthealth/Viewers/blob/master/DATACITATION.md"
+        />*/}
         <Row
           title="Version number"
           value={versionNumber}
