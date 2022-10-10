@@ -48,7 +48,8 @@ function ViewerHeader({ appConfig }: withAppTypes<{ appConfig: AppTypes.Config }
       onClick: () =>
         show({
           content: AboutModal,
-          title: t('AboutModal:About OHIF Viewer'),
+          title: t('AboutModal:About Gradient OHIF Viewer'),
+          // contentProps: { versionNumber, commitHash },
           containerClassName: 'max-w-md',
         }),
     },

@@ -199,6 +199,7 @@ import ArrowRight from './Sources/ArrowRight';
 import ChevronLeft from './Sources/ChevronLeft';
 import StatusAlert from './Sources/StatusAlert';
 import Undo from './Sources/Undo';
+import GradientHealthLogo from './Sources/GradientHealthLogo';
 //
 //
 type IconProps = React.HTMLAttributes<SVGElement>;
@@ -725,6 +726,7 @@ export const Icons = {
   Undo,
   Redo,
   JumpToSlice,
+  GradientHealthLogo,
 
   /** Adds an icon to the set of icons */
   addIcon: (name: string, icon) => {
