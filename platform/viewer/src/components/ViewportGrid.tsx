@@ -368,7 +368,7 @@ function ViewerViewportGrid(props) {
             left: viewportX * 100 + 0.2 + '%',
             width: viewportWidth * 100 - 0.3 + '%',
             height: viewportHeight * 100 - 0.3 + '%',
-            ...modeViewportPaneStyles,
+            ...modeViewportPaneStyles({ numViewportPanes }),
           }}
           isActive={isActive}
         >

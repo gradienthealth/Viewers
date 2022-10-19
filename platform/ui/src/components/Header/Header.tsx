@@ -14,6 +14,15 @@ function Header({
   ...props
 }): ReactNode {
   const { t } = useTranslation('Header');
+  const [matches, setMatches] = React.useState(
+    window.matchMedia('(min-width: 600px)').matches
+  );
+
+  React.useEffect(() => {
+    window
+      .matchMedia('(min-width: 600px)')
+      .addEventListener('change', e => setMatches(e.matches));
+  }, []);
 
   // TODO: this should be passed in as a prop instead and the react-router-dom
   // dependency should be dropped
@@ -51,9 +60,11 @@ function Header({
         </div>
         <div className="flex items-center">{children}</div>
         <div className="flex items-center">
-          <span className="mr-3 text-lg text-common-light">
-            {t('INVESTIGATIONAL USE ONLY')}
-          </span>
+          {matches ? (
+            <span className="mr-3 text-lg text-common-light">
+              {t('INVESTIGATIONAL USE ONLY')}
+            </span>
+          ) : null}
           <Dropdown id="options" showDropdownIcon={false} list={menuOptions}>
             <IconButton
               id={'options-settings-icon'}
