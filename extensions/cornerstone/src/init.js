@@ -51,13 +51,16 @@ export default async function init({
   //cornerstone.setUseCPURendering(true);
 
   // For debugging large datasets
-  //cornerstone.cache.setMaxCacheSize(3000000000);
+  const MAX_CACHE_SIZE_1GB = 1073741824;
+  const maxCacheSizeConfig = window?.config?.maxCacheSizeConfig;
+  cornerstone.cache.setMaxCacheSize(
+    maxCacheSizeConfig ? maxCacheSizeConfig : MAX_CACHE_SIZE_1GB
+  );
 
   initCornerstoneTools();
 
-  // Don't use cursors in viewports
-  // Todo: this should come from extension/app configuration
-  Settings.getRuntimeSettings().set('useCursors', false);
+  const useCursors = window?.config?.useCursors;
+  Settings.getRuntimeSettings().set('useCursors', Boolean(useCursors));
 
   const {
     UserAuthenticationService,
