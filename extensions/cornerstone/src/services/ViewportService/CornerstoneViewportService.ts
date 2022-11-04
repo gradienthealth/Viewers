@@ -265,6 +265,7 @@ class CornerstoneViewportService extends PubSubService
     const type = viewportInfo.getViewportType();
     const background = viewportInfo.getBackground();
     const orientation = viewportInfo.getOrientation();
+    const displayArea = viewportInfo.getDisplayArea();
 
     const viewportInput: Types.PublicViewportInput = {
       viewportId,
@@ -273,6 +274,7 @@ class CornerstoneViewportService extends PubSubService
       defaultOptions: {
         background,
         orientation,
+        displayArea,
       },
     };
 
