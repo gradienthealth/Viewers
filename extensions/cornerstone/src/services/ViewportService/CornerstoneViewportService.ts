@@ -187,6 +187,7 @@ class CornerstoneViewportService implements IViewportService {
     const type = viewportInfo.getViewportType();
     const background = viewportInfo.getBackground();
     const orientation = viewportInfo.getOrientation();
+    const displayArea = viewportInfo.getDisplayArea();
 
     const viewportInput: Types.PublicViewportInput = {
       viewportId,
@@ -195,6 +196,7 @@ class CornerstoneViewportService implements IViewportService {
       defaultOptions: {
         background,
         orientation,
+        displayArea,
       },
     };
 
