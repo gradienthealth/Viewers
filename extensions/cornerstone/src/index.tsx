@@ -13,7 +13,7 @@ import getHangingProtocolModule from './getHangingProtocolModule';
 import ToolGroupService from './services/ToolGroupService';
 import SyncGroupService from './services/SyncGroupService';
 import { toolNames } from './initCornerstoneTools';
-import { getEnabledElement } from './state';
+import { getEnabledElement, setEnabledElement } from './state';
 import CornerstoneViewportService from './services/ViewportService/CornerstoneViewportService';
 import dicomLoaderService from './utils/dicomLoaderService';
 import { registerColormap } from './utils/colormap/transferFunctionHelpers';
@@ -112,6 +112,7 @@ const cornerstoneExtension = {
             return { cornerstone, cornerstoneTools };
           },
           getEnabledElement,
+          setEnabledElement,
           dicomLoaderService,
           registerColormap,
         },
