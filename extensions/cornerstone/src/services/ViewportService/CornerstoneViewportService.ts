@@ -31,6 +31,8 @@ import JumpPresets from '../../utils/JumpPresets';
 const EVENTS = {
   VIEWPORT_DATA_CHANGED:
     'event::cornerstoneViewportService:viewportDataChanged',
+  VIEWPORT_STACK_SET: 'event::cornerstone::viewportservice:viewportstackset',
+  VIEWPORT_VOLUME_SET: 'event::cornerstone::viewportservice:viewportvolumeset',
 };
 
 /**
@@ -316,6 +318,11 @@ class CornerstoneViewportService implements IViewportService {
 
     viewport.setStack(imageIds, initialImageIndexToUse).then(() => {
       viewport.setProperties(properties);
+      this._broadcastEvent(EVENTS.VIEWPORT_STACK_SET, {
+        viewport,
+        imageIds,
+        initialImageIndexToUse,
+      });
     });
   }
 
@@ -558,6 +565,11 @@ class CornerstoneViewportService implements IViewportService {
     }
 
     viewport.render();
+
+    this._broadcastEvent(EVENTS.VIEWPORT_VOLUME_SET, {
+      viewport,
+      volumeInputArray,
+    });
   }
 
   // Todo: keepCamera is an interim solution until we have a better solution for

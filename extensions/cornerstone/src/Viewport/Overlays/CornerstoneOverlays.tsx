@@ -7,7 +7,7 @@ import ViewportImageSliceLoadingIndicator from './ViewportImageSliceLoadingIndic
 
 function CornerstoneOverlays(props) {
   const { viewportIndex, element, scrollbarHeight, servicesManager } = props;
-  const { CornerstoneViewportService } = servicesManager.services;
+  const { CornerstoneViewportService, CornerstoneCacheService} = servicesManager.services;
   const [imageSliceData, setImageSliceData] = useState({
     imageIndex: 0,
     numberOfSlices: 0,

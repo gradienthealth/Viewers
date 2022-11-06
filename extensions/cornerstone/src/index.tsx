@@ -16,8 +16,13 @@ import SegmentationService from './services/SegmentationService';
 import CornerstoneCacheService from './services/CornerstoneCacheService';
 
 import { toolNames } from './initCornerstoneTools';
-import { getEnabledElement, reset as enabledElementReset } from './state';
+import {
+  getEnabledElement,
+  setEnabledElement,
+  reset as enabledElementReset,
+} from './state';
 import CornerstoneViewportService from './services/ViewportService/CornerstoneViewportService';
+
 import dicomLoaderService from './utils/dicomLoaderService';
 import { registerColormap } from './utils/colormap/transferFunctionHelpers';
 
@@ -122,6 +127,7 @@ const cornerstoneExtension = {
             return { cornerstone, cornerstoneTools };
           },
           getEnabledElement,
+          setEnabledElement,
           dicomLoaderService,
           registerColormap,
         },
