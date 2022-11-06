@@ -11,7 +11,6 @@ import {
 } from '@cornerstonejs/core';
 
 import { setEnabledElement } from '../state';
-import CornerstoneCacheService from '../services/ViewportService/CornerstoneCacheService';
 
 import './OHIFCornerstoneViewport.css';
 import CornerstoneOverlays from './Overlays/CornerstoneOverlays';
@@ -97,6 +96,7 @@ const OHIFCornerstoneViewport = React.memo(props => {
     ToolGroupService,
     SyncGroupService,
     CornerstoneViewportService,
+    CornerstoneCacheService,
   } = servicesManager.services;
 
   // useCallback for scroll bar height calculation

@@ -4,11 +4,10 @@ import ViewportImageScrollbar from './ViewportImageScrollbar';
 import ViewportOverlay from './ViewportOverlay';
 import ViewportOrientationMarkers from './ViewportOrientationMarkers';
 import ViewportLoadingIndicator from './ViewportLoadingIndicator';
-import CornerstoneCacheService from '../../services/ViewportService/CornerstoneCacheService';
 
 function CornerstoneOverlays(props) {
   const { viewportIndex, element, scrollbarHeight, servicesManager } = props;
-  const { CornerstoneViewportService } = servicesManager.services;
+  const { CornerstoneViewportService, CornerstoneCacheService} = servicesManager.services;
   const [imageSliceData, setImageSliceData] = useState({
     imageIndex: 0,
     numberOfSlices: 0,

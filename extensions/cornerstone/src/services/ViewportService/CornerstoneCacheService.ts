@@ -40,7 +40,7 @@ class CornerstoneCacheService {
   listeners: { [key: string]: (...args: any[]) => void } = {};
   EVENTS: { [key: string]: string };
 
-  constructor() {
+  constructor(servicesManager) {
     this.listeners = {};
     this.EVENTS = EVENTS;
     Object.assign(this, pubSubServiceInterface);
@@ -227,5 +227,11 @@ class CornerstoneCacheService {
   }
 }
 
-const CacheService = new CornerstoneCacheService();
-export default CacheService;
+export default function ExtendedCornerstoneCacheService(serviceManager) {
+  return {
+    name: 'CornerstoneCacheService',
+    create: ({ configuration = {} }) => {
+      return new CornerstoneCacheService(serviceManager);
+    },
+  };
+}

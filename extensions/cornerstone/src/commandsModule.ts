@@ -1,6 +1,7 @@
 import {
   getEnabledElement,
   StackViewport,
+  VolumeViewport,
   volumeLoader,
   cache,
   utilities as csUtils,
@@ -300,6 +301,10 @@ const commandsModule = ({ servicesManager }) => {
         viewport.resetCamera();
         viewport.render();
       }
+      if (viewport instanceof VolumeViewport) {
+        viewport.resetCamera();
+        viewport.render();
+      }
     },
     scaleViewport: ({ direction }) => {
       const enabledElement = _getActiveViewportEnabledElement();
@@ -426,6 +431,11 @@ const commandsModule = ({ servicesManager }) => {
   };
 
   const definitions = {
+    getActiveViewportEnabledElement: {
+      commandFn: actions.getActiveViewportEnabledElement,
+      storeContexts: [],
+      options: {},
+    },
     setWindowLevel: {
       commandFn: actions.setWindowLevel,
       storeContexts: [],
