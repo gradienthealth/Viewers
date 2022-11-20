@@ -1,3 +1,4 @@
+import { pubSubServiceInterface } from '@ohif/core';
 import { api } from 'dicomweb-client';
 import {
   DicomMetadataStore,
@@ -86,7 +87,21 @@ function createDicomWebApi(dicomWebConfig, UserAuthenticationService) {
     ? new StaticWadoClient(wadoConfig)
     : new api.DICOMwebClient(wadoConfig);
 
+  const pubSubService = Object.assign({
+    EVENTS: {
+      NEW_STUDY: 'event::DicomWebDatasource::NEW_STUDY'
+    },
+    listeners: []
+  }, pubSubServiceInterface);
+
   const implementation = {
+
+    onNewStudy: (callback) => {
+      pubSubService.subscribe(pubSubService.EVENTS.NEW_STUDY, callback);
+    },
+    setNewStudy: ({ studyInstanceUIDs/*, seriesInstanceUID: string*/ }) => {
+      pubSubService._broadcastEvent(pubSubService.EVENTS.NEW_STUDY, { studyInstanceUIDs });
+    },
     initialize: ({ params, query }) => {
       const { StudyInstanceUIDs: paramsStudyInstanceUIDs } = params;
       const queryStudyInstanceUIDs = query.getAll('StudyInstanceUIDs');
@@ -103,7 +118,7 @@ function createDicomWebApi(dicomWebConfig, UserAuthenticationService) {
     query: {
       studies: {
         mapParams: mapParams.bind(),
-        search: async function(origParams) {
+        search: async function (origParams) {
           const headers = UserAuthenticationService.getAuthorizationHeader();
           if (headers) {
             qidoDicomWebClient.headers = headers;
@@ -128,7 +143,7 @@ function createDicomWebApi(dicomWebConfig, UserAuthenticationService) {
       },
       series: {
         // mapParams: mapParams.bind(),
-        search: async function(studyInstanceUid) {
+        search: async function (studyInstanceUid) {
           const headers = UserAuthenticationService.getAuthorizationHeader();
           if (headers) {
             qidoDicomWebClient.headers = headers;
