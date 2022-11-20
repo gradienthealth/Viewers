@@ -22,6 +22,8 @@ function create({
   getImageIdsForDisplaySet,
   getImageIdsForInstance,
   getImageIdsForStudy = null,
+  onNewStudy = null,
+  setNewStudy = null,
 }) {
   const defaultQuery = {
     studies: {
@@ -38,7 +40,7 @@ function create({
        * @param {number} params.resultsPerPage
        */
       mapParams: params => params,
-      requestResults: () => {},
+      requestResults: () => { },
       processResults: results => results,
     },
     series: {},
@@ -67,7 +69,9 @@ function create({
     deleteStudyMetadataPromise,
     getImageIdsForDisplaySet,
     getImageIdsForInstance,
-    getImageIdsForStudy
+    getImageIdsForStudy,
+    setNewStudy,
+    onNewStudy,
   };
 }
 
