@@ -463,12 +463,9 @@ function commandsModule({ servicesManager, commandsManager }) {
 
       if (viewport instanceof StackViewport) {
         viewport.resetProperties();
-        viewport.resetCamera();
-      } else {
-        // Todo: add reset properties for volume viewport
-        viewport.resetCamera();
       }
 
+      viewport.resetCamera();
       viewport.render();
     },
     scaleViewport: ({ direction }) => {
@@ -652,6 +649,11 @@ function commandsModule({ servicesManager, commandsManager }) {
       options: {},
     },
 
+    getActiveViewportEnabledElement: {
+      commandFn: actions.getActiveViewportEnabledElement,
+      storeContexts: [],
+      options: {},
+    },
     setWindowLevel: {
       commandFn: actions.setWindowLevel,
       storeContexts: [],

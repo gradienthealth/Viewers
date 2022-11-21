@@ -7,6 +7,12 @@ import ViewportImageSliceLoadingIndicator from './ViewportImageSliceLoadingIndic
 
 function CornerstoneOverlays(props) {
   const { viewportIndex, element, scrollbarHeight, servicesManager } = props;
+  const {
+    disableViewportImageScrollbar,
+    disableViewportOverlay,
+    disableViewportImageSliceLoadingIndicator,
+    disableViewportOrientationMarkers,
+  } = props;
   const { cornerstoneViewportService } = servicesManager.services;
   const [imageSliceData, setImageSliceData] = useState({
     imageIndex: 0,
@@ -36,8 +42,9 @@ function CornerstoneOverlays(props) {
   }
 
   if (viewportData) {
-    const viewportInfo =
-      cornerstoneViewportService.getViewportInfoByIndex(viewportIndex);
+    const viewportInfo = cornerstoneViewportService.getViewportInfoByIndex(
+      viewportIndex
+    );
 
     if (viewportInfo?.viewportOptions?.customViewportProps?.hideOverlays) {
       return null;
@@ -46,36 +53,44 @@ function CornerstoneOverlays(props) {
 
   return (
     <div className="noselect">
-      <ViewportImageScrollbar
-        viewportIndex={viewportIndex}
-        viewportData={viewportData}
-        element={element}
-        imageSliceData={imageSliceData}
-        setImageSliceData={setImageSliceData}
-        scrollbarHeight={scrollbarHeight}
-        servicesManager={servicesManager}
-      />
+      {!disableViewportImageScrollbar && (
+        <ViewportImageScrollbar
+          viewportIndex={viewportIndex}
+          viewportData={viewportData}
+          element={element}
+          imageSliceData={imageSliceData}
+          setImageSliceData={setImageSliceData}
+          scrollbarHeight={scrollbarHeight}
+          servicesManager={servicesManager}
+        />
+      )}
 
-      <CustomizableViewportOverlay
-        imageSliceData={imageSliceData}
-        viewportData={viewportData}
-        viewportIndex={viewportIndex}
-        servicesManager={servicesManager}
-        element={element}
-      />
+      {!disableViewportOverlay && (
+        <CustomizableViewportOverlay
+          imageSliceData={imageSliceData}
+          viewportData={viewportData}
+          viewportIndex={viewportIndex}
+          servicesManager={servicesManager}
+          element={element}
+        />
+      )}
 
-      <ViewportImageSliceLoadingIndicator
-        viewportData={viewportData}
-        element={element}
-      />
+      {!disableViewportImageSliceLoadingIndicator && (
+        <ViewportImageSliceLoadingIndicator
+          viewportData={viewportData}
+          element={element}
+        />
+      )}
 
-      <ViewportOrientationMarkers
-        imageSliceData={imageSliceData}
-        element={element}
-        viewportData={viewportData}
-        servicesManager={servicesManager}
-        viewportIndex={viewportIndex}
-      />
+      {!disableViewportOrientationMarkers && (
+        <ViewportOrientationMarkers
+          imageSliceData={imageSliceData}
+          element={element}
+          viewportData={viewportData}
+          servicesManager={servicesManager}
+          viewportIndex={viewportIndex}
+        />
+      )}
     </div>
   );
 }
