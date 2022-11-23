@@ -40,10 +40,22 @@ const findStudies = (key, value) => {
   return studies;
 };
 
+let _dicomJsonConfig = null;
+
 function createDicomJSONApi(dicomJsonConfig) {
-  const { name, wadoRoot } = dicomJsonConfig;
+  var { name, wadoRoot } = dicomJsonConfig;
+  const init = config => {
+    _dicomJsonConfig = config;
+    name = _dicomJsonConfig.name;
+    wadoRoot = _dicomJsonConfig.wadoRoot;
+  };
+
+  init(dicomJsonConfig);
 
   const implementation = {
+    updateConfig: (dicomWebConfig) => {
+      init(dicomWebConfig);
+    },
     initialize: async ({ params, query, url }) => {
       if (!url) url = query.get('url');
       let metaData = getMetaDataByURL(url);
@@ -239,12 +251,12 @@ function createDicomJSONApi(dicomJsonConfig) {
             const imageId = getImageId({
               instance,
               frame: i,
-              config: dicomJsonConfig,
+              config: _dicomJsonConfig,
             });
             imageIds.push(imageId);
           }
         } else {
-          const imageId = getImageId({ instance, config: dicomJsonConfig });
+          const imageId = getImageId({ instance, config: _dicomJsonConfig });
           imageIds.push(imageId);
         }
       });
