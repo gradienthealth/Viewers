@@ -3248,6 +3248,20 @@
   resolved "https://registry.yarnpkg.com/@gar/promisify/-/promisify-1.1.3.tgz#555193ab2e3bb3b6adc3d551c9c030d9e860daf6"
   integrity sha512-k2Ty1JcVojjJFwrg/ThKi2ujJ7XNLYaFGNB/bWT9wGR+oSMJHMa5w+CUq6p/pVrKeNNgA7pCqEcjSnHVoqJQFw==
 
+"@gradienthealth/neuro-rma@0.0.4":
+  version "0.0.4"
+  resolved "https://registry.yarnpkg.com/@gradienthealth/neuro-rma/-/neuro-rma-0.0.4.tgz#58198c02024b1b6186a01d7ea2526157a69151ed"
+  integrity sha512-woti7AOtjTCqQ3xecJlmJACuQkD999B499iV4x1g+g9wf2Vi2xtpmBJTeoFSL3gHGw7Fz2mZq1sDUASWdvHaLw==
+  dependencies:
+    "@babel/runtime" "7.7.6"
+
+"@gradienthealth/rapidai-extension@^0.0.1":
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/@gradienthealth/rapidai-extension/-/rapidai-extension-0.0.1.tgz#cda697b25ad03521d60031d6911b1c3629055dd9"
+  integrity sha512-N3TJcng2G2bvk5+hnvq4X8gIo0nNI9VZlGlYnZSO/PebbAUVuZtqt9CJzZMnNaw1Goco1UNL3hmXLikQO8yNwQ==
+  dependencies:
+    "@babel/runtime" "7.7.6"
+
 "@hapi/hoek@^9.0.0":
   version "9.3.0"
   resolved "https://registry.yarnpkg.com/@hapi/hoek/-/hoek-9.3.0.tgz#8368869dcb735be2e7f5cb7647de78e167a251fb"
@@ -3537,10 +3551,10 @@
     "@jridgewell/resolve-uri" "^3.0.3"
     "@jridgewell/sourcemap-codec" "^1.4.10"
 
-"@kitware/vtk.js@25.9.0":
-  version "25.9.0"
-  resolved "https://registry.npmjs.org/@kitware/vtk.js/-/vtk.js-25.9.0.tgz#ecf555c56f6e117b454131c43aba45311a515ecc"
-  integrity sha512-L4OQavJkSZjYYvW4GsEVkX7hqPKEbzEKwitq9GcjoAijrV0MINyxkChRbYEEYnTMcSW3i2jZ/jmiXaPfXuhPFQ==
+"@kitware/vtk.js@25.11.1":
+  version "25.11.1"
+  resolved "https://nexus.infrastructure.rapid-sys.com/repository/isv-npm/@kitware/vtk.js/-/vtk.js-25.11.1.tgz#323cff57ca5177a5472eac01a413c4f899e3c353"
+  integrity sha512-cWzP2YMfu8nbQGl5Ox63NH2hpuLQKmmW3NOMMAOhCu6Wq2ALIXO5wSl/+tMczSVLB07ZQFKKJ6tmPCTnSTMCYQ==
   dependencies:
     "@babel/runtime" "7.17.9"
     commander "9.2.0"
