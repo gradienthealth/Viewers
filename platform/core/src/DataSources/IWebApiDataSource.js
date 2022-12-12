@@ -21,6 +21,7 @@ function create({
   deleteStudyMetadataPromise,
   getImageIdsForDisplaySet,
   getImageIdsForInstance,
+  getImageIdsForStudy = null,
 }) {
   const defaultQuery = {
     studies: {
@@ -66,6 +67,7 @@ function create({
     deleteStudyMetadataPromise,
     getImageIdsForDisplaySet,
     getImageIdsForInstance,
+    getImageIdsForStudy
   };
 }
 
