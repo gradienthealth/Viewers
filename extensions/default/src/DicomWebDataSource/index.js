@@ -434,6 +434,23 @@ function createDicomWebApi(dicomWebConfig, userAuthenticationService) {
       setSuccessFlag();
     },
     deleteStudyMetadataPromise,
+    async getImageIdsForStudy(StudyInstanceUID) {
+      const seriesMetadata = await this.query.series.search(StudyInstanceUID);
+      const seriesDatasets = await Promise.all(
+        seriesMetadata.map(seriesMetadata =>
+          _wadoDicomWebClient.retrieveSeriesMetadata({
+            studyInstanceUID: StudyInstanceUID,
+            seriesInstanceUID: seriesMetadata.seriesInstanceUid,
+          })
+        )
+      );
+      return seriesDatasets.map(instances => {
+        const naturalizedInstance = instances.map(naturalizeDataset);
+        return this.getImageIdsForDisplaySet({
+          images: naturalizedInstance,
+        });
+      });
+    },
     getImageIdsForDisplaySet(displaySet) {
       const images = displaySet.images;
       const imageIds = [];
