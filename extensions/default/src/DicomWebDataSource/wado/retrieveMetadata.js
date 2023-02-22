@@ -17,7 +17,8 @@ async function RetrieveMetadata(
   enableStudyLazyLoad,
   filters = {},
   sortCriteria,
-  sortFunction
+  sortFunction,
+  withCredentials
 ) {
   const RetrieveMetadataLoader =
     enableStudyLazyLoad !== false
@@ -29,7 +30,8 @@ async function RetrieveMetadata(
     studyInstanceUid,
     filters,
     sortCriteria,
-    sortFunction
+    sortFunction,
+    withCredentials
   );
   const data = await retrieveMetadataLoader.execLoad();
 

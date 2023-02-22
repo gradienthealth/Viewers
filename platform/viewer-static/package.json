@@ -1,0 +1,19 @@
+{
+  "name": "@ischemaview/rapid-dicom-viewer",
+  "version": "1.1.0",
+  "description": "rapid-dicom-viewer built and bundled into static assets",
+  "main": "index.html",
+  "files": [
+    "/dist"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "node scripts/build-viewer-static.js"
+  },
+  "keywords": [],
+  "author": "OHIF Contributors / iSchemaView, Inc",
+  "license": "MIT",
+  "publishConfig": {
+    "registry": "https://nexus.infrastructure.rapid-sys.com/repository/npm-internal"
+  }
+}

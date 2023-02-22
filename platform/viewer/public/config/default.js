@@ -15,6 +15,8 @@ window.config = {
   showWarningMessageForCrossOrigin: true,
   showCPUFallbackMessage: true,
   showLoadingIndicator: true,
+  maxCacheSize: 1024 * 1024 * 300,
+  //maxNumberOfWebWorkers: 2,x`x`
   maxNumRequests: {
     interaction: 100,
     thumbnail: 75,
@@ -28,14 +30,12 @@ window.config = {
       sourceName: 'dicomweb',
       configuration: {
         name: 'aws',
-        // old server
-        // wadoUriRoot: 'https://server.dcmjs.org/dcm4chee-arc/aets/DCM4CHEE/wado',
-        // qidoRoot: 'https://server.dcmjs.org/dcm4chee-arc/aets/DCM4CHEE/rs',
-        // wadoRoot: 'https://server.dcmjs.org/dcm4chee-arc/aets/DCM4CHEE/rs',
-        // new server
-        wadoUriRoot: 'https://d1zt0lkqsoz8si.cloudfront.net/dicomweb',
-        qidoRoot: 'https://d1zt0lkqsoz8si.cloudfront.net/dicomweb',
-        wadoRoot: 'https://d1zt0lkqsoz8si.cloudfront.net/dicomweb',
+        wadoUriRoot: '{siteUrl}',
+        qidoRoot: '{siteUrl}',
+        wadoRoot: '{siteUrl}',
+        // wadoUriRoot: 'https://d1zt0lkqsoz8si.cloudfront.net/dicomweb',
+        // qidoRoot: 'https://d1zt0lkqsoz8si.cloudfront.net/dicomweb',
+        // wadoRoot: 'https://d1zt0lkqsoz8si.cloudfront.net/dicomweb',
         qidoSupportsIncludeField: false,
         supportsReject: false,
         imageRendering: 'wadors',
@@ -45,6 +45,7 @@ window.config = {
         supportsWildcard: true,
         staticWado: true,
         singlepart: 'bulkdata,video,pdf',
+        withCredentials: true,
       },
     },
     {
@@ -71,7 +72,7 @@ window.config = {
   },
   whiteLabeling: {
     /* Optional: Should return a React component to be rendered in the "Logo" section of the application's Top Navigation bar */
-    createLogoComponentFn: function (React) {
+    createLogoComponentFn: function(React) {
       return React.createElement(
         'a',
         {
@@ -80,11 +81,11 @@ window.config = {
           className: 'text-purple-600 line-through',
           href: '/',
         },
-        React.createElement('img',
-          {
-            src: './assets/RapidAILogo.svg',
-          }
-        ))
+        React.createElement('img', {
+          src: './logo.svg',
+          className: 'w-12',
+        })
+      );
     },
   },
   defaultDataSourceName: 'dicomweb',

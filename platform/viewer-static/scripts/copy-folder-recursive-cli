@@ -1,0 +1,20 @@
+#!/usr/bin/env node
+
+const copyFolderRecursiveSync = require('./copy-folder-recursive-sync');
+
+const USAGE =
+`USAGE:
+   copy-folder-recursive-cli <source directory> <destination_directory>`;
+
+const from = process.argv[2];
+const to = process.argv[3];
+
+
+if (!from || !to) {
+  console.log(
+    USAGE
+  )
+  process.exit(1);
+}
+
+copyFolderRecursiveSync(from, to);

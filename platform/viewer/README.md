@@ -87,6 +87,18 @@ yarn install
 yarn start
 ```
 
+### Building standalone deployment assets
+
+In the viewer root folder, run:
+
+```js
+// Restore dependencies
+yarn install
+
+// Build static assets into /dist folder
+yarn build:static
+```
+
 For more advanced local development scenarios, like using your own locally
 hosted PACS and test data,
 [check out our Essential: Getting Started](https://docs.ohif.org/getting-started.html)

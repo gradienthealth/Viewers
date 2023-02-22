@@ -17,6 +17,7 @@ const DIST_DIR = path.join(__dirname, '../dist');
 const PUBLIC_DIR = path.join(__dirname, '../public');
 // ~~ Env Vars
 const HTML_TEMPLATE = process.env.HTML_TEMPLATE || 'index.html';
+const LOCAL_PATH = process.env.LOCAL_PATH || '';
 const PUBLIC_URL = process.env.PUBLIC_URL || '/';
 const APP_CONFIG = process.env.APP_CONFIG || 'config/default.js';
 const PROXY_TARGET = process.env.PROXY_TARGET;
@@ -45,7 +46,9 @@ const setHeaders = (res, path) => {
 module.exports = (env, argv) => {
   const baseConfig = webpackBase(env, argv, { SRC_DIR, DIST_DIR });
   const isProdBuild = process.env.NODE_ENV === 'production';
+  const isStaticBundle = !!LOCAL_PATH;
   const hasProxy = PROXY_TARGET && PROXY_DOMAIN;
+  const pathPrefix = isStaticBundle ? LOCAL_PATH : PUBLIC_URL;
 
   const mergedConfig = merge(baseConfig, {
     entry: {
@@ -54,9 +57,9 @@ module.exports = (env, argv) => {
     output: {
       path: DIST_DIR,
       filename: isProdBuild ? '[name].bundle.[chunkhash].js' : '[name].js',
-      publicPath: PUBLIC_URL, // Used by HtmlWebPackPlugin for asset prefix
-      devtoolModuleFilenameTemplate: function(info) {
-        if (isProdBuild) {
+      publicPath: pathPrefix, // Used by HtmlWebPackPlugin for asset prefix
+      devtoolModuleFilenameTemplate: function (info) {
+        if (isProdBuild && !isStaticBundle) {
           return `webpack:///${info.resourcePath}`;
         } else {
           return 'file:///' + encodeURI(info.absoluteResourcePath);
@@ -108,7 +111,7 @@ module.exports = (env, argv) => {
         template: `${PUBLIC_DIR}/html-templates/${HTML_TEMPLATE}`,
         filename: 'index.html',
         templateParameters: {
-          PUBLIC_URL: PUBLIC_URL,
+          PUBLIC_URL: pathPrefix,
         },
       }),
       // Generate a service worker for fast local loads

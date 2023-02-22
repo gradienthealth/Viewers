@@ -19,13 +19,15 @@ export default class RetrieveMetadataLoader {
     studyInstanceUID,
     filters = {},
     sortCriteria,
-    sortFunction
+    sortFunction,
+    withCredentials
   ) {
     this.client = client;
     this.studyInstanceUID = studyInstanceUID;
     this.filters = filters;
     this.sortCriteria = sortCriteria;
     this.sortFunction = sortFunction;
+    this.withCredentials = withCredentials;
   }
 
   async execLoad() {

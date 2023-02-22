@@ -102,14 +102,17 @@ function createDicomWebApi(webConfig, userAuthenticationService) {
     onNewStudy: callback => {
       pubSubService.subscribe(pubSubService.EVENTS.NEW_STUDY, callback);
     },
-    setNewStudy: ({ studyInstanceUIDs /*, seriesInstanceUID: string*/ }) => {
+    setNewStudy: ({ studyInstanceUIDs, seriesInstanceUIDs }) => {
       pubSubService._broadcastEvent(pubSubService.EVENTS.NEW_STUDY, {
         studyInstanceUIDs,
+        seriesInstanceUIDs,
       });
     },
     initialize: ({ params, query }) => {
       const { StudyInstanceUIDs: paramsStudyInstanceUIDs } = params;
+      const { SeriesInstanceUIDs: paramsSeriesInstanceUIDs } = params;
       const queryStudyInstanceUIDs = query.getAll('StudyInstanceUIDs');
+      const querySeriesInstanceUIDs = query.getAll('SeriesInstanceUIDs');
 
       const StudyInstanceUIDs =
         (queryStudyInstanceUIDs.length && queryStudyInstanceUIDs) ||
@@ -118,7 +121,23 @@ function createDicomWebApi(webConfig, userAuthenticationService) {
         StudyInstanceUIDs && Array.isArray(StudyInstanceUIDs)
           ? StudyInstanceUIDs
           : [StudyInstanceUIDs];
-      return StudyInstanceUIDsAsArray;
+
+      const SeriesInstanceUIDs =
+        querySeriesInstanceUIDs || paramsSeriesInstanceUIDs;
+      const SeriesInstanceUIDsAsArray =
+        SeriesInstanceUIDs && Array.isArray(SeriesInstanceUIDs)
+          ? SeriesInstanceUIDs
+          : [SeriesInstanceUIDs];
+
+      let result = {
+        studyInstanceUIDs: StudyInstanceUIDsAsArray,
+        seriesInstanceUIDs: SeriesInstanceUIDsAsArray,
+        filters: null,
+        sortCriteria: null,
+        sortFunction: null,
+      };
+
+      return result;
     },
     query: {
       studies: {
@@ -202,6 +221,7 @@ function createDicomWebApi(webConfig, userAuthenticationService) {
           sortCriteria,
           sortFunction,
           madeInClient = false,
+          withCredentials = !!webConfig.withCredentials,
         } = {}) => {
           const headers = userAuthenticationService.getAuthorizationHeader();
           if (headers) {
@@ -220,7 +240,8 @@ function createDicomWebApi(webConfig, userAuthenticationService) {
               filters,
               sortCriteria,
               sortFunction,
-              madeInClient
+              madeInClient,
+              withCredentials
             );
           }
 
@@ -229,7 +250,8 @@ function createDicomWebApi(webConfig, userAuthenticationService) {
             filters,
             sortCriteria,
             sortFunction,
-            madeInClient
+            madeInClient,
+            withCredentials
           );
         },
       },
@@ -271,7 +293,8 @@ function createDicomWebApi(webConfig, userAuthenticationService) {
       filters,
       sortCriteria,
       sortFunction,
-      madeInClient
+      madeInClient,
+      withCredentials
     ) => {
       const enableStudyLazyLoad = false;
 
@@ -282,7 +305,8 @@ function createDicomWebApi(webConfig, userAuthenticationService) {
         enableStudyLazyLoad,
         filters,
         sortCriteria,
-        sortFunction
+        sortFunction,
+        withCredentials
       );
 
       // first naturalize the data
@@ -342,7 +366,8 @@ function createDicomWebApi(webConfig, userAuthenticationService) {
       filters,
       sortCriteria,
       sortFunction,
-      madeInClient = false
+      madeInClient = false,
+      withCredentials = false
     ) => {
       const enableStudyLazyLoad = true;
       // Get Series
@@ -355,7 +380,8 @@ function createDicomWebApi(webConfig, userAuthenticationService) {
         enableStudyLazyLoad,
         filters,
         sortCriteria,
-        sortFunction
+        sortFunction,
+        withCredentials
       );
 
       /**

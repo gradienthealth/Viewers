@@ -12,10 +12,11 @@ import RetrieveMetadataLoader from './retrieveMetadataLoader';
  */
 export default class RetrieveMetadataLoaderSync extends RetrieveMetadataLoader {
   getOptions() {
-    const { studyInstanceUID, filters } = this;
+    const { studyInstanceUID, filters, withCredentials } = this;
 
     const options = {
       studyInstanceUID,
+      withCredentials,
     };
 
     const { seriesInstanceUID } = filters;
@@ -35,6 +36,7 @@ export default class RetrieveMetadataLoaderSync extends RetrieveMetadataLoader {
       studyInstanceUID,
       filters: { seriesInstanceUID } = {},
       client,
+      withCredentials,
     } = this;
 
     if (seriesInstanceUID) {
@@ -42,12 +44,13 @@ export default class RetrieveMetadataLoaderSync extends RetrieveMetadataLoader {
         client.retrieveSeriesMetadata.bind(client, {
           studyInstanceUID,
           seriesInstanceUID,
+          withCredentials
         })
       );
     }
 
     loaders.push(
-      client.retrieveStudyMetadata.bind(client, { studyInstanceUID })
+      client.retrieveStudyMetadata.bind(client, { studyInstanceUID, withCredentials })
     );
 
     yield* loaders;

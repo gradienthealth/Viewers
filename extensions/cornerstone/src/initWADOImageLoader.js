@@ -79,6 +79,7 @@ export default function initWADOImageLoader(
     errorInterceptor: error => {
       errorHandler.getHTTPErrorHandler(error);
     },
+    withCredentials: true,
   });
 
   initWebWorkers(appConfig);

@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import i18n from '@ohif/i18n';
 import { I18nextProvider } from 'react-i18next';
-import { BrowserRouter } from 'react-router-dom';
+import { HashRouter } from 'react-router-dom';
 import Compose from './routes/Mode/Compose';
 
 import {
@@ -113,10 +113,10 @@ function App({ config, defaultExtensions, defaultModes }) {
 
   return (
     <CombinedProviders>
-      <BrowserRouter basename={routerBasename}>
+      <HashRouter basename={routerBasename}>
         {authRoutes}
         {appRoutes}
-      </BrowserRouter>
+      </HashRouter>
     </CombinedProviders>
   );
 }

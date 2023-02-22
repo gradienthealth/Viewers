@@ -1,3 +1,4 @@
+import deepEqual from './utils/deepEqual.js';
 import RetrieveMetadata from './wado/retrieveMetadata.js';
 
 const moduleName = 'RetrieveStudyMetadata';
@@ -21,7 +22,8 @@ export function retrieveStudyMetadata(
   enableStudyLazyLoad,
   filters,
   sortCriteria,
-  sortFunction
+  sortFunction,
+  withCredentials
 ) {
   // @TODO: Whenever a study metadata request has failed, its related promise will be rejected once and for all
   // and further requests for that metadata will always fail. On failure, we probably need to remove the
@@ -40,7 +42,15 @@ export function retrieveStudyMetadata(
 
   // Already waiting on result? Return cached promise
   if (StudyMetaDataPromises.has(StudyInstanceUID)) {
-    return StudyMetaDataPromises.get(StudyInstanceUID);
+    const filtersArray = StudyMetaDataPromises.get(StudyInstanceUID);
+
+    const foundFilter = filtersArray.find((item, index, obj) => {
+      return deepEqual(item.filters, filters);
+    });
+
+    if (foundFilter) {
+      return foundFilter.promise;
+    }
   }
 
   // Create a promise to handle the data retrieval
@@ -51,14 +61,25 @@ export function retrieveStudyMetadata(
       enableStudyLazyLoad,
       filters,
       sortCriteria,
-      sortFunction
+      sortFunction,
+      withCredentials
     ).then(function(data) {
       resolve(data);
     }, reject);
   });
 
+  let filtersArray;
+
   // Store the promise in cache
-  StudyMetaDataPromises.set(StudyInstanceUID, promise);
+  if (StudyMetaDataPromises.has(StudyInstanceUID)) {
+    filtersArray = StudyMetaDataPromises.get(StudyInstanceUID);
+  } else {
+    filtersArray = [];
+
+    StudyMetaDataPromises.set(filtersArray);
+  }
+
+  filtersArray.push({ promise, filters });
 
   return promise;
 }
