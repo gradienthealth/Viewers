@@ -9,7 +9,7 @@ import { createDicomLocalApi } from './DicomLocalDataSource/index.js';
 /**
  *
  */
-function getDataSourcesModule() {
+function getDataSourcesModule({ servicesManager }) {
   return [
     {
       name: 'dicomweb',
@@ -19,7 +19,9 @@ function getDataSourcesModule() {
     {
       name: 'dicomjson',
       type: 'jsonApi',
-      createDataSource: createDicomJSONApi,
+      createDataSource: dicomJsonConfig => {
+        return createDicomJSONApi(dicomJsonConfig, servicesManager);
+      },
     },
     {
       name: 'dicomlocal',

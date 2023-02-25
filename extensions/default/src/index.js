@@ -18,7 +18,9 @@ const defaultExtension = {
   preRegistration: ({ servicesManager, configuration = {} }) => {
     init({ servicesManager, configuration });
   },
-  getDataSourcesModule,
+  getDataSourcesModule: ({ servicesManager }) => {
+    return getDataSourcesModule({ servicesManager });
+  },
   getLayoutTemplateModule,
   getPanelModule,
   getHangingProtocolModule,

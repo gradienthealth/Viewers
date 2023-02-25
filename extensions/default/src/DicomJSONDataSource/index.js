@@ -24,6 +24,123 @@ let _store = {
   // }
 };
 
+const getMetadataFromBigQueryRow = (rows, prefix) => {
+  const rowsByStudy = Object.values(
+    rows.reduce((rowsByStudy, row) => {
+      const studyuid = row['StudyInstanceUID'];
+      if (!rowsByStudy[studyuid]) rowsByStudy[studyuid] = [];
+      rowsByStudy[studyuid].push(row);
+      return rowsByStudy;
+    }, {})
+  );
+
+  const studies = rowsByStudy.map(rows => {
+    const studyNumInstances = rows.reduce((acc, row) => {
+      return acc + (parseInt(row['NumInstances']) || 0);
+    }, 0);
+
+    const series = rows.map(row => {
+      return {
+        SeriesInstanceUID: row['SeriesInstanceUID'],
+        Modality: row['Modality'],
+        SeriesDescription: row['SeriesDescription'] || 'No description',
+        StudyInstanceUID: row['StudyInstanceUID'],
+        SeriesNumber: row['SeriesNumber'],
+        SeriesTime: row['SeriesTime'],
+        NumInstances: isNaN(parseInt(row['NumInstances']))
+          ? 0
+          : parseInt(row['NumInstances']),
+        instances: row['instances'].map(instance => {
+          return {
+            metadata: instance.metadata,
+            url: prefix
+              ? instance.url.replace(
+                  'https://storage.googleapis.com',
+                  `https://storage.googleapis.com/${prefix}`
+                )
+              : instance.url,
+          };
+        }),
+      };
+    });
+
+    return {
+      StudyInstanceUID: rows[0]['StudyInstanceUID'],
+      PatientName: rows[0]['PatientName'],
+      PatientSex: rows[0]['PatientSex'],
+      AccessionNumber: rows[0]['AccessionNumber'],
+      StudyDate: rows[0]['StudyDate'],
+      PatientID: rows[0]['PatientID'],
+      PatientWeight: rows[0]['PatientWeight'],
+      PatientAge: rows[0]['PatientAge'],
+      StudyDescription: rows[0]['StudyDescription'] || 'No description',
+      StudyTime: rows[0]['StudyTime'],
+      NumInstances: studyNumInstances,
+      Modalities: `["${rows[0]['Modality']}"]`,
+      series: series,
+    };
+  });
+  return {
+    studies: studies,
+  };
+};
+
+const getBigQueryRows = async (studyuids, seriesuid, access_token) => {
+  const projectId = 'gradient-health-search';
+  const query = `
+    SELECT TO_JSON_STRING(t) FROM (
+      SELECT
+        StudyInstanceUID,
+        SeriesInstanceUID,
+        PatientID,
+        StudyID,
+        Modality,
+        PatientName,
+        PatientSex,
+        AccessionNumber,
+        StudyDate,
+        PatientWeight,
+        PatientAge,
+        ParsedPatientAge,
+        StudyDescription,
+        StudyTime,
+        NumInstances,
+        SeriesDescription,
+        SeriesNumber
+        SeriesTime,
+        instances
+      FROM \`gradient-health-search.radiology.all-viewer-links\`
+      WHERE StudyInstanceUID IN (${studyuids.map(s => `'${s}'`).join(', ')})
+      ${seriesuid ? `AND SeriesInstanceUID = '${seriesuid}'` : ''}
+    ) as t
+  `;
+  const response = await fetch(
+    `https://bigquery.googleapis.com/bigquery/v2/projects/${projectId}/queries`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        query: query,
+        useLegacySql: false,
+        location: 'us-central1',
+        defaultDataset: {
+          datasetId: 'radiology',
+          projectId: 'gradient-health-search',
+        },
+      }),
+      headers: {
+        Authorization: 'Bearer ' + access_token,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+  const data = await response.json();
+  if (data) {
+    return data?.rows.map(row => JSON.parse(row?.f?.[0]?.v));
+  } else {
+    return undefined;
+  }
+};
+
 const getMetaDataByURL = url => {
   return _store.urls.find(metaData => metaData.url === url);
 };
@@ -42,7 +159,7 @@ const findStudies = (key, value) => {
 
 let _dicomJsonConfig = null;
 
-function createDicomJSONApi(dicomJsonConfig) {
+function createDicomJSONApi(dicomJsonConfig, servicesManager) {
   var { name, wadoRoot } = dicomJsonConfig;
   const init = config => {
     _dicomJsonConfig = config;
@@ -53,7 +170,7 @@ function createDicomJSONApi(dicomJsonConfig) {
   init(dicomJsonConfig);
 
   const implementation = {
-    updateConfig: (dicomWebConfig) => {
+    updateConfig: dicomWebConfig => {
       init(dicomWebConfig);
     },
     initialize: async ({ params, query, url }) => {
@@ -69,8 +186,23 @@ function createDicomJSONApi(dicomJsonConfig) {
         });
       }
 
-      const response = await fetch(url);
-      let data = await response.json();
+      let data;
+      if (query.get('bigquery')) {
+        const { UserAuthenticationService } = servicesManager.services;
+        const user = UserAuthenticationService.getUser();
+        const studyuids = query.getAll('StudyInstanceUID');
+        const seriesuid = query.get('SeriesInstanceUID');
+        const prefix = query.get('prefix');
+        const rows = await getBigQueryRows(
+          studyuids,
+          seriesuid,
+          user['access_token']
+        );
+        data = getMetadataFromBigQueryRow(rows, prefix);
+      } else {
+        const response = await fetch(url);
+        data = await response.json();
+      }
 
       const studyInstanceUIDs = data.studies.map(
         study => study.StudyInstanceUID
@@ -106,7 +238,7 @@ function createDicomJSONApi(dicomJsonConfig) {
     },
     query: {
       studies: {
-        mapParams: () => { },
+        mapParams: () => {},
         search: async param => {
           const [key, value] = Object.entries(param)[0];
           const mappedParam = mappings[key];

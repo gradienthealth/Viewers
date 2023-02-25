@@ -20,6 +20,21 @@ window.config = {
     thumbnail: 75,
     prefetch: 10,
   },
+  oidc: [
+    {
+      authority: 'https://accounts.google.com',
+      client_id:
+        '195181363105-h9e3uujhnd2t6c8dqrdcv01h4bn2fsva.apps.googleusercontent.com',
+      redirect_uri: '/callback',
+      response_type: 'id_token token',
+      scope:
+        'email profile openid https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/devstorage.read_only https://www.googleapis.com/auth/bigquery.readonly',
+      post_logout_redirect_uri: '/logout-redirect.html',
+      revoke_uri: 'https://accounts.google.com/o/oauth2/revoke?token=',
+      automaticSilentRenew: true,
+      revokeAccessTokenOnSignout: true,
+    },
+  ],
   // filterQueryParam: false,
   dataSources: [
     {
@@ -33,9 +48,9 @@ window.config = {
         // qidoRoot: 'https://server.dcmjs.org/dcm4chee-arc/aets/DCM4CHEE/rs',
         // wadoRoot: 'https://server.dcmjs.org/dcm4chee-arc/aets/DCM4CHEE/rs',
         // new server
-        wadoUriRoot: 'https://domvja9iplmyu.cloudfront.net/dicomweb',
-        qidoRoot: 'https://domvja9iplmyu.cloudfront.net/dicomweb',
-        wadoRoot: 'https://domvja9iplmyu.cloudfront.net/dicomweb',
+        wadoUriRoot: 'https://storage.cloud.google.com',
+        qidoRoot: 'https://storage.cloud.google.com',
+        wadoRoot: 'https://storage.cloud.google.com',
         qidoSupportsIncludeField: false,
         supportsReject: false,
         imageRendering: 'wadors',
@@ -71,7 +86,7 @@ window.config = {
   },
   whiteLabeling: {
     /* Optional: Should return a React component to be rendered in the "Logo" section of the application's Top Navigation bar */
-    createLogoComponentFn: function (React) {
+    createLogoComponentFn: function(React) {
       return React.createElement(
         'a',
         {
@@ -80,11 +95,10 @@ window.config = {
           className: 'text-purple-600 line-through',
           href: '/',
         },
-        React.createElement('img',
-          {
-            src: './assets/gradient.svg',
-          }
-        ))
+        React.createElement('img', {
+          src: '/assets/gradient.svg',
+        })
+      );
     },
   },
   defaultDataSourceName: 'dicomweb',

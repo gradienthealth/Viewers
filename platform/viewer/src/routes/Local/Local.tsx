@@ -91,7 +91,7 @@ function Local() {
             <div className="py-8 px-8 mx-auto bg-secondary-dark drop-shadow-md space-y-2 rounded-lg">
               <img
                 className="block mx-auto h-14"
-                src="./assets/gradient.svg"
+                src="/assets/gradient.svg"
                 alt="Gradient Health"
               />
               <div className="text-center space-y-2 pt-4">

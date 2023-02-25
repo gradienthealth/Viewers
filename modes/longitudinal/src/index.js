@@ -162,7 +162,7 @@ function modeFactory() {
             props: {
               leftPanels: [tracked.thumbnailList],
               rightPanels: [dicomSeg.panel, tracked.measurements],
-              // rightPanelDefaultClosed: true, // optional prop to start with collapse panels
+              rightPanelDefaultClosed: true, // optional prop to start with collapse panels
               viewports: [
                 {
                   namespace: tracked.viewport,
