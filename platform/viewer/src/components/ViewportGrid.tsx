@@ -35,7 +35,7 @@ function ViewerViewportGrid(props) {
     servicesManager,
     viewportComponents,
     dataSource,
-    modeViewportPaneStyles = {},
+    modeViewportPaneStyles = () => { },
   } = props;
   const [viewportGrid, viewportGridService] = useViewportGrid();
 
@@ -344,8 +344,7 @@ function ViewerViewportGrid(props) {
 
       const onInteractionHandler = event => {
         if (isActive) return;
-
-        if (event) {
+        if (event && event.type !== 'touchstart') {
           event.preventDefault();
           event.stopPropagation();
         }
@@ -374,9 +373,7 @@ function ViewerViewportGrid(props) {
         >
           <div
             data-cy="viewport-pane"
-            className={classNames('h-full w-full flex flex-col', {
-              'pointer-events-none': !isActive,
-            })}
+            className={classNames('h-full w-full flex flex-col')}
           >
             <ViewportComponent
               displaySets={displaySets}
