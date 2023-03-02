@@ -89,291 +89,294 @@ function areEqual(prevProps, nextProps) {
       }
     }
   }
-
   return true;
 }
 
 // Todo: This should be done with expose of internal API similar to react-vtkjs-viewport
 // Then we don't need to worry about the re-renders if the props change.
-const OHIFCornerstoneViewport = React.memo(React.forwardRef((props, ref) => {
-  const {
-    viewportIndex,
-    displaySets,
-    dataSource,
-    viewportOptions,
-    displaySetOptions,
-    servicesManager,
-    onElementEnabled,
-    onElementDisabled,
-    // Note: you SHOULD NOT use the initialImageIdOrIndex for manipulation
-    // of the imageData in the OHIFCornerstoneViewport. This prop is used
-    // to set the initial state of the viewport's first image to render
-    initialImageIndex,
-    disableViewportImageScrollbar,
-    disableViewportOverlay,
-    disableViewportImageSliceLoadingIndicator,
-    disableViewportOrientationMarkers,
-  } = props;
+const OHIFCornerstoneViewport = React.memo(
+  React.forwardRef((props, ref) => {
+    const {
+      viewportIndex,
+      displaySets,
+      dataSource,
+      viewportOptions,
+      displaySetOptions,
+      servicesManager,
+      onElementEnabled,
+      onElementDisabled,
+      // Note: you SHOULD NOT use the initialImageIdOrIndex for manipulation
+      // of the imageData in the OHIFCornerstoneViewport. This prop is used
+      // to set the initial state of the viewport's first image to render
+      initialImageIndex,
+      disableViewportImageScrollbar,
+      disableViewportOverlay,
+      disableViewportImageSliceLoadingIndicator,
+      disableViewportOrientationMarkers,
+    } = props;
 
-  const [scrollbarHeight, setScrollbarHeight] = useState('100px');
+    const [scrollbarHeight, setScrollbarHeight] = useState('100px');
 
-  const elementRef = useRef();
+    const elementRef = useRef();
 
-  React.useImperativeHandle(ref, () => elementRef.current);
+    React.useImperativeHandle(ref, () => elementRef.current);
 
-  const {
-    measurementService,
-    displaySetService,
-    toolbarService,
-    toolGroupService,
-    syncGroupService,
-    cornerstoneViewportService,
-    cornerstoneCacheService,
-    viewportGridService,
-  } = servicesManager.services;
+    const {
+      measurementService,
+      displaySetService,
+      toolbarService,
+      toolGroupService,
+      syncGroupService,
+      cornerstoneViewportService,
+      cornerstoneCacheService,
+      viewportGridService,
+    } = servicesManager.services;
 
-  // useCallback for scroll bar height calculation
-  const setImageScrollBarHeight = useCallback(() => {
-    const scrollbarHeight = `${elementRef.current.clientHeight - 20}px`;
-    setScrollbarHeight(scrollbarHeight);
-  }, [elementRef]);
+    // useCallback for scroll bar height calculation
+    const setImageScrollBarHeight = useCallback(() => {
+      const scrollbarHeight = `${elementRef.current.clientHeight - 20}px`;
+      setScrollbarHeight(scrollbarHeight);
+    }, [elementRef]);
 
-  // useCallback for onResize
-  const onResize = useCallback(() => {
-    if (elementRef.current) {
-      cornerstoneViewportService.resize();
-      setImageScrollBarHeight();
-    }
-  }, [elementRef]);
+    // useCallback for onResize
+    const onResize = useCallback(() => {
+      if (elementRef.current) {
+        cornerstoneViewportService.resize();
+        setImageScrollBarHeight();
+      }
+    }, [elementRef]);
 
-  const cleanUpServices = useCallback(() => {
-    const viewportInfo = cornerstoneViewportService.getViewportInfoByIndex(
-      viewportIndex
-    );
+    const cleanUpServices = useCallback(() => {
+      const viewportInfo = cornerstoneViewportService.getViewportInfoByIndex(
+        viewportIndex
+      );
 
-    if (!viewportInfo) {
-      return;
-    }
-
-    const viewportId = viewportInfo.getViewportId();
-    const renderingEngineId = viewportInfo.getRenderingEngineId();
-    const syncGroups = viewportInfo.getSyncGroups();
-
-    toolGroupService.removeViewportFromToolGroup(viewportId, renderingEngineId);
-
-    syncGroupService.removeViewportFromSyncGroup(
-      viewportId,
-      renderingEngineId,
-      syncGroups
-    );
-  }, [viewportIndex, viewportOptions.viewportId]);
-
-  const elementEnabledHandler = useCallback(
-    evt => {
-      // check this is this element reference and return early if doesn't match
-      if (evt.detail.element !== elementRef.current) {
+      if (!viewportInfo) {
         return;
       }
 
-      const { viewportId, element } = evt.detail;
-      const viewportInfo = cornerstoneViewportService.getViewportInfo(
-        viewportId
-      );
-      const viewportIndex = viewportInfo.getViewportIndex();
-
-      setEnabledElement(viewportIndex, element);
-
+      const viewportId = viewportInfo.getViewportId();
       const renderingEngineId = viewportInfo.getRenderingEngineId();
-      const toolGroupId = viewportInfo.getToolGroupId();
       const syncGroups = viewportInfo.getSyncGroups();
 
-      toolGroupService.addViewportToToolGroup(
+      toolGroupService.removeViewportFromToolGroup(
         viewportId,
-        renderingEngineId,
-        toolGroupId
+        renderingEngineId
       );
 
-      syncGroupService.addViewportToSyncGroup(
+      syncGroupService.removeViewportFromSyncGroup(
         viewportId,
         renderingEngineId,
         syncGroups
       );
+    }, [viewportIndex, viewportOptions.viewportId]);
 
-      if (onElementEnabled) {
-        onElementEnabled(evt);
-      }
-    },
-    [viewportIndex, onElementEnabled, toolGroupService]
-  );
+    const elementEnabledHandler = useCallback(
+      evt => {
+        // check this is this element reference and return early if doesn't match
+        if (evt.detail.element !== elementRef.current) {
+          return;
+        }
 
-  // disable the element upon unmounting
-  useEffect(() => {
-    cornerstoneViewportService.enableViewport(
-      viewportIndex,
-      viewportOptions,
-      elementRef.current
-    );
+        const { viewportId, element } = evt.detail;
+        const viewportInfo = cornerstoneViewportService.getViewportInfo(
+          viewportId
+        );
+        const viewportIndex = viewportInfo.getViewportIndex();
 
-    eventTarget.addEventListener(
-      Enums.Events.ELEMENT_ENABLED,
-      elementEnabledHandler
-    );
+        setEnabledElement(viewportIndex, element);
 
-    setImageScrollBarHeight();
+        const renderingEngineId = viewportInfo.getRenderingEngineId();
+        const toolGroupId = viewportInfo.getToolGroupId();
+        const syncGroups = viewportInfo.getSyncGroups();
 
-    return () => {
-      cleanUpServices();
-
-      cornerstoneViewportService.disableElement(viewportIndex);
-
-      if (onElementDisabled) {
-        const viewportInfo = cornerstoneViewportService.getViewportInfoByIndex(
-          viewportIndex
+        toolGroupService.addViewportToToolGroup(
+          viewportId,
+          renderingEngineId,
+          toolGroupId
         );
 
-        onElementDisabled(viewportInfo);
-      }
+        syncGroupService.addViewportToSyncGroup(
+          viewportId,
+          renderingEngineId,
+          syncGroups
+        );
 
-      eventTarget.removeEventListener(
+        if (onElementEnabled) {
+          onElementEnabled(evt);
+        }
+      },
+      [viewportIndex, onElementEnabled, toolGroupService]
+    );
+
+    // disable the element upon unmounting
+    useEffect(() => {
+      cornerstoneViewportService.enableViewport(
+        viewportIndex,
+        viewportOptions,
+        elementRef.current
+      );
+
+      eventTarget.addEventListener(
         Enums.Events.ELEMENT_ENABLED,
         elementEnabledHandler
       );
-    };
-  }, []);
 
-  // subscribe to displaySet metadata invalidation (updates)
-  // Currently, if the metadata changes we need to re-render the display set
-  // for it to take effect in the viewport. As we deal with scaling in the loading,
-  // we need to remove the old volume from the cache, and let the
-  // viewport to re-add it which will use the new metadata. Otherwise, the
-  // viewport will use the cached volume and the new metadata will not be used.
-  // Note: this approach does not actually end of sending network requests
-  // and it uses the network cache
-  useEffect(() => {
-    const { unsubscribe } = displaySetService.subscribe(
-      displaySetService.EVENTS.DISPLAY_SET_SERIES_METADATA_INVALIDATED,
-      async invalidatedDisplaySetInstanceUID => {
-        const viewportInfo = cornerstoneViewportService.getViewportInfoByIndex(
-          viewportIndex
+      setImageScrollBarHeight();
+
+      return () => {
+        cleanUpServices();
+
+        cornerstoneViewportService.disableElement(viewportIndex);
+
+        if (onElementDisabled) {
+          const viewportInfo = cornerstoneViewportService.getViewportInfoByIndex(
+            viewportIndex
+          );
+
+          onElementDisabled(viewportInfo);
+        }
+
+        eventTarget.removeEventListener(
+          Enums.Events.ELEMENT_ENABLED,
+          elementEnabledHandler
+        );
+      };
+    }, []);
+
+    // subscribe to displaySet metadata invalidation (updates)
+    // Currently, if the metadata changes we need to re-render the display set
+    // for it to take effect in the viewport. As we deal with scaling in the loading,
+    // we need to remove the old volume from the cache, and let the
+    // viewport to re-add it which will use the new metadata. Otherwise, the
+    // viewport will use the cached volume and the new metadata will not be used.
+    // Note: this approach does not actually end of sending network requests
+    // and it uses the network cache
+    useEffect(() => {
+      const { unsubscribe } = displaySetService.subscribe(
+        displaySetService.EVENTS.DISPLAY_SET_SERIES_METADATA_INVALIDATED,
+        async invalidatedDisplaySetInstanceUID => {
+          const viewportInfo = cornerstoneViewportService.getViewportInfoByIndex(
+            viewportIndex
+          );
+
+          if (viewportInfo.hasDisplaySet(invalidatedDisplaySetInstanceUID)) {
+            const viewportData = viewportInfo.getViewportData();
+            const newViewportData = await cornerstoneCacheService.invalidateViewportData(
+              viewportData,
+              invalidatedDisplaySetInstanceUID,
+              dataSource,
+              displaySetService
+            );
+
+            const keepCamera = true;
+            cornerstoneViewportService.updateViewport(
+              viewportIndex,
+              newViewportData,
+              keepCamera
+            );
+          }
+        }
+      );
+      return () => {
+        unsubscribe();
+      };
+    }, [viewportIndex]);
+
+    useEffect(() => {
+      // handle the default viewportType to be stack
+      if (!viewportOptions.viewportType) {
+        viewportOptions.viewportType = STACK;
+      }
+
+      const loadViewportData = async () => {
+        const viewportData = await cornerstoneCacheService.createViewportData(
+          displaySets,
+          viewportOptions,
+          dataSource,
+          initialImageIndex
         );
 
-        if (viewportInfo.hasDisplaySet(invalidatedDisplaySetInstanceUID)) {
-          const viewportData = viewportInfo.getViewportData();
-          const newViewportData = await cornerstoneCacheService.invalidateViewportData(
-            viewportData,
-            invalidatedDisplaySetInstanceUID,
-            dataSource,
-            displaySetService
-          );
+        cornerstoneViewportService.setViewportData(
+          viewportIndex,
+          viewportData,
+          viewportOptions,
+          displaySetOptions
+        );
+      };
 
-          const keepCamera = true;
-          cornerstoneViewportService.updateViewport(
-            viewportIndex,
-            newViewportData,
-            keepCamera
-          );
-        }
-      }
-    );
-    return () => {
-      unsubscribe();
-    };
-  }, [viewportIndex]);
+      loadViewportData();
+    }, [viewportOptions, displaySets, dataSource]);
 
-  useEffect(() => {
-    // handle the default viewportType to be stack
-    if (!viewportOptions.viewportType) {
-      viewportOptions.viewportType = STACK;
-    }
-
-    const loadViewportData = async () => {
-      const viewportData = await cornerstoneCacheService.createViewportData(
-        displaySets,
-        viewportOptions,
-        dataSource,
-        initialImageIndex
-      );
-
-      cornerstoneViewportService.setViewportData(
+    /**
+     * There are two scenarios for jump to click
+     * 1. Current viewports contain the displaySet that the annotation was drawn on
+     * 2. Current viewports don't contain the displaySet that the annotation was drawn on
+     * and we need to change the viewports displaySet for jumping.
+     * Since measurement_jump happens via events and listeners, the former case is handled
+     * by the measurement_jump direct callback, but the latter case is handled first by
+     * the viewportGrid to set the correct displaySet on the viewport, AND THEN we check
+     * the cache for jumping to see if there is any jump queued, then we jump to the correct slice.
+     */
+    useEffect(() => {
+      const unsubscribeFromJumpToMeasurementEvents = _subscribeToJumpToMeasurementEvents(
+        measurementService,
+        displaySetService,
+        elementRef,
         viewportIndex,
-        viewportData,
-        viewportOptions,
-        displaySetOptions
+        displaySets,
+        viewportGridService,
+        cornerstoneViewportService
       );
-    };
 
-    loadViewportData();
-  }, [viewportOptions, displaySets, dataSource]);
+      _checkForCachedJumpToMeasurementEvents(
+        measurementService,
+        displaySetService,
+        elementRef,
+        viewportIndex,
+        displaySets,
+        viewportGridService,
+        cornerstoneViewportService
+      );
 
-  /**
-   * There are two scenarios for jump to click
-   * 1. Current viewports contain the displaySet that the annotation was drawn on
-   * 2. Current viewports don't contain the displaySet that the annotation was drawn on
-   * and we need to change the viewports displaySet for jumping.
-   * Since measurement_jump happens via events and listeners, the former case is handled
-   * by the measurement_jump direct callback, but the latter case is handled first by
-   * the viewportGrid to set the correct displaySet on the viewport, AND THEN we check
-   * the cache for jumping to see if there is any jump queued, then we jump to the correct slice.
-   */
-  useEffect(() => {
-    const unsubscribeFromJumpToMeasurementEvents = _subscribeToJumpToMeasurementEvents(
-      measurementService,
-      displaySetService,
-      elementRef,
-      viewportIndex,
-      displaySets,
-      viewportGridService,
-      cornerstoneViewportService
+      return () => {
+        unsubscribeFromJumpToMeasurementEvents();
+      };
+    }, [displaySets, elementRef, viewportIndex]);
+
+    return (
+      <div className="viewport-wrapper">
+        <ReactResizeDetector
+          handleWidth
+          handleHeight
+          skipOnMount={true} // Todo: make these configurable
+          refreshMode={'debounce'}
+          refreshRate={200} // transition amount in side panel
+          onResize={onResize}
+          targetRef={elementRef.current}
+        />
+        <div
+          className="cornerstone-viewport-element"
+          style={{ height: '100%', width: '100%' }}
+          onContextMenu={e => e.preventDefault()}
+          onMouseDown={e => e.preventDefault()}
+          ref={elementRef}
+        ></div>
+        <CornerstoneOverlays
+          disableViewportImageScrollbar={disableViewportImageScrollbar}
+          disableViewportOverlay={disableViewportOverlay}
+          disableViewportImageSliceLoadingIndicator={
+            disableViewportImageSliceLoadingIndicator
+          }
+          disableViewportOrientationMarkers={disableViewportOrientationMarkers}
+          viewportIndex={viewportIndex}
+          toolbarService={toolbarService}
+          element={elementRef.current}
+          scrollbarHeight={scrollbarHeight}
+          servicesManager={servicesManager}
+        />
+      </div>
     );
-
-    _checkForCachedJumpToMeasurementEvents(
-      measurementService,
-      displaySetService,
-      elementRef,
-      viewportIndex,
-      displaySets,
-      viewportGridService,
-      cornerstoneViewportService
-    );
-
-    return () => {
-      unsubscribeFromJumpToMeasurementEvents();
-    };
-  }, [displaySets, elementRef, viewportIndex]);
-
-  return (
-    <div className="viewport-wrapper">
-      <ReactResizeDetector
-        handleWidth
-        handleHeight
-        skipOnMount={true} // Todo: make these configurable
-        refreshMode={'debounce'}
-        refreshRate={200} // transition amount in side panel
-        onResize={onResize}
-        targetRef={elementRef.current}
-      />
-      <div
-        className="cornerstone-viewport-element"
-        style={{ height: '100%', width: '100%' }}
-        onContextMenu={e => e.preventDefault()}
-        onMouseDown={e => e.preventDefault()}
-        ref={elementRef}
-      ></div>
-      <CornerstoneOverlays
-        disableViewportImageScrollbar={disableViewportImageScrollbar}
-        disableViewportOverlay={disableViewportOverlay}
-        disableViewportImageSliceLoadingIndicator={
-          disableViewportImageSliceLoadingIndicator
-        }
-        disableViewportOrientationMarkers={disableViewportOrientationMarkers}
-        viewportIndex={viewportIndex}
-        toolbarService={toolbarService}
-        element={elementRef.current}
-        scrollbarHeight={scrollbarHeight}
-        servicesManager={servicesManager}
-      />
-    </div>
-  );
   }),
   areEqual
 );
