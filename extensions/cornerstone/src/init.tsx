@@ -85,8 +85,9 @@ export default async function init({
     uiNotificationService.show({
       title: 'Cross Origin Isolation',
       message:
-        'Cross Origin Isolation is not enabled, volume rendering will not work (e.g., MPR)',
-      type: 'warning',
+        'Cross Origin Isolation is not enabled, volume rendering will be less performant',
+      type: 'info',
+      duration: 1000,
     });
   }
 
