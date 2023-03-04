@@ -106,7 +106,7 @@ Header.propTypes = {
   isReturnEnabled: PropTypes.bool,
   isSticky: PropTypes.bool,
   onClickReturnButton: PropTypes.func,
-  WhiteLabeling: PropTypes.element,
+  WhiteLabeling: PropTypes.oneOfType([PropTypes.element, PropTypes.object]),
 };
 
 Header.defaultProps = {
