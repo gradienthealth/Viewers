@@ -17,7 +17,7 @@ import ReactDOM from 'react-dom';
 import loadDynamicImports, { loadRuntimeImports } from './pluginImports.js';
 import loadDynamicConfig from './loadDynamicConfig';
 
-Promise.all([loadDynamicImports(), loadDynamicConfig()]).then(arr => {
+Promise.all([loadDynamicImports(), loadDynamicConfig(window.config)]).then(arr => {
   /**
    * Combine our appConfiguration with installed extensions and modes.
    * In the future appConfiguration may contain modes added at runtime.
