@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 import ReactResizeDetector from 'react-resize-detector';
 import PropTypes from 'prop-types';
@@ -368,7 +369,7 @@ const OHIFCornerstoneViewport = React.memo(React.forwardRef((props, ref) => {
             displaySetService
           );
 
-          const keepCamera = true;
+          const keepCamera = false;
           cornerstoneViewportService.updateViewport(
             viewportIndex,
             newViewportData,
@@ -511,7 +512,7 @@ const OHIFCornerstoneViewport = React.memo(React.forwardRef((props, ref) => {
       )}
     </div>
   );
-  }),
+}),
   areEqual
 );
 

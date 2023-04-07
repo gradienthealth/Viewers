@@ -109,9 +109,11 @@ class CornerstoneCacheService {
     }
 
     // Todo: grab the volume and get the id from the viewport itself
+    // TODO: an invalidated volumeId can already be invalidated
     const volumeId = `${VOLUME_LOADER_SCHEME}:${invalidatedDisplaySetInstanceUID}`;
 
     const volume = cs3DCache.getVolume(volumeId);
+    const targetBuffer = volume?.getScalarData()?.buffer;
 
     if (volume) {
       cs3DCache.removeVolumeLoadObject(volumeId);
@@ -125,7 +127,8 @@ class CornerstoneCacheService {
     const newViewportData = await this._getVolumeViewportData(
       dataSource,
       displaySets,
-      viewportData.viewportType
+      viewportData.viewportType,
+      targetBuffer
     );
 
     return newViewportData;
@@ -170,7 +173,8 @@ class CornerstoneCacheService {
   private async _getVolumeViewportData(
     dataSource,
     displaySets,
-    viewportType: Enums.ViewportType
+    viewportType: Enums.ViewportType,
+    targetBuffer = null
   ): Promise<VolumeViewportData> {
     // Todo: Check the cache for multiple scenarios to see if we need to
     // decache the volume data from other viewports or not
@@ -225,6 +229,7 @@ class CornerstoneCacheService {
         };
 
         volume = await volumeLoader.createAndCacheVolume(volumeId, {
+          targetBuffer,
           imageIds:
             volumeImageIds.length > this.maxFramesInVolume
               ? distributedCopy(volumeImageIds, this.maxFramesInVolume)
