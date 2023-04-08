@@ -1,7 +1,7 @@
 export default async config => {
-  const useDynamicConfig = config.useDynamicConfig;
+  const useDynamicConfig = config.dangerouslyUseDynamicConfig;
 
-  // Check if useDynamicConfig enabled
+  // Check if dangerouslyUseDynamicConfig enabled
   if (useDynamicConfig.enabled) {
     // If enabled then get configUrl param
     let query = new URLSearchParams(window.location.search);
