@@ -7,8 +7,14 @@ import React, {
 } from 'react';
 import PropTypes from 'prop-types';
 
+const user = JSON.parse(
+  sessionStorage.getItem(
+    'oidc.user:https://accounts.google.com:195181363105-h9e3uujhnd2t6c8dqrdcv01h4bn2fsva.apps.googleusercontent.com'
+  )
+);
+
 const DEFAULT_STATE = {
-  user: null,
+  user: (user && user?.expires_at * 1000 > Date.now()) ? user : null,
   enabled: false,
 };
 
