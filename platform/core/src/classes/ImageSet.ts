@@ -93,7 +93,10 @@ class ImageSet {
   sortByImagePositionPatient() {
     const images = this.rawImages;
     const referenceImagePositionPatient = _getImagePositionPatient(images[0]);
-
+    if (!referenceImagePositionPatient) {
+      console.warn('Could not sort ImageSet', this.getUID());
+      return;
+    }
     const refIppVec = new Vector3(
       referenceImagePositionPatient[0],
       referenceImagePositionPatient[1],
@@ -114,7 +117,7 @@ class ImageSet {
       )
     );
 
-    const distanceImagePairs = images.map(function(image) {
+    const distanceImagePairs = images.map(function (image) {
       const ippVec = new Vector3(..._getImagePositionPatient(image));
       const positionVector = refIppVec.clone().sub(ippVec);
       const distance = positionVector.dot(scanAxisNormal);
@@ -125,13 +128,13 @@ class ImageSet {
       };
     });
 
-    distanceImagePairs.sort(function(a, b) {
+    distanceImagePairs.sort(function (a, b) {
       return b.distance - a.distance;
     });
 
     const sortedImages = distanceImagePairs.map(a => a.image);
 
-    images.sort(function(a, b) {
+    images.sort(function (a, b) {
       return sortedImages.indexOf(a) - sortedImages.indexOf(b);
     });
   }
