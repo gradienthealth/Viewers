@@ -14,6 +14,7 @@ import PatientInfo from '../PatientInfo';
 
 export type ViewportActionBarProps = {
   studyData: any;
+  children: any;
   onArrowsClick: (arrow: string) => void;
   onDoubleClick: MouseEventHandler;
   getStatusComponent: () => ReactElement;
@@ -21,6 +22,7 @@ export type ViewportActionBarProps = {
 
 const ViewportActionBar = ({
   studyData,
+  children,
   onArrowsClick,
   onDoubleClick,
   getStatusComponent,
@@ -157,6 +159,7 @@ const ViewportActionBar = ({
             name="chevron-next"
             onClick={() => onArrowsClick('right')}
           />
+          {children}
         </>
       )}
       <div className={patientInfoClasses()} onClick={onPatientInfoClick}>
