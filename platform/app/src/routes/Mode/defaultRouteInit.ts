@@ -90,7 +90,7 @@ export async function defaultRouteInit(
 
   // log the error if this fails, otherwise it's so difficult to tell what went wrong...
   allRetrieves.forEach(retrieve => {
-    retrieve.catch(error => {
+    retrieve?.catch(error => {
       console.error(error);
     });
   });
