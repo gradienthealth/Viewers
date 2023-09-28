@@ -79,7 +79,9 @@ jobs:
             yarn install
             yarn run cli link-extension ../GradientExtensionsAndModes/extensions/ohif-gradienthealth-extension
             yarn run cli link-mode ../GradientExtensionsAndModes/modes/cohort
-            yarn run build:gradient
+            yarn run cli link-mode ../GradientExtensionsAndModes/modes/breast-density-mode
+            #yarn run build:gradient
+            yarn run build:icad
 
         - name: Checkout gh page
           uses: actions/checkout@v3
