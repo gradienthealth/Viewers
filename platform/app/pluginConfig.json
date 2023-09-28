@@ -91,6 +91,10 @@
     {
       "packageName": "@gradienthealth/cohort-mode",
       "version": "0.1.2"
+    },
+    {
+      "packageName": "@gradienthealth/breast-density-mode",
+      "version": "0.1.2"
     }
   ],
   "public": [
