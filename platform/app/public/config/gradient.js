@@ -71,6 +71,7 @@ window.config = {
         supportsWildcard: true,
         staticWado: true,
         singlepart: 'bulkdata,video,pdf',
+        requestTransferSyntaxUID: '*'
       },
     },*/
     {
@@ -87,7 +88,8 @@ window.config = {
         thumbnailRendering: "wadors",
         enableStudyLazyLoad: !0,
         supportsFuzzyMatching: !0,
-        supportsWildcard: !1
+        supportsWildcard: !1,
+        requestTransferSyntaxUID: '*'
       }
     },
     {
