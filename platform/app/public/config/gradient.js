@@ -39,6 +39,10 @@ window.config = {
         'https://www.googleapis.com/auth/spreadsheets',
         'https://www.googleapis.com/auth/devstorage.read_only',
         'https://www.googleapis.com/auth/bigquery.readonly',
+        'https://www.googleapis.com/auth/drive.metadata.readonly',
+        'https://www.googleapis.com/auth/drive.readonly',
+        'https://www.googleapis.com/auth/cloudplatformprojects.readonly',
+        'https://www.googleapis.com/auth/cloud-healthcare',
       ].join(' '),
       post_logout_redirect_uri: '/logout-redirect.html',
       revoke_uri: 'https://accounts.google.com/o/oauth2/revoke?token=',
@@ -48,7 +52,7 @@ window.config = {
   ],
   // filterQueryParam: false,
   dataSources: [
-    {
+    /*{
       friendlyName: 'dcmjs DICOMWeb Server',
       namespace: '@ohif/extension-default.dataSourcesModule.dicomweb',
       sourceName: 'dicomweb',
@@ -68,6 +72,23 @@ window.config = {
         staticWado: true,
         singlepart: 'bulkdata,video,pdf',
       },
+    },*/
+    {
+      friendlyName: "dcmjs DICOMWeb Server",
+      namespace: "@ohif/extension-default.dataSourcesModule.dicomweb",
+      sourceName: "dicomweb",
+      configuration: {
+        name: "GCP",
+        wadoUriRoot: "https://healthcare.googleapis.com/v1/projects/icad-med/locations/us-central1/datasets/mammo/dicomStores/breast_density/dicomWeb",
+        qidoRoot: "https://healthcare.googleapis.com/v1/projects/icad-med/locations/us-central1/datasets/mammo/dicomStores/breast_density/dicomWeb",
+        wadoRoot: "https://healthcare.googleapis.com/v1/projects/icad-med/locations/us-central1/datasets/mammo/dicomStores/breast_density/dicomWeb",
+        qidoSupportsIncludeField: !0,
+        imageRendering: "wadors",
+        thumbnailRendering: "wadors",
+        enableStudyLazyLoad: !0,
+        supportsFuzzyMatching: !0,
+        supportsWildcard: !1
+      }
     },
     {
       friendlyName: 'dicom json',
