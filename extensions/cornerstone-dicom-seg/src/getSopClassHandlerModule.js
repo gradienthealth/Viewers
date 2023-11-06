@@ -142,20 +142,23 @@ async function _loadSegments({ extensionManager, servicesManager, segDisplaySet,
     '@ohif/extension-cornerstone.utilityModule.common'
   );
 
-  const { segmentationService, uiNotificationService } = servicesManager.services;
+  const { segmentationService, uiNotificationService, displaySetService } =
+    servicesManager.services;
 
   const { dicomLoaderService } = utilityModule.exports;
   const arrayBuffer = await dicomLoaderService.findDicomDataPromise(segDisplaySet, null, headers);
 
-  const cachedReferencedVolume = cache.getVolume(segDisplaySet.referencedVolumeId);
+  const referencedDisplaySet = displaySetService.getDisplaySetByUID(
+    segDisplaySet.referencedDisplaySetInstanceUID
+  );
+  let imageIds;
 
-  if (!cachedReferencedVolume) {
-    throw new Error(
-      'Referenced Volume is missing for the SEG, and stack viewport SEG is not supported yet'
-    );
+  if (referencedDisplaySet.isReconstructable) {
+    const cachedReferencedVolume = cache.getVolume(segDisplaySet.referencedVolumeId);
+    imageIds = cachedReferencedVolume.imageIds || cachedReferencedVolume._imageIds;
+  } else {
+    imageIds = referencedDisplaySet.instances.map(instance => instance.imageId);
   }
-
-  const { imageIds } = cachedReferencedVolume;
 
   // Todo: what should be defaults here
   const tolerance = 0.001;

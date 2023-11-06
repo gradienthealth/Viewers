@@ -19,8 +19,9 @@ import {
   getUpdatedViewportsForSegmentation,
   getTargetViewport,
 } from './utils/hydrationUtils';
-const { segmentation: segmentationUtils } = utilities;
+import generateLabelmaps2DFromImageIdMap from './utils/generateLabelmaps2DFromImageIdMap';
 
+const { segmentation: segmentationUtils } = utilities;
 const { datasetToBlob } = dcmjs.data;
 
 const {
@@ -79,17 +80,6 @@ const commandsModule = ({
       const viewport = getTargetViewport({ viewportId, viewportGridService });
       // Todo: add support for multiple display sets
       const displaySetInstanceUID = viewport.displaySetInstanceUIDs[0];
-
-      const displaySet = displaySetService.getDisplaySetByUID(displaySetInstanceUID);
-
-      if (!displaySet.isReconstructable) {
-        uiNotificationService.show({
-          title: 'Segmentation',
-          message: 'Segmentation is not supported for non-reconstructible displaysets yet',
-          type: 'error',
-        });
-        return;
-      }
 
       updateViewportsForSegmentationRendering({
         viewportId,
@@ -245,14 +235,23 @@ const commandsModule = ({
      */
     generateSegmentation: ({ segmentationId, options = {} }) => {
       const segmentation = cornerstoneToolsSegmentation.state.getSegmentation(segmentationId);
+      const segmentationLabelmapData = segmentation.representationData.LABELMAP;
 
-      const { referencedVolumeId } = segmentation.representationData.LABELMAP;
+      let referencedImages, labelmapObj;
+      if (segmentationLabelmapData.imageIdReferenceMap) {
+        const { imageIdReferenceMap } = segmentationLabelmapData;
 
-      const segmentationVolume = cache.getVolume(segmentationId);
-      const referencedVolume = cache.getVolume(referencedVolumeId);
-      const referencedImages = referencedVolume.getCornerstoneImages();
+        ({ referencedImages, labelmapObj } =
+          generateLabelmaps2DFromImageIdMap(imageIdReferenceMap));
+      } else {
+        const { referencedVolumeId } = segmentationLabelmapData;
 
-      const labelmapObj = generateLabelMaps2DFrom3D(segmentationVolume);
+        const segmentationVolume = cache.getVolume(segmentationId);
+        const referencedVolume = cache.getVolume(referencedVolumeId);
+        referencedImages = referencedVolume.getCornerstoneImages();
+
+        labelmapObj = generateLabelMaps2DFrom3D(segmentationVolume);
+      }
 
       // Generate fake metadata as an example
       labelmapObj.metadata = [];

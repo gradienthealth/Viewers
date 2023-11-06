@@ -471,6 +471,9 @@ class MetadataProvider {
   }
 
   getUIDsFromImageID(imageId) {
+    if (Array.isArray(imageId)) {
+      imageId = imageId[0];
+    }
     if (!imageId) {
       throw new Error('MetadataProvider::Empty imageId');
     }

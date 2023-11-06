@@ -2,7 +2,7 @@ name: Deploy viewer to github pages
 
 on:
   push:
-    branches: [ "gradienthealth/zip_deployment" ]
+    branches: [ "gradienthealth/Stack-Segmentation" ]
   #pull_request:
     #branches: [ "main" ]
 
@@ -24,7 +24,7 @@ jobs:
           uses: actions/checkout@v3
           with:
             repository: gradienthealth/cornerstone3D-beta
-            ref: gradienthealth/dicom-zip-image-loader
+            ref: gradienthealth/stack-segmentation-support-with-zip-image-loader
             path: ./cornerstone3D
 
         - name: Build cornerstone3D
@@ -37,7 +37,7 @@ jobs:
           uses: actions/checkout@v3
           with:
             repository: gradienthealth/GradientExtensionsAndModes
-            ref: gradienthealth/zip_deployment
+            ref: gradienthealth/Segmentation-with-DicomJSON
             path: ./GradientExtensionsAndModes
 
         #- name: Build GradientExtensionsAndModes

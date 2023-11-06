@@ -106,7 +106,7 @@ function OHIFCornerstoneSEGViewport(props) {
         {...props}
         displaySets={[referencedDisplaySet, segDisplaySet]}
         viewportOptions={{
-          viewportType: 'volume',
+          viewportType: referencedDisplaySet.isReconstructable ? 'volume' : 'stack',
           toolGroupId: toolGroupId,
           orientation: viewportOptions.orientation,
           viewportId: viewportOptions.viewportId,
