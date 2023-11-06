@@ -354,6 +354,31 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
       }
     }
 
+    const segmentations = this.servicesManager.services.segmentationService.getSegmentations(false);
+    const toolgroupId = viewportInfo.getToolGroupId();
+    for (const segmentation of segmentations) {
+      const toolGroupSegmentationRepresentations =
+        this.servicesManager.services.segmentationService.getSegmentationRepresentationsForToolGroup(
+          toolgroupId
+        ) || [];
+      const isSegmentationInToolGroup = toolGroupSegmentationRepresentations.find(
+        representation => representation.segmentationId === segmentation.id
+      );
+
+      if (!isSegmentationInToolGroup) {
+        const segDisplaySet = this.servicesManager.services.displaySetService.getDisplaySetByUID(
+          segmentation.id
+        );
+
+        segDisplaySet &&
+          this.servicesManager.services.segmentationService.addSegmentationRepresentationToToolGroup(
+            toolgroupId,
+            segmentation.id,
+            segDisplaySet.isOverlayDisplaySet
+          );
+      }
+    }
+
     return viewport.setStack(imageIds, initialImageIndexToUse).then(() => {
       viewport.setProperties({ ...properties });
       const camera = presentations.positionPresentation?.camera;
