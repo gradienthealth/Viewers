@@ -176,6 +176,7 @@ class DicomLoaderService {
       authorizationHeaders,
       wadoRoot,
       wadoUri,
+      instance,
     } = dataset;
     // Retrieve wadors or just try to fetch wadouri
     if (!someInvalidStrings(wadoRoot)) {
@@ -188,6 +189,9 @@ class DicomLoaderService {
       );
     } else if (!someInvalidStrings(wadoUri)) {
       return fetchIt(wadoUri, { headers: authorizationHeaders });
+    } else if (!someInvalidStrings(instance?.url)) {
+      const uri = instance.url.replace(/^dicomweb:/, '');
+      return fetchIt(uri, { headers: authorizationHeaders });
     }
   }
 
