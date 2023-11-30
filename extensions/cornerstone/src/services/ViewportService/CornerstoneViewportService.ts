@@ -361,6 +361,27 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
         viewport.setCamera(camera);
       }
     });
+
+    const segmentations = this.servicesManager.services.segmentationService.getSegmentations(false);
+    for (const segmentation of segmentations) {
+      const toolGroupSegmentationRepresentations =
+        this.servicesManager.services.segmentationService.getToolGroupIdsWithSegmentation(
+          viewportInfo.getToolGroupId()
+        );
+      const isSegmentationInToolGroup = toolGroupSegmentationRepresentations.find(
+        representation => representation.segmentationId === segmentation.id
+      );
+      if (!isSegmentationInToolGroup) {
+        const segDisplaySet = this.servicesManager.services.displaySetService.getDisplaySetByUID(
+          segmentation.id
+        );
+        this.servicesManager.services.segmentationService.addSegmentationRepresentationToToolGroup(
+          viewportInfo.getToolGroupId(),
+          segmentation.id,
+          segDisplaySet.isOverlayDisplaySet ? true : false
+        );
+      }
+    }
   }
 
   private _getInitialImageIndexForViewport(

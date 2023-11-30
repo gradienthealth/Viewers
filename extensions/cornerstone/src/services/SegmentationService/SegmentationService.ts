@@ -9,6 +9,8 @@ import {
   getEnabledElementByIds,
   utilities as csUtils,
   volumeLoader,
+  imageLoader,
+  metaData,
 } from '@cornerstonejs/core';
 import {
   CONSTANTS as cstConstants,
@@ -22,6 +24,7 @@ import { Types as ohifTypes } from '@ohif/core';
 import { easeInOutBell, reverseEaseInOutBell } from '../../utils/transitions';
 import { Segment, Segmentation, SegmentationConfig } from './SegmentationServiceTypes';
 import { mapROIContoursToRTStructData } from './RTSTRUCT/mapROIContoursToRTStructData';
+import createImageDataForStackImage from '../../utils/createImageDataForStackImage';
 
 const { COLOR_LUT } = cstConstants;
 const LABELMAP = csToolsEnums.SegmentationRepresentations.Labelmap;
@@ -230,10 +233,11 @@ class SegmentationService extends PubSubService {
 
     // Get volume and delete the labels
     // Todo: handle other segmentations other than labelmap
-    const labelmapVolume = this.getLabelmapVolume(segmentationId);
+    const labelmap =
+      this.getLabelmapVolume(segmentationId) || this.getLabelmapImageData(segmentationId);
 
-    const { dimensions } = labelmapVolume;
-    const scalarData = labelmapVolume.getScalarData();
+    const { dimensions } = labelmap;
+    const scalarData = labelmap.getScalarData();
 
     // Set all values of this segment to zero and get which frames have been edited.
     const frameLength = dimensions[0] * dimensions[1];
@@ -527,7 +531,8 @@ class SegmentationService extends PubSubService {
       },
     };
 
-    const labelmap = this.getLabelmapVolume(segmentationId);
+    const labelmap =
+      this.getLabelmapVolume(segmentationId) || this.getLabelmapImageData(segmentationId);
     const cachedSegmentation = this.getSegmentation(segmentationId);
     if (labelmap && cachedSegmentation) {
       // if the labelmap with the same segmentationId already exists, we can
@@ -545,27 +550,75 @@ class SegmentationService extends PubSubService {
       throw new Error('No labelmapBufferArray or referencedVolumeId found for the SEG displaySet');
     }
 
+    const referencedDisplaySet = this.servicesManager.services.displaySetService.getDisplaySetByUID(
+      segDisplaySet.referencedDisplaySetInstanceUID
+    );
+
+    let indexToWorld;
     // if the labelmap doesn't exist, we need to create it first from the
     // DICOM SEG displaySet data
-    const referencedVolume = cache.getVolume(referencedVolumeId);
+    if (referencedDisplaySet.isReconstructable) {
+      const referencedVolume = cache.getVolume(referencedVolumeId);
 
-    if (!referencedVolume) {
-      throw new Error(`No volume found for referencedVolumeId: ${referencedVolumeId}`);
+      if (!referencedVolume) {
+        throw new Error(`No volume found for referencedVolumeId: ${referencedVolumeId}`);
+      }
+
+      // Force use of a Uint8Array SharedArrayBuffer for the segmentation to save space and so
+      // it is easily compressible in worker thread.
+      const derivedVolume = await volumeLoader.createAndCacheDerivedVolume(referencedVolumeId, {
+        volumeId: segmentationId,
+        targetBuffer: {
+          type: 'Uint8Array',
+          sharedArrayBuffer: window.SharedArrayBuffer,
+        },
+      });
+      const derivedVolumeScalarData = derivedVolume.getScalarData();
+      derivedVolumeScalarData.set(new Uint8Array(labelmapBufferArray[0]));
+
+      indexToWorld = derivedVolume.imageData.indexToWorld;
+    } else {
+      const getSegImageId = (imageId: string, index: number): string =>
+        `segImage:${imageId}/${index}`;
+
+      const referencedImageIds = referencedDisplaySet.instances.reduce((imageIds, instance) => {
+        return [...imageIds, instance.imageId];
+      }, []);
+      let segImageIds: string[];
+
+      if (!cache.getImage(getSegImageId(referencedImageIds[0], 0))) {
+        ({ imageIds: segImageIds } = imageLoader.createAndCacheDerivedImages(
+          referencedImageIds,
+          getSegImageId
+        ));
+      } else {
+        segImageIds = referencedImageIds.map(getSegImageId);
+      }
+
+      // Change the segmentation labelmap representation to data to the Stack viewport one.
+      segmentation.representationData[LABELMAP] = { imageIds: segImageIds, referencedImageIds };
+
+      const { rows, columns } = metaData.get('imagePlaneModule', segImageIds[0]);
+
+      const singleSlicePixelSize = rows * columns;
+      for (let i = 0; i < referencedDisplaySet.instances.length; i++) {
+        const singleSlicePixelData = new Uint8Array(singleSlicePixelSize);
+        singleSlicePixelData.set(
+          new Uint8Array(
+            labelmapBufferArray[0].slice(i * singleSlicePixelSize, singleSlicePixelSize)
+          )
+        );
+
+        const image = await cache.getImageLoadObject(segImageIds[i]).promise;
+        const pixelData = image.getPixelData();
+        pixelData.set(singleSlicePixelData);
+      }
+
+      const { imageData } = createImageDataForStackImage(segImageIds, this.servicesManager);
+      indexToWorld = imageData.indexToWorld;
     }
 
-    // Force use of a Uint8Array SharedArrayBuffer for the segmentation to save space and so
-    // it is easily compressible in worker thread.
-    const derivedVolume = await volumeLoader.createAndCacheDerivedVolume(referencedVolumeId, {
-      volumeId: segmentationId,
-      targetBuffer: {
-        type: 'Uint8Array',
-        sharedArrayBuffer: window.SharedArrayBuffer,
-      },
-    });
-    const derivedVolumeScalarData = derivedVolume.getScalarData();
-
     const segmentsInfo = segDisplaySet.segMetadata.data;
-    derivedVolumeScalarData.set(new Uint8Array(labelmapBufferArray[0]));
 
     segmentation.segments = segmentsInfo.map((segmentInfo, segmentIndex) => {
       if (segmentIndex === 0) {
@@ -583,7 +636,7 @@ class SegmentationService extends PubSubService {
       } = segmentInfo;
 
       const { x, y, z } = segDisplaySet.centroids.get(segmentIndex);
-      const centerWorld = derivedVolume.imageData.indexToWorld([x, y, z]);
+      const centerWorld = indexToWorld([x, y, z]);
 
       segmentation.cachedStats = {
         ...segmentation.cachedStats,
@@ -775,9 +828,10 @@ class SegmentationService extends PubSubService {
     segmentIndex?: number
   ): Map<number, { x: number; y: number; z: number; world: number[] }> => {
     const segmentation = this.getSegmentation(segmentationId);
-    const volume = this.getLabelmapVolume(segmentationId);
-    const { dimensions, imageData } = volume;
-    const scalarData = volume.getScalarData();
+    const labelmap =
+      this.getLabelmapVolume(segmentationId) || this.getLabelmapImageData(segmentationId);
+    const { dimensions, imageData } = labelmap;
+    const scalarData = labelmap.getScalarData();
     const [dimX, dimY, numFrames] = dimensions;
     const frameLength = dimX * dimY;
 
@@ -833,7 +887,9 @@ class SegmentationService extends PubSubService {
     centroids: Map<number, { image: number[]; world?: number[] }>
   ): void => {
     const segmentation = this.getSegmentation(segmentationId);
-    const imageData = this.getLabelmapVolume(segmentationId).imageData; // Assuming this method returns imageData
+    const imageData = (
+      this.getLabelmapVolume(segmentationId) || this.getLabelmapImageData(segmentationId)
+    ).imageData; // Assuming this method returns imageData
 
     if (!segmentation.cachedStats) {
       segmentation.cachedStats = { segmentCenter: {} };
@@ -974,15 +1030,27 @@ class SegmentationService extends PubSubService {
 
     const segmentationId = options?.segmentationId ?? `${csUtils.uuidv4()}`;
 
-    // Force use of a Uint8Array SharedArrayBuffer for the segmentation to save space and so
-    // it is easily compressible in worker thread.
-    await volumeLoader.createAndCacheDerivedVolume(volumeId, {
-      volumeId: segmentationId,
-      targetBuffer: {
-        type: 'Uint8Array',
-        sharedArrayBuffer: window.SharedArrayBuffer,
-      },
-    });
+    let imageIds: string[], referencedImageIds: string[];
+    if (displaySet.isReconstructable) {
+      // Force use of a Uint8Array SharedArrayBuffer for the segmentation to save space and so
+      // it is easily compressible in worker thread.
+      await volumeLoader.createAndCacheDerivedVolume(volumeId, {
+        volumeId: segmentationId,
+        targetBuffer: {
+          type: 'Uint8Array',
+          sharedArrayBuffer: window.SharedArrayBuffer,
+        },
+      });
+    } else {
+      const getSegImageId = (imageId: string, index: number): string =>
+        `segImage:${imageId}/${index}`;
+
+      referencedImageIds = displaySet.instances.reduce((imageIds, instance) => {
+        return [...imageIds, instance.imageId];
+      }, []);
+
+      ({ imageIds } = imageLoader.createAndCacheDerivedImages(referencedImageIds, getSegImageId));
+    }
 
     const defaultScheme = this._getDefaultSegmentationScheme();
 
@@ -997,10 +1065,12 @@ class SegmentationService extends PubSubService {
       FrameOfReferenceUID:
         options?.FrameOfReferenceUID || displaySet.instances?.[0]?.FrameOfReferenceUID,
       representationData: {
-        LABELMAP: {
-          volumeId: segmentationId,
-          referencedVolumeId: volumeId, // Todo: this is so ugly
-        },
+        LABELMAP: displaySet.isReconstructable
+          ? {
+              volumeId: segmentationId,
+              referencedVolumeId: volumeId, // Todo: this is so ugly
+            }
+          : { imageIds, referencedImageIds },
       },
     };
 
@@ -1452,6 +1522,16 @@ class SegmentationService extends PubSubService {
 
   public getLabelmapVolume = (segmentationId: string) => {
     return cache.getVolume(segmentationId);
+  };
+
+  public getLabelmapImageData = (segmentationId: string) => {
+    const segmentation = this.getSegmentation(segmentationId) as Segmentation;
+    if (segmentation?.representationData[LABELMAP].imageIds?.length) {
+      return createImageDataForStackImage(
+        segmentation?.representationData[LABELMAP].imageIds,
+        this.servicesManager
+      );
+    }
   };
 
   public getSegmentationRepresentationsForToolGroup = toolGroupId => {
