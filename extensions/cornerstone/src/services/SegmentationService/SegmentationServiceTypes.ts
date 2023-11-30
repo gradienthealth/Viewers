@@ -58,10 +58,17 @@ type Segmentation = {
   representationData: SegmentationRepresentationData;
 };
 
-type LabelmapSegmentationData = {
+type LabelmapVolumeData = {
   volumeId: string;
   referencedVolumeId?: string;
 };
+
+type LabelmapStackData = {
+  imageIds: string[];
+  referencedImageIds: string[];
+};
+
+type LabelmapSegmentationData = LabelmapVolumeData | LabelmapStackData;
 
 type SegmentationRepresentationData = {
   LABELMAP?: LabelmapSegmentationData;

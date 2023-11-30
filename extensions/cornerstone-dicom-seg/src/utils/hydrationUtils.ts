@@ -1,4 +1,4 @@
-import { Enums, cache } from '@cornerstonejs/core';
+import { Enums, cache, eventTarget } from '@cornerstonejs/core';
 
 /**
  * Updates the viewports in preparation for rendering segmentations.
@@ -25,8 +25,12 @@ async function updateViewportsForSegmentationRendering({
   servicesManager: any;
   referencedDisplaySetInstanceUID?: string;
 }) {
-  const { cornerstoneViewportService, segmentationService, viewportGridService } =
-    servicesManager.services;
+  const {
+    cornerstoneViewportService,
+    segmentationService,
+    viewportGridService,
+    displaySetService,
+  } = servicesManager.services;
 
   const viewport = getTargetViewport({ viewportId, viewportGridService });
   const targetViewportId = viewport.viewportOptions.viewportId;
@@ -53,10 +57,14 @@ async function updateViewportsForSegmentationRendering({
     volumeId.includes(referencedDisplaySetInstanceUID)
   );
 
+  const referencedDisplaySet = displaySetService.getDisplaySetByUID(
+    referencedDisplaySetInstanceUID
+  );
+
   updatedViewports.forEach(async viewport => {
     viewport.viewportOptions = {
       ...viewport.viewportOptions,
-      viewportType: 'volume',
+      viewportType: referencedDisplaySet.isReconstructable ? 'volume' : 'stack',
       needsRerendering: true,
     };
     const viewportId = viewport.viewportId;
@@ -82,25 +90,35 @@ async function updateViewportsForSegmentationRendering({
       const volumeViewport = cornerstoneViewportService.getCornerstoneViewport(viewportId);
       volumeViewport.setCamera(prevCamera);
 
-      volumeViewport.element.removeEventListener(
-        Enums.Events.VOLUME_VIEWPORT_NEW_VOLUME,
-        createNewSegmentationWhenVolumeMounts
-      );
+      referencedDisplaySet.isReconstructable
+        ? csViewport.element.removeEventListener(
+            Enums.Events.VOLUME_VIEWPORT_NEW_VOLUME,
+            createNewSegmentationWhenVolumeMounts
+          )
+        : eventTarget.removeEventListener(
+            Enums.Events.STACK_VIEWPORT_NEW_STACK,
+            createNewSegmentationWhenVolumeMounts
+          );
 
-      if (!isTheActiveViewportVolumeMounted) {
-        // it means it is one of those other updated viewports so just update the camera
-        return;
-      }
+      // if (!isTheActiveViewportVolumeMounted) {
+      //   // it means it is one of those other updated viewports so just update the camera
+      //   return;
+      // }
 
       if (viewportId === targetViewportId) {
         await createSegmentationForVolume();
       }
     };
 
-    csViewport.element.addEventListener(
-      Enums.Events.VOLUME_VIEWPORT_NEW_VOLUME,
-      createNewSegmentationWhenVolumeMounts
-    );
+    referencedDisplaySet.isReconstructable
+      ? csViewport.element.addEventListener(
+          Enums.Events.VOLUME_VIEWPORT_NEW_VOLUME,
+          createNewSegmentationWhenVolumeMounts
+        )
+      : eventTarget.addEventListener(
+          Enums.Events.STACK_VIEWPORT_NEW_STACK,
+          createNewSegmentationWhenVolumeMounts
+        );
   });
 
   // Set the displaySets for the viewports that require to be updated
@@ -174,7 +192,7 @@ function getUpdatedViewportsForSegmentation({
         viewportId,
         displaySetInstanceUIDs: viewport.displaySetInstanceUIDs,
         viewportOptions: {
-          viewportType: 'volume',
+          viewportType: viewport.viewportType,
           needsRerendering: true,
         },
       });
