@@ -363,10 +363,11 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
     });
 
     const segmentations = this.servicesManager.services.segmentationService.getSegmentations(false);
+    const toolgroupId = viewportInfo.getToolGroupId();
     for (const segmentation of segmentations) {
       const toolGroupSegmentationRepresentations =
         this.servicesManager.services.segmentationService.getToolGroupIdsWithSegmentation(
-          viewportInfo.getToolGroupId()
+          toolgroupId
         );
       const isSegmentationInToolGroup = toolGroupSegmentationRepresentations.find(
         representation => representation.segmentationId === segmentation.id
@@ -375,11 +376,13 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
         const segDisplaySet = this.servicesManager.services.displaySetService.getDisplaySetByUID(
           segmentation.id
         );
-        this.servicesManager.services.segmentationService.addSegmentationRepresentationToToolGroup(
-          viewportInfo.getToolGroupId(),
-          segmentation.id,
-          segDisplaySet.isOverlayDisplaySet ? true : false
-        );
+
+        segDisplaySet &&
+          this.servicesManager.services.segmentationService.addSegmentationRepresentationToToolGroup(
+            toolgroupId,
+            segmentation.id,
+            segDisplaySet.isOverlayDisplaySet
+          );
       }
     }
   }

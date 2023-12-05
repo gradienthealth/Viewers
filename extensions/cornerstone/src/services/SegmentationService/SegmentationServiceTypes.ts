@@ -64,8 +64,7 @@ type LabelmapVolumeData = {
 };
 
 type LabelmapStackData = {
-  imageIds: string[];
-  referencedImageIds: string[];
+  imageIdReferenceMap: Map<string, string>;
 };
 
 type LabelmapSegmentationData = LabelmapVolumeData | LabelmapStackData;
