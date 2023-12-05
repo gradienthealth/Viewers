@@ -578,35 +578,39 @@ class SegmentationService extends PubSubService {
 
       indexToWorld = derivedVolume.imageData.indexToWorld;
     } else {
-      const getSegImageId = (imageId: string, index: number): string =>
-        `segImage:${imageId}/${index}`;
+      const getSegImageId = (imageId: string): string => `segimage:${imageId}`;
 
       const referencedImageIds = referencedDisplaySet.instances.reduce((imageIds, instance) => {
         return [...imageIds, instance.imageId];
       }, []);
-      let segImageIds: string[];
+      const imageIdReferenceMap = new Map();
+      const segImageIds: string[] = [];
 
-      if (!cache.getImage(getSegImageId(referencedImageIds[0], 0))) {
-        ({ imageIds: segImageIds } = imageLoader.createAndCacheDerivedImages(
-          referencedImageIds,
-          getSegImageId
-        ));
-      } else {
-        segImageIds = referencedImageIds.map(getSegImageId);
-      }
+      referencedImageIds.forEach(referencedImageId => {
+        const segImageId = getSegImageId(referencedImageId);
+        imageIdReferenceMap.set(referencedImageId, segImageId);
+        segImageIds.push(segImageId);
+
+        if (cache.getImage(segImageId)) {
+          return;
+        }
+
+        imageLoader.createAndCacheDerivedImage(referencedImageId, {
+          imageId: segImageId,
+          targetBufferType: 'Uint8Array',
+        });
+      });
 
       // Change the segmentation labelmap representation to data to the Stack viewport one.
-      segmentation.representationData[LABELMAP] = { imageIds: segImageIds, referencedImageIds };
+      segmentation.representationData[LABELMAP] = { imageIdReferenceMap };
 
       const { rows, columns } = metaData.get('imagePlaneModule', segImageIds[0]);
 
+      const bytes = new Uint8Array(labelmapBufferArray[0]);
       const singleSlicePixelSize = rows * columns;
       for (let i = 0; i < referencedDisplaySet.instances.length; i++) {
-        const singleSlicePixelData = new Uint8Array(singleSlicePixelSize);
-        singleSlicePixelData.set(
-          new Uint8Array(
-            labelmapBufferArray[0].slice(i * singleSlicePixelSize, singleSlicePixelSize)
-          )
+        const singleSlicePixelData = new Uint8Array(
+          bytes.slice(i * singleSlicePixelSize, (i + 1) * singleSlicePixelSize).buffer
         );
 
         const image = await cache.getImageLoadObject(segImageIds[i]).promise;
@@ -614,7 +618,7 @@ class SegmentationService extends PubSubService {
         pixelData.set(singleSlicePixelData);
       }
 
-      const { imageData } = createImageDataForStackImage(segImageIds, this.servicesManager);
+      const { imageData } = createImageDataForStackImage(imageIdReferenceMap);
       indexToWorld = imageData.indexToWorld;
     }
 
@@ -1030,7 +1034,8 @@ class SegmentationService extends PubSubService {
 
     const segmentationId = options?.segmentationId ?? `${csUtils.uuidv4()}`;
 
-    let imageIds: string[], referencedImageIds: string[];
+    const imageIdReferenceMap = new Map();
+
     if (displaySet.isReconstructable) {
       // Force use of a Uint8Array SharedArrayBuffer for the segmentation to save space and so
       // it is easily compressible in worker thread.
@@ -1042,14 +1047,17 @@ class SegmentationService extends PubSubService {
         },
       });
     } else {
-      const getSegImageId = (imageId: string, index: number): string =>
-        `segImage:${imageId}/${index}`;
+      const getSegImageId = (imageId: string): string => `segimage:${imageId}`;
 
-      referencedImageIds = displaySet.instances.reduce((imageIds, instance) => {
+      const referencedImageIds = displaySet.instances.reduce((imageIds, instance) => {
         return [...imageIds, instance.imageId];
       }, []);
 
-      ({ imageIds } = imageLoader.createAndCacheDerivedImages(referencedImageIds, getSegImageId));
+      imageLoader.createAndCacheDerivedImages(referencedImageIds, getSegImageId);
+
+      referencedImageIds.forEach(imageId =>
+        imageIdReferenceMap.set(imageId, getSegImageId(imageId))
+      );
     }
 
     const defaultScheme = this._getDefaultSegmentationScheme();
@@ -1070,7 +1078,7 @@ class SegmentationService extends PubSubService {
               volumeId: segmentationId,
               referencedVolumeId: volumeId, // Todo: this is so ugly
             }
-          : { imageIds, referencedImageIds },
+          : { imageIdReferenceMap },
       },
     };
 
@@ -1526,10 +1534,9 @@ class SegmentationService extends PubSubService {
 
   public getLabelmapImageData = (segmentationId: string) => {
     const segmentation = this.getSegmentation(segmentationId) as Segmentation;
-    if (segmentation?.representationData[LABELMAP].imageIds?.length) {
+    if (segmentation?.representationData[LABELMAP].imageIdReferenceMap?.size) {
       return createImageDataForStackImage(
-        segmentation?.representationData[LABELMAP].imageIds,
-        this.servicesManager
+        segmentation?.representationData[LABELMAP].imageIdReferenceMap
       );
     }
   };

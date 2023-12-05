@@ -430,6 +430,9 @@ class MetadataProvider {
   }
 
   getUIDsFromImageID(imageId) {
+    if (Array.isArray(imageId)) {
+      imageId = imageId[0];
+    }
     if (!imageId) {
       throw new Error('MetadataProvider::Empty imageId');
     }
@@ -440,9 +443,6 @@ class MetadataProvider {
     //   SOPInstanceUID,
     // })
     // somewhere else
-    if (Array.isArray(imageId)) {
-      imageId = imageId[0];
-    }
     if (imageId.startsWith('wadors:')) {
       const strippedImageId = imageId.split('/studies/')[1];
       const splitImageId = strippedImageId.split('/');

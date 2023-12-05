@@ -37,7 +37,18 @@ class CornerstoneCacheService {
     dataSource: unknown,
     initialImageIndex?: number
   ): Promise<StackViewportData | VolumeViewportData> {
-    const viewportType = viewportOptions.viewportType as string;
+    let viewportType = viewportOptions.viewportType as string;
+
+    // For VolumeViewport, we should check if whether the the displaySets
+    // that are about to be displayed are referenced in a segmentation
+    // as a reference volume, if so, we should hang a volume viewport
+    // instead of a stack viewport
+    if (displaySets[0].isReconstructable && this._shouldRenderSegmentation(displaySets)) {
+      viewportType = 'volume';
+
+      // update viewportOptions to reflect the new viewport type
+      viewportOptions.viewportType = viewportType;
+    }
 
     const cs3DViewportType = getCornerstoneViewportType(viewportType);
     let viewportData: StackViewportData | VolumeViewportData;
@@ -127,6 +138,8 @@ class CornerstoneCacheService {
       },
     };
 
+    // Atmost two displaysets are expected here even when we load multiple segmentations
+    // over referenced series(displaySets[0]).
     if (displaySets[1]?.load && displaySets[1].load instanceof Function) {
       const { userAuthenticationService } = this.servicesManager.services;
       const headers = userAuthenticationService.getAuthorizationHeader();
