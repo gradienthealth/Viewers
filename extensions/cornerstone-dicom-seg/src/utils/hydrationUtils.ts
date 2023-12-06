@@ -84,6 +84,10 @@ async function updateViewportsForSegmentationRendering({
       ? Enums.Events.VOLUME_VIEWPORT_NEW_VOLUME
       : Enums.Events.STACK_VIEWPORT_NEW_STACK;
 
+    const eventTriggerer = referencedDisplaySet.isReconstructable
+      ? csViewport.element
+      : eventTarget;
+
     const createNewSegmentationOnNewViewport = async evt => {
       const isTheActiveViewportVolumeMounted = evt.detail.volumeActors?.find(ac =>
         ac.uid.includes(referencedDisplaySetInstanceUID)
@@ -95,7 +99,7 @@ async function updateViewportsForSegmentationRendering({
       const volumeViewport = cornerstoneViewportService.getCornerstoneViewport(viewportId);
       volumeViewport.setCamera(prevCamera);
 
-      csViewport.element.removeEventListener(newViewportEvent, createNewSegmentationOnNewViewport);
+      eventTriggerer.removeEventListener(newViewportEvent, createNewSegmentationOnNewViewport);
 
       if (referencedDisplaySet.isReconstructable && !isTheActiveViewportVolumeMounted) {
         // it means it is one of those other updated viewports so just update the camera
@@ -107,7 +111,7 @@ async function updateViewportsForSegmentationRendering({
       }
     };
 
-    csViewport.element.addEventListener(newViewportEvent, createNewSegmentationOnNewViewport);
+    eventTriggerer.addEventListener(newViewportEvent, createNewSegmentationOnNewViewport);
   });
 
   // Set the displaySets for the viewports that require to be updated
