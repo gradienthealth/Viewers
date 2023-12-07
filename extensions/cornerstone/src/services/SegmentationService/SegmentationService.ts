@@ -578,7 +578,7 @@ class SegmentationService extends PubSubService {
 
       indexToWorld = derivedVolume.imageData.indexToWorld;
     } else {
-      const getSegImageId = (imageId: string): string => `segimage:${imageId}`;
+      const getSegImageId = (imageId: string): string => `segimage:${segmentationId}:${imageId}`;
 
       const referencedImageIds = referencedDisplaySet.instances.reduce((imageIds, instance) => {
         return [...imageIds, instance.imageId];
@@ -1047,7 +1047,7 @@ class SegmentationService extends PubSubService {
         },
       });
     } else {
-      const getSegImageId = (imageId: string): string => `segimage:${imageId}`;
+      const getSegImageId = (imageId: string): string => `segimage:${segmentationId}:${imageId}`;
 
       const referencedImageIds = displaySet.instances.reduce((imageIds, instance) => {
         return [...imageIds, instance.imageId];
