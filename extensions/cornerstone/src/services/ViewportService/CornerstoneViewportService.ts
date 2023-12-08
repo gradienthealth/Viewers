@@ -354,14 +354,6 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
       }
     }
 
-    return viewport.setStack(imageIds, initialImageIndexToUse).then(() => {
-      viewport.setProperties({ ...properties });
-      const camera = presentations.positionPresentation?.camera;
-      if (camera) {
-        viewport.setCamera(camera);
-      }
-    });
-
     const segmentations = this.servicesManager.services.segmentationService.getSegmentations(false);
     const toolgroupId = viewportInfo.getToolGroupId();
     for (const segmentation of segmentations) {
@@ -385,6 +377,14 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
           );
       }
     }
+
+    return viewport.setStack(imageIds, initialImageIndexToUse).then(() => {
+      viewport.setProperties({ ...properties });
+      const camera = presentations.positionPresentation?.camera;
+      if (camera) {
+        viewport.setCamera(camera);
+      }
+    });
   }
 
   private _getInitialImageIndexForViewport(
