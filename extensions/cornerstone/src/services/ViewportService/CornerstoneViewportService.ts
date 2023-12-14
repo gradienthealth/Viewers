@@ -358,12 +358,13 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
     const toolgroupId = viewportInfo.getToolGroupId();
     for (const segmentation of segmentations) {
       const toolGroupSegmentationRepresentations =
-        this.servicesManager.services.segmentationService.getToolGroupIdsWithSegmentation(
+        this.servicesManager.services.segmentationService.getSegmentationRepresentationsForToolGroup(
           toolgroupId
-        );
+        ) || [];
       const isSegmentationInToolGroup = toolGroupSegmentationRepresentations.find(
         representation => representation.segmentationId === segmentation.id
       );
+
       if (!isSegmentationInToolGroup) {
         const segDisplaySet = this.servicesManager.services.displaySetService.getDisplaySetByUID(
           segmentation.id
