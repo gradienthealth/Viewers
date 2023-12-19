@@ -47,6 +47,16 @@ export default function PanelSegmentation({
     };
   }, []);
 
+  const setSegmentationActive = segmentationId => {
+    const isSegmentationActive = segmentations.find(seg => seg.id === segmentationId)?.isActive;
+
+    if (isSegmentationActive) {
+      return;
+    }
+
+    segmentationService.setActiveSegmentationForToolGroup(segmentationId);
+  };
+
   const getToolGroupIds = segmentationId => {
     const toolGroupIds = segmentationService.getToolGroupIdsWithSegmentation(segmentationId);
 
@@ -62,26 +72,29 @@ export default function PanelSegmentation({
   };
 
   const onSegmentationDelete = (segmentationId: string) => {
+    setSegmentationActive(segmentationId);
     segmentationService.remove(segmentationId);
   };
 
   const onSegmentAdd = segmentationId => {
+    setSegmentationActive(segmentationId);
     segmentationService.addSegment(segmentationId);
   };
 
   const onSegmentClick = (segmentationId, segmentIndex) => {
     segmentationService.setActiveSegment(segmentationId, segmentIndex);
+    setSegmentationActive(segmentationId);
 
     const toolGroupIds = getToolGroupIds(segmentationId);
 
     toolGroupIds.forEach(toolGroupId => {
-      // const toolGroupId =
-      segmentationService.setActiveSegmentationForToolGroup(segmentationId, toolGroupId);
       segmentationService.jumpToSegmentCenter(segmentationId, segmentIndex, toolGroupId);
     });
   };
 
   const onSegmentEdit = (segmentationId, segmentIndex) => {
+    segmentationService.setActiveSegment(segmentationId, segmentIndex);
+    setSegmentationActive(segmentationId);
     const segmentation = segmentationService.getSegmentation(segmentationId);
 
     const segment = segmentation.segments[segmentIndex];
@@ -97,6 +110,7 @@ export default function PanelSegmentation({
   };
 
   const onSegmentationEdit = segmentationId => {
+    setSegmentationActive(segmentationId);
     const segmentation = segmentationService.getSegmentation(segmentationId);
     const { label } = segmentation;
 
@@ -117,6 +131,8 @@ export default function PanelSegmentation({
   };
 
   const onSegmentColorClick = (segmentationId, segmentIndex) => {
+    segmentationService.setActiveSegment(segmentationId, segmentIndex);
+    setSegmentationActive(segmentationId);
     const segmentation = segmentationService.getSegmentation(segmentationId);
 
     const segment = segmentation.segments[segmentIndex];
@@ -144,10 +160,13 @@ export default function PanelSegmentation({
   };
 
   const onSegmentDelete = (segmentationId, segmentIndex) => {
+    setSegmentationActive(segmentationId);
     segmentationService.removeSegment(segmentationId, segmentIndex);
   };
 
   const onToggleSegmentVisibility = (segmentationId, segmentIndex) => {
+    segmentationService.setActiveSegment(segmentationId, segmentIndex);
+    setSegmentationActive(segmentationId);
     const segmentation = segmentationService.getSegmentation(segmentationId);
     const segmentInfo = segmentation.segments[segmentIndex];
     const isVisible = !segmentInfo.isVisible;
@@ -165,10 +184,13 @@ export default function PanelSegmentation({
   };
 
   const onToggleSegmentLock = (segmentationId, segmentIndex) => {
+    segmentationService.setActiveSegment(segmentationId, segmentIndex);
+    setSegmentationActive(segmentationId);
     segmentationService.toggleSegmentLocked(segmentationId, segmentIndex);
   };
 
   const onToggleSegmentationVisibility = segmentationId => {
+    setSegmentationActive(segmentationId);
     segmentationService.toggleSegmentationVisibility(segmentationId);
   };
 
@@ -183,12 +205,14 @@ export default function PanelSegmentation({
   );
 
   const onSegmentationDownload = segmentationId => {
+    setSegmentationActive(segmentationId);
     commandsManager.runCommand('downloadSegmentation', {
       segmentationId,
     });
   };
 
   const storeSegmentation = async segmentationId => {
+    setSegmentationActive(segmentationId);
     const datasources = extensionManager.getActiveDataSource();
 
     const displaySetInstanceUIDs = await createReportAsync({
@@ -216,6 +240,7 @@ export default function PanelSegmentation({
   };
 
   const onSegmentationDownloadRTSS = segmentationId => {
+    setSegmentationActive(segmentationId);
     commandsManager.runCommand('downloadRTSS', {
       segmentationId,
     });
