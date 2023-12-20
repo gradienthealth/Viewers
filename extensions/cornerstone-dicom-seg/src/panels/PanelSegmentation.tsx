@@ -83,17 +83,16 @@ export default function PanelSegmentation({
 
   const onSegmentClick = (segmentationId, segmentIndex) => {
     segmentationService.setActiveSegment(segmentationId, segmentIndex);
-    setSegmentationActive(segmentationId);
 
     const toolGroupIds = getToolGroupIds(segmentationId);
 
     toolGroupIds.forEach(toolGroupId => {
+      segmentationService.setActiveSegmentationForToolGroup(segmentationId, toolGroupId);
       segmentationService.jumpToSegmentCenter(segmentationId, segmentIndex, toolGroupId);
     });
   };
 
   const onSegmentEdit = (segmentationId, segmentIndex) => {
-    segmentationService.setActiveSegment(segmentationId, segmentIndex);
     setSegmentationActive(segmentationId);
     const segmentation = segmentationService.getSegmentation(segmentationId);
 
@@ -131,7 +130,6 @@ export default function PanelSegmentation({
   };
 
   const onSegmentColorClick = (segmentationId, segmentIndex) => {
-    segmentationService.setActiveSegment(segmentationId, segmentIndex);
     setSegmentationActive(segmentationId);
     const segmentation = segmentationService.getSegmentation(segmentationId);
 
@@ -165,7 +163,6 @@ export default function PanelSegmentation({
   };
 
   const onToggleSegmentVisibility = (segmentationId, segmentIndex) => {
-    segmentationService.setActiveSegment(segmentationId, segmentIndex);
     setSegmentationActive(segmentationId);
     const segmentation = segmentationService.getSegmentation(segmentationId);
     const segmentInfo = segmentation.segments[segmentIndex];
@@ -184,7 +181,6 @@ export default function PanelSegmentation({
   };
 
   const onToggleSegmentLock = (segmentationId, segmentIndex) => {
-    segmentationService.setActiveSegment(segmentationId, segmentIndex);
     setSegmentationActive(segmentationId);
     segmentationService.toggleSegmentLocked(segmentationId, segmentIndex);
   };
