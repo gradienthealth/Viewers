@@ -39,12 +39,11 @@ class CornerstoneCacheService {
   ): Promise<StackViewportData | VolumeViewportData> {
     let viewportType = viewportOptions.viewportType as string;
 
-    // Todo: Since Cornerstone 3D currently doesn't support segmentation
-    // on stack viewport, we should check if whether the the displaySets
+    // For VolumeViewport, we should check if whether the the displaySets
     // that are about to be displayed are referenced in a segmentation
     // as a reference volume, if so, we should hang a volume viewport
     // instead of a stack viewport
-    if (this._shouldRenderSegmentation(displaySets)) {
+    if (displaySets[0].isReconstructable && this._shouldRenderSegmentation(displaySets)) {
       viewportType = 'volume';
 
       // update viewportOptions to reflect the new viewport type
@@ -111,12 +110,12 @@ class CornerstoneCacheService {
     return newViewportData;
   }
 
-  private _getStackViewportData(
+  private async _getStackViewportData(
     dataSource,
     displaySets,
     initialImageIndex,
     viewportType: Enums.ViewportType
-  ): StackViewportData {
+  ): Promise<StackViewportData> {
     // For Stack Viewport we don't have fusion currently
     const displaySet = displaySets[0];
 
@@ -138,6 +137,14 @@ class CornerstoneCacheService {
         imageIds: stackImageIds,
       },
     };
+
+    // Atmost two displaysets are expected here even when we load multiple segmentations
+    // over referenced series(displaySets[0]).
+    if (displaySets[1]?.load && displaySets[1].load instanceof Function) {
+      const { userAuthenticationService } = this.servicesManager.services;
+      const headers = userAuthenticationService.getAuthorizationHeader();
+      await displaySets[1].load({ headers });
+    }
 
     if (typeof initialImageIndex === 'number') {
       StackViewportData.data.initialImageIndex = initialImageIndex;

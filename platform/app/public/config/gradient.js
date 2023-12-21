@@ -37,7 +37,7 @@ window.config = {
         'profile',
         'openid',
         'https://www.googleapis.com/auth/spreadsheets',
-        'https://www.googleapis.com/auth/devstorage.read_only',
+        'https://www.googleapis.com/auth/devstorage.read_write',
         'https://www.googleapis.com/auth/bigquery.readonly',
         'https://www.googleapis.com/auth/drive.metadata.readonly',
         'https://www.googleapis.com/auth/drive.readonly',
