@@ -176,6 +176,7 @@ class DicomLoaderService {
       authorizationHeaders,
       wadoRoot,
       wadoUri,
+      instance,
     } = dataset;
     // Retrieve wadors or just try to fetch wadouri
     if (!someInvalidStrings(wadoRoot)) {
@@ -188,6 +189,19 @@ class DicomLoaderService {
       );
     } else if (!someInvalidStrings(wadoUri)) {
       return fetchIt(wadoUri, { headers: authorizationHeaders });
+    } else if (!someInvalidStrings(instance?.url)) {
+      // make sure the url is absolute, remove the scope
+      // from it if it is not absolute. For instance it might be dicomweb:http://....
+      // and we need to remove the dicomweb: part
+      const url = instance.url;
+
+      if (url.startsWith('dicomzip')) {
+        const { url: uri } = dicomImageLoader.wadouri.parseImageId(url);
+        return dicomImageLoader.wadouri.loadZipRequest(uri, url);
+      }
+
+      const absoluteUrl = url.startsWith('http') ? url : url.substring(url.indexOf(':') + 1);
+      return fetchIt(absoluteUrl, { headers: authorizationHeaders });
     }
   }
 

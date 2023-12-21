@@ -74,6 +74,9 @@ class MetadataProvider {
   }
 
   get(query, imageId, options = { fallback: false }) {
+    if (Array.isArray(imageId)) {
+      return;
+    }
     const instance = this._getInstance(imageId);
 
     if (query === INSTANCE) {
@@ -427,6 +430,9 @@ class MetadataProvider {
   }
 
   getUIDsFromImageID(imageId) {
+    if (Array.isArray(imageId)) {
+      imageId = imageId[0];
+    }
     if (!imageId) {
       throw new Error('MetadataProvider::Empty imageId');
     }
