@@ -22,10 +22,6 @@ const segmentation = {
   viewport: '@ohif/extension-cornerstone-dicom-seg.viewportModule.dicom-seg',
 };
 
-const gradienthealth = {
-  form: '@gradienthealth/ohif-gradienthealth-extension.panelModule.form',
-};
-
 /**
  * Just two dependencies to be able to render a viewport with panels in order
  * to make sure that the mode is working.
@@ -54,14 +50,7 @@ function modeFactory({ modeConfiguration }) {
      * Services and other resources.
      */
     onModeEnter: ({ servicesManager, extensionManager, commandsManager }) => {
-      const {
-        measurementService,
-        toolbarService,
-        toolGroupService,
-        GoogleSheetsService,
-        CropDisplayAreaService,
-        CacheAPIService,
-      } = servicesManager.services;
+      const { measurementService, toolbarService, toolGroupService } = servicesManager.services;
 
       measurementService.clearMeasurements();
 
@@ -97,9 +86,6 @@ function modeFactory({ modeConfiguration }) {
         activateTool
       ));
 
-      GoogleSheetsService.init();
-      CropDisplayAreaService.init();
-      CacheAPIService.init();
       toolbarService.init(extensionManager);
       toolbarService.addButtons(toolbarButtons);
       toolbarService.createButtonSection('primary', [
@@ -167,7 +153,7 @@ function modeFactory({ modeConfiguration }) {
             id: ohif.layout,
             props: {
               leftPanels: [ohif.leftPanel],
-              rightPanels: [segmentation.panelTool, gradienthealth.form],
+              rightPanels: [segmentation.panelTool],
               viewports: [
                 {
                   namespace: cornerstone.viewport,
