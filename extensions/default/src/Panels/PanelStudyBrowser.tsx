@@ -17,7 +17,7 @@ function PanelStudyBrowser({
   requestDisplaySetCreationForStudy,
   dataSource,
 }) {
-  const { hangingProtocolService, displaySetService, uiNotificationService } =
+  const { hangingProtocolService, displaySetService, uiNotificationService, GoogleSheetsService } =
     servicesManager.services;
   const navigate = useNavigate();
 
@@ -27,9 +27,10 @@ function PanelStudyBrowser({
   const { StudyInstanceUIDs } = useImageViewer();
   const [{ activeViewportId, viewports, isHangingProtocolLayout }, viewportGridService] =
     useViewportGrid();
+  const [studyInstanceUIDs, setStudyInstanceUIDs] = useState([...StudyInstanceUIDs]);
   const [activeTabName, setActiveTabName] = useState('primary');
   const [expandedStudyInstanceUIDs, setExpandedStudyInstanceUIDs] = useState([
-    ...StudyInstanceUIDs,
+    ...studyInstanceUIDs,
   ]);
   const [studyDisplayList, setStudyDisplayList] = useState([]);
   const [displaySets, setDisplaySets] = useState([]);
@@ -56,6 +57,11 @@ function PanelStudyBrowser({
 
     viewportGridService.setDisplaySetsForViewports(updatedViewports);
   };
+
+  useEffect(() => {
+    setStudyInstanceUIDs([...StudyInstanceUIDs]);
+    setExpandedStudyInstanceUIDs([...StudyInstanceUIDs]);
+  }, [StudyInstanceUIDs]);
 
   // ~~ studyDisplayList
   useEffect(() => {
@@ -103,8 +109,8 @@ function PanelStudyBrowser({
       });
     }
 
-    StudyInstanceUIDs.forEach(sid => fetchStudiesForPatient(sid));
-  }, [StudyInstanceUIDs, dataSource, getStudiesForPatientByMRN, navigate]);
+    studyInstanceUIDs.forEach(sid => fetchStudiesForPatient(sid));
+  }, [studyInstanceUIDs, dataSource, getStudiesForPatientByMRN, navigate]);
 
   // // ~~ Initial Thumbnails
   useEffect(() => {
@@ -126,7 +132,7 @@ function PanelStudyBrowser({
         return { ...prevState, ...newImageSrcEntry };
       });
     });
-  }, [StudyInstanceUIDs, dataSource, displaySetService, getImageSrc]);
+  }, [studyInstanceUIDs, dataSource, displaySetService, getImageSrc]);
 
   // ~~ displaySets
   useEffect(() => {
@@ -136,7 +142,7 @@ function PanelStudyBrowser({
     sortStudyInstances(mappedDisplaySets);
 
     setDisplaySets(mappedDisplaySets);
-  }, [StudyInstanceUIDs, thumbnailImageSrcMap, displaySetService]);
+  }, [studyInstanceUIDs, thumbnailImageSrcMap, displaySetService]);
 
   // ~~ subscriptions --> displaySets
   useEffect(() => {
@@ -204,9 +210,29 @@ function PanelStudyBrowser({
       SubscriptionDisplaySetsChanged.unsubscribe();
       SubscriptionDisplaySetMetaDataInvalidated.unsubscribe();
     };
-  }, [StudyInstanceUIDs, thumbnailImageSrcMap, displaySetService]);
+  }, [studyInstanceUIDs, thumbnailImageSrcMap, displaySetService]);
 
-  const tabs = _createStudyBrowserTabs(StudyInstanceUIDs, studyDisplayList, displaySets);
+  useEffect(() => {
+    const { unsubscribe } = GoogleSheetsService.subscribe(
+      GoogleSheetsService.EVENTS.GOOGLE_SHEETS_CHANGE,
+      () => {
+        const newStudyInstanceUID = Object.entries(GoogleSheetsService.studyUIDToIndex).filter(
+          ([key, val]) => val === GoogleSheetsService.index
+        )[0][0];
+
+        if (!studyInstanceUIDs.includes(newStudyInstanceUID)) {
+          setStudyInstanceUIDs([newStudyInstanceUID]);
+          setExpandedStudyInstanceUIDs([newStudyInstanceUID]);
+        }
+      }
+    );
+
+    return () => {
+      unsubscribe();
+    };
+  });
+
+  const tabs = _createStudyBrowserTabs(studyInstanceUIDs, studyDisplayList, displaySets);
 
   // TODO: Should not fire this on "close"
   function _handleStudyClick(StudyInstanceUID) {
