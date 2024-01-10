@@ -471,11 +471,15 @@ class SegmentationService extends PubSubService {
 
     // if first segmentation, we can use the default colorLUT, otherwise
     // we need to generate a new one and use a new colorLUT
-    const colorLUTIndex = 0;
+    let colorLUTIndex = 0;
+    const newColorLUT = this.generateNewColorLUT();
     if (Object.keys(this.segmentations).length !== 0) {
-      const newColorLUT = this.generateNewColorLUT();
-      const colorLUTIndex = this.getNextColorLUTIndex();
+      colorLUTIndex = this.getNextColorLUTIndex();
       cstSegmentation.config.color.addColorLUT(newColorLUT, colorLUTIndex);
+    } else if (!cstSegmentation.state.getColorLUT(0)) {
+      // If all loaded segmentations are removed and a new one is adding there may
+      // not be a colorLUT for index 0 as all of them should have been removed.
+      cstSegmentation.config.color.addColorLUT(newColorLUT, 0);
     }
 
     this.segmentations[segmentationId] = {
