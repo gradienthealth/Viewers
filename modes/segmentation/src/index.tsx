@@ -28,6 +28,8 @@ const segmentation = {
 
 const gradienthealth = {
   form: '@gradienthealth/ohif-gradienthealth-extension.panelModule.form',
+  thumbnailList:
+    '@gradienthealth/ohif-gradienthealth-extension.panelModule.seriesList-without-tracking',
 };
 
 /**
@@ -153,11 +155,16 @@ function modeFactory({ modeConfiguration }) {
       {
         path: 'template',
         layoutTemplate: ({ location, servicesManager }) => {
+          const params = new URLSearchParams(location.search);
+          const rightPanels = [
+            segmentation.panelTool,
+            ...(params.get('sheetId') ? [gradienthealth.form] : []),
+          ];
           return {
             id: ohif.layout,
             props: {
-              leftPanels: [ohif.leftPanel],
-              rightPanels: [segmentation.panelTool, gradienthealth.form],
+              leftPanels: [gradienthealth.thumbnailList],
+              rightPanels: rightPanels,
               viewports: [
                 {
                   namespace: cornerstone.viewport,
