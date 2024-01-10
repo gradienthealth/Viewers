@@ -2110,6 +2110,16 @@ class SegmentationService extends PubSubService {
     if (removeFromCache && cache.getVolumeLoadObject(segmentationId)) {
       cache.removeVolumeLoadObject(segmentationId);
     }
+
+    const segmentation = this.getSegmentation(segmentationId);
+    const segmentationImageMap =
+      segmentation.representationData[segmentation.type].imageIdReferenceMap;
+    if (removeFromCache && segmentationImageMap) {
+      segmentationImageMap.forEach(
+        segImageId =>
+          cache.getVolumeLoadObject(segImageId) && cache.removeImageLoadObject(segImageId)
+      );
+    }
   }
 
   private _updateCornerstoneSegmentations({ segmentationId, notYetUpdatedAtSource }) {
