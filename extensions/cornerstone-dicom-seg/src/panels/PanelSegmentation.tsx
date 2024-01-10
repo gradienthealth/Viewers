@@ -13,7 +13,13 @@ export default function PanelSegmentation({
   extensionManager,
   configuration,
 }) {
-  const { segmentationService, viewportGridService, uiDialogService } = servicesManager.services;
+  const {
+    segmentationService,
+    viewportGridService,
+    uiDialogService,
+    displaySetService,
+    userAuthenticationService,
+  } = servicesManager.services;
 
   const { t } = useTranslation('PanelSegmentation');
 
@@ -48,6 +54,8 @@ export default function PanelSegmentation({
   }, []);
 
   const setSegmentationActive = segmentationId => {
+    setReferencedDisplaySet(segmentationId);
+
     const isSegmentationActive = segmentations.find(seg => seg.id === segmentationId)?.isActive;
 
     if (isSegmentationActive) {
@@ -55,6 +63,28 @@ export default function PanelSegmentation({
     }
 
     segmentationService.setActiveSegmentationForToolGroup(segmentationId);
+  };
+
+  // Set referenced displaySet of the segmentation to the viewport
+  // if it is not displayed in any of the viewports.
+  const setReferencedDisplaySet = segmentationId => {
+    const segDisplayset = displaySetService.getDisplaySetByUID(segmentationId);
+    const referencedDisplaySetInstancesUID = segDisplayset.referencedDisplaySetInstanceUID;
+    const { viewports, activeViewportId } = viewportGridService.getState();
+    let referencedImageLoaded = false;
+    viewports.forEach(viewport => {
+      if (viewport.displaySetInstanceUIDs.includes(referencedDisplaySetInstancesUID)) {
+        referencedImageLoaded = true;
+      }
+    });
+
+    if (!referencedImageLoaded) {
+      viewportGridService.setDisplaySetsForViewport({
+        viewportId: activeViewportId,
+        displaySetInstanceUIDs: [referencedDisplaySetInstancesUID, segmentationId],
+      });
+      segDisplayset.load({ headers: userAuthenticationService.getAuthorizationHeader() });
+    }
   };
 
   const getToolGroupIds = segmentationId => {
@@ -68,6 +98,7 @@ export default function PanelSegmentation({
   };
 
   const onSegmentationClick = (segmentationId: string) => {
+    setReferencedDisplaySet(segmentationId);
     segmentationService.setActiveSegmentationForToolGroup(segmentationId);
   };
 
@@ -82,6 +113,7 @@ export default function PanelSegmentation({
   };
 
   const onSegmentClick = (segmentationId, segmentIndex) => {
+    setReferencedDisplaySet(segmentationId);
     segmentationService.setActiveSegment(segmentationId, segmentIndex);
 
     const toolGroupIds = getToolGroupIds(segmentationId);
