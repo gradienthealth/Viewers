@@ -74,6 +74,10 @@ export default function PanelSegmentation({
   // if it is not displayed in any of the viewports.
   const setReferencedDisplaySet = segmentationId => {
     const segDisplayset = displaySetService.getDisplaySetByUID(segmentationId);
+    if (!segDisplayset) {
+      return;
+    }
+
     const referencedDisplaySetInstancesUID = segDisplayset.referencedDisplaySetInstanceUID;
     const { viewports, activeViewportId } = viewportGridService.getState();
     let referencedImageLoaded = false;
