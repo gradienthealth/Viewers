@@ -192,6 +192,7 @@ async function _loadSegments({ extensionManager, servicesManager, segDisplaySet,
     }
   });
 
+  /* Skip the warning message as it is annoying on auto segmentations loading.
   if (!usedRecommendedDisplayCIELabValue) {
     // Display a notification about the non-utilization of RecommendedDisplayCIELabValue
     uiNotificationService.show({
@@ -201,7 +202,7 @@ async function _loadSegments({ extensionManager, servicesManager, segDisplaySet,
       type: 'warning',
       duration: 5000,
     });
-  }
+  }*/
 
   Object.assign(segDisplaySet, results);
 }

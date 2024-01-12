@@ -81,7 +81,7 @@ function SegmentationDropDownRow({
             ...(!disableEditing
               ? [
                   {
-                    title: t('Export DICOM SEG'),
+                    title: t('Save'),
                     onClick: () => {
                       storeSegmentation(segmentation.id);
                     },
@@ -95,12 +95,12 @@ function SegmentationDropDownRow({
                   onSegmentationDownload(segmentation.id);
                 },
               },
-              {
+              /*{
                 title: t('Download DICOM RTSTRUCT'),
                 onClick: () => {
                   onSegmentationDownloadRTSS(segmentation.id);
                 },
-              },
+              },*/
             ],
           ]}
         >
