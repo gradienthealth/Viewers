@@ -319,27 +319,39 @@ const commandsModule = ({
      * otherwise throws an error.
      */
     storeSegmentation: async ({ segmentationId, dataSource }) => {
-      const promptResult = await createReportDialogPrompt(uiDialogService, {
-        extensionManager,
-      });
-
-      if (promptResult.action !== 1 && promptResult.value) {
-        return;
-      }
-
       const segmentation = segmentationService.getSegmentation(segmentationId);
 
       if (!segmentation) {
         throw new Error('No segmentation found');
       }
+      const { label, displaySetInstanceUID } = segmentation;
 
-      const { label } = segmentation;
+      const displaySet = displaySetService.getDisplaySetByUID(displaySetInstanceUID);
+      const shouldOverWrite = displaySet && displaySet.Modality === 'SEG';
+
+      let promptResult: { action?: number; value?: string } = {};
+
+      if (!shouldOverWrite) {
+        promptResult = await createReportDialogPrompt(uiDialogService, {
+          extensionManager,
+        });
+
+        if (promptResult.action !== 1 && promptResult.value) {
+          return;
+        }
+      }
+
       const SeriesDescription = promptResult.value || label || 'Research Derived Series';
 
       const generatedData = actions.generateSegmentation({
         segmentationId,
         options: {
           SeriesDescription,
+          // Use Series and SOP instancesUIDs if displaySet of the segmentation already exists.
+          ...(shouldOverWrite && {
+            SeriesInstanceUID: displaySet.SeriesInstanceUID,
+            SOPInstanceUID: displaySet.instances[0].SOPInstanceUID,
+          }),
         },
       });
 
@@ -357,8 +369,6 @@ const commandsModule = ({
 
       // add the information for where we stored it to the instance as well
       naturalizedReport.wadoRoot = dataSource.getConfig().wadoRoot;
-
-      DicomMetadataStore.addInstances([naturalizedReport], true);
 
       return naturalizedReport;
     },

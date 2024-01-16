@@ -1,5 +1,9 @@
 import React from 'react';
+import dcmjs from 'dcmjs';
+import { wadouri } from '@cornerstonejs/dicom-image-loader';
 import { DicomMetadataStore } from '@ohif/core';
+
+const { datasetToBlob } = dcmjs.data;
 
 /**
  *
@@ -17,12 +21,22 @@ async function createReportAsync({ servicesManager, getReport, reportType = 'mea
   try {
     const naturalizedReport = await getReport();
 
+    const { SeriesInstanceUID, SOPInstanceUID } = naturalizedReport;
+    let displaySet = displaySetService
+      .getDisplaySetsForSeries(SeriesInstanceUID)
+      ?.find(ds => ds.instances.some(instance => instance.SOPInstanceUID === SOPInstanceUID));
+
+    const shouldOverWrite = displaySet && displaySet.Modality === 'SEG';
+
     // The "Mode" route listens for DicomMetadataStore changes
     // When a new instance is added, it listens and
     // automatically calls makeDisplaySets
     DicomMetadataStore.addInstances([naturalizedReport], true);
 
-    const displaySet = displaySetService.getMostRecentDisplaySet();
+    if (!displaySet) {
+      // If there is no displayset before adding instances, it is a new series.
+      displaySet = displaySetService.getMostRecentDisplaySet();
+    }
 
     const displaySetInstanceUID = displaySet.displaySetInstanceUID;
 
@@ -31,6 +45,13 @@ async function createReportAsync({ servicesManager, getReport, reportType = 'mea
       message: `${reportType} saved successfully`,
       type: 'success',
     });
+
+    if (shouldOverWrite) {
+      const fileUri = wadouri.fileManager.add(datasetToBlob(naturalizedReport));
+      displaySet.instance.imageId = fileUri;
+      displaySet.instance.getImageId = () => fileUri;
+      return;
+    }
 
     return [displaySetInstanceUID];
   } catch (error) {
