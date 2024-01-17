@@ -1,6 +1,5 @@
 import React from 'react';
 import dcmjs from 'dcmjs';
-import { wadouri } from '@cornerstonejs/dicom-image-loader';
 import { DicomMetadataStore } from '@ohif/core';
 
 const { datasetToBlob } = dcmjs.data;
@@ -10,7 +9,8 @@ const { datasetToBlob } = dcmjs.data;
  * @param {*} servicesManager
  */
 async function createReportAsync({ servicesManager, getReport, reportType = 'measurement' }) {
-  const { displaySetService, uiNotificationService, uiDialogService } = servicesManager.services;
+  const { displaySetService, uiNotificationService, uiDialogService, CacheAPIService } =
+    servicesManager.services;
   const loadingDialogId = uiDialogService.create({
     showOverlay: true,
     isDraggable: false,
@@ -47,9 +47,7 @@ async function createReportAsync({ servicesManager, getReport, reportType = 'mea
     });
 
     if (shouldOverWrite) {
-      const fileUri = wadouri.fileManager.add(datasetToBlob(naturalizedReport));
-      displaySet.instance.imageId = fileUri;
-      displaySet.instance.getImageId = () => fileUri;
+      CacheAPIService?.updateCachedFile(datasetToBlob(naturalizedReport), displaySet);
       return;
     }
 
