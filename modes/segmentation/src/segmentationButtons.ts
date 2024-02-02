@@ -18,12 +18,12 @@ const toolbarButtons: Button[] = [
           },
           options: [
             {
-              name: 'Radius (mm)',
+              name: 'Radius (px)',
               id: 'brush-radius',
               type: 'range',
-              min: 0.01,
-              max: 99.5,
-              step: 0.01,
+              min: 0.5,
+              max: 10000,
+              step: 0.5,
               value: 25,
               commands: {
                 commandName: 'setBrushSize',
@@ -53,12 +53,12 @@ const toolbarButtons: Button[] = [
           },
           options: [
             {
-              name: 'Radius (mm)',
+              name: 'Radius (px)',
               id: 'eraser-radius',
               type: 'range',
-              min: 0.01,
-              max: 99.5,
-              step: 0.01,
+              min: 0.5,
+              max: 10000,
+              step: 0.5,
               value: 25,
               commands: {
                 commandName: 'setBrushSize',

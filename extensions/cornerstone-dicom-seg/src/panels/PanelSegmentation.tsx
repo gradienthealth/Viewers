@@ -1,11 +1,25 @@
 import { createReportAsync } from '@ohif/extension-default';
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useReducer } from 'react';
 import PropTypes from 'prop-types';
 import { SegmentationGroupTable, SegmentationGroupTableExpanded } from '@ohif/ui';
 import { SegmentationPanelMode } from '../types/segmentation';
 import callInputDialog from './callInputDialog';
 import callColorPickerDialog from './colorPickerDialog';
 import { useTranslation } from 'react-i18next';
+import getSegmentLabel from '../utils/getSegmentLabel';
+
+const savedStatusReducer = (state, action) => {
+  return {
+    ...state,
+    ...action.payload,
+  };
+};
+
+const SAVED_STATUS_ICON = {
+  SAVED: 'notifications-success',
+  MODIFIED: 'notifications-warning',
+  ERROR: 'notifications-error',
+};
 
 const components = {
   [SegmentationPanelMode.Expanded]: SegmentationGroupTableExpanded,
@@ -24,6 +38,7 @@ export default function PanelSegmentation({
     uiDialogService,
     displaySetService,
     userAuthenticationService,
+    CropDisplayAreaService,
   } = servicesManager.services;
 
   const { t } = useTranslation('PanelSegmentation');
@@ -34,6 +49,7 @@ export default function PanelSegmentation({
   );
 
   const [segmentations, setSegmentations] = useState(() => segmentationService.getSegmentations());
+  const [savedStatusStates, dispatch] = useReducer(savedStatusReducer, {});
 
   useEffect(() => {
     // ~~ Subscription
@@ -58,6 +74,74 @@ export default function PanelSegmentation({
     };
   }, []);
 
+  useEffect(() => {
+    let changedSegmentations: any[] = [],
+      timerId;
+    const timoutInSeconds = 5;
+
+    const { unsubscribe } = segmentationService.subscribe(
+      segmentationService.EVENTS.SEGMENTATION_DATA_MODIFIED,
+      ({ segmentation }) => {
+        clearTimeout(timerId);
+        dispatch({ payload: { [segmentation.id]: SAVED_STATUS_ICON.MODIFIED } });
+
+        if (
+          !changedSegmentations.find(
+            changedSegmentation => changedSegmentation.id === segmentation.id
+          )
+        ) {
+          changedSegmentations.push(segmentation);
+        }
+
+        timerId = setTimeout(() => {
+          const datasources = extensionManager.getActiveDataSource();
+
+          const promises = changedSegmentations.map(segmentation =>
+            createReportAsync({
+              servicesManager: servicesManager,
+              getReport: () =>
+                commandsManager.runCommand('storeSegmentation', {
+                  segmentationId: segmentation.id,
+                  dataSource: datasources[0],
+                }),
+              reportType: 'Segmentation',
+              showLoadingModal: false,
+              throwErrors: true,
+            })
+          );
+
+          Promise.allSettled(promises).then(results => {
+            const payload = results.reduce((acc, result, index) => {
+              if (result.value) {
+                changedSegmentations[index].displaySetInstanceUID = result.value[0];
+                displaySetService.getDisplaySetByUID(result.value[0])?.getReferenceDisplaySet();
+              }
+
+              return {
+                ...acc,
+                [changedSegmentations[index].id]:
+                  result.status === 'fulfilled' ? SAVED_STATUS_ICON.SAVED : SAVED_STATUS_ICON.ERROR,
+              };
+            }, {});
+
+            dispatch({ payload });
+
+            const savedSegmentations = Object.keys(payload).filter(
+              id => payload[id] === SAVED_STATUS_ICON.SAVED
+            );
+            changedSegmentations = changedSegmentations.filter(
+              cs => !savedSegmentations.includes(cs.id)
+            );
+          });
+        }, timoutInSeconds * 1000);
+      }
+    );
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
   const setSegmentationActive = segmentationId => {
     setReferencedDisplaySet(segmentationId);
 
@@ -78,11 +162,11 @@ export default function PanelSegmentation({
       return;
     }
 
-    const referencedDisplaySetInstancesUID = segDisplayset.referencedDisplaySetInstanceUID;
+    const referencedDisplaySetInstanceUID = segDisplayset.referencedDisplaySetInstanceUID;
     const { viewports, activeViewportId } = viewportGridService.getState();
     let referencedImageLoaded = false;
     viewports.forEach(viewport => {
-      if (viewport.displaySetInstanceUIDs.includes(referencedDisplaySetInstancesUID)) {
+      if (viewport.displaySetInstanceUIDs.includes(referencedDisplaySetInstanceUID)) {
         referencedImageLoaded = true;
       }
     });
@@ -90,9 +174,8 @@ export default function PanelSegmentation({
     if (!referencedImageLoaded) {
       viewportGridService.setDisplaySetsForViewport({
         viewportId: activeViewportId,
-        displaySetInstanceUIDs: [referencedDisplaySetInstancesUID, segmentationId],
+        displaySetInstanceUIDs: [referencedDisplaySetInstanceUID],
       });
-      segDisplayset.load({ headers: userAuthenticationService.getAuthorizationHeader() });
     }
   };
 
@@ -120,7 +203,8 @@ export default function PanelSegmentation({
 
   const onSegmentAdd = segmentationId => {
     setSegmentationActive(segmentationId);
-    segmentationService.addSegment(segmentationId);
+    const label = getSegmentLabel(segmentations.find(seg => seg.id === segmentationId));
+    segmentationService.addSegment(segmentationId, { properties: { label } });
   };
 
   const onSegmentClick = (segmentationId, segmentIndex) => {
@@ -270,16 +354,25 @@ export default function PanelSegmentation({
   const storeSegmentation = async segmentationId => {
     setSegmentationActive(segmentationId);
     const datasources = extensionManager.getActiveDataSource();
+    let displaySetInstanceUIDs;
 
-    const displaySetInstanceUIDs = await createReportAsync({
-      servicesManager,
-      getReport: () =>
-        commandsManager.runCommand('storeSegmentation', {
-          segmentationId,
-          dataSource: datasources[0],
-        }),
-      reportType: 'Segmentation',
-    });
+    try {
+      displaySetInstanceUIDs = await createReportAsync({
+        servicesManager,
+        getReport: () =>
+          commandsManager.runCommand('storeSegmentation', {
+            segmentationId,
+            dataSource: datasources[0],
+          }),
+        reportType: 'Segmentation',
+        throwErrors: true,
+      });
+
+      dispatch({ payload: { [segmentationId]: SAVED_STATUS_ICON.SAVED } });
+    } catch (error) {
+      console.warn(error.message);
+      dispatch({ payload: { [segmentationId]: SAVED_STATUS_ICON.ERROR } });
+    }
 
     // Show the exported report in the active viewport as read only (similar to SR)
     if (displaySetInstanceUIDs) {
@@ -314,6 +407,7 @@ export default function PanelSegmentation({
     <SegmentationGroupTableComponent
       title={t('Segmentations')}
       segmentations={segmentations}
+      savedStatusStates={savedStatusStates}
       disableEditing={configuration.disableEditing}
       activeSegmentationId={selectedSegmentationId || ''}
       onSegmentationAdd={onSegmentationAddWrapper}
@@ -355,6 +449,7 @@ export default function PanelSegmentation({
       setFillAlphaInactive={value =>
         _setSegmentationConfiguration(selectedSegmentationId, 'fillAlphaInactive', value)
       }
+      CropDisplayAreaService={CropDisplayAreaService}
     />
   );
 }

@@ -856,15 +856,9 @@ class SegmentationService extends PubSubService {
     for (const [index, centroid] of centroids) {
       const count = centroid.count;
       const normalizedCentroid = {
-        x: centroid.x / count,
-        y: centroid.y / count,
-        z: centroid.z / count,
+        image: [centroid.x / count, centroid.y / count, centroid.z / count],
       };
-      normalizedCentroid.world = imageData.indexToWorld([
-        normalizedCentroid.x,
-        normalizedCentroid.y,
-        normalizedCentroid.z,
-      ]);
+      normalizedCentroid.world = imageData.indexToWorld(normalizedCentroid.image);
       result.set(index, normalizedCentroid);
     }
 

@@ -8,15 +8,25 @@ const { datasetToBlob } = dcmjs.data;
  *
  * @param {*} servicesManager
  */
-async function createReportAsync({ servicesManager, getReport, reportType = 'measurement' }) {
+async function createReportAsync({
+  servicesManager,
+  getReport,
+  reportType = 'measurement',
+  showLoadingModal = true,
+  throwErrors = false,
+}) {
   const { displaySetService, uiNotificationService, uiDialogService, CacheAPIService } =
     servicesManager.services;
-  const loadingDialogId = uiDialogService.create({
-    showOverlay: true,
-    isDraggable: false,
-    centralize: true,
-    content: Loading,
-  });
+  const loadingDialogId =
+    showLoadingModal &&
+    uiDialogService.create({
+      showOverlay: true,
+      isDraggable: false,
+      centralize: true,
+      content: Loading,
+    });
+
+  let displaySetInstanceUID;
 
   try {
     const naturalizedReport = await getReport();
@@ -38,28 +48,35 @@ async function createReportAsync({ servicesManager, getReport, reportType = 'mea
       displaySet = displaySetService.getMostRecentDisplaySet();
     }
 
-    const displaySetInstanceUID = displaySet.displaySetInstanceUID;
+    displaySetInstanceUID = displaySet.displaySetInstanceUID;
 
-    uiNotificationService.show({
-      title: 'Create Report',
-      message: `${reportType} saved successfully`,
-      type: 'success',
-    });
+    showLoadingModal &&
+      uiNotificationService.show({
+        title: 'Create Report',
+        message: `${reportType} saved successfully`,
+        type: 'success',
+      });
 
-    if (shouldOverWrite) {
+    reportType === 'Segmentation' &&
       CacheAPIService?.updateCachedFile(datasetToBlob(naturalizedReport), displaySet);
+    if (shouldOverWrite) {
       return;
     }
 
     return [displaySetInstanceUID];
   } catch (error) {
-    uiNotificationService.show({
-      title: 'Create Report',
-      message: error.message || `Failed to store ${reportType}`,
-      type: 'error',
-    });
+    showLoadingModal &&
+      uiNotificationService.show({
+        title: 'Create Report',
+        message: error.message || `Failed to store ${reportType}`,
+        type: 'error',
+      });
+
+    if (throwErrors) {
+      throw error;
+    }
   } finally {
-    uiDialogService.dismiss({ id: loadingDialogId });
+    showLoadingModal && uiDialogService.dismiss({ id: loadingDialogId });
   }
 }
 

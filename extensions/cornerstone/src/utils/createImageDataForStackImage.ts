@@ -1,4 +1,4 @@
-import { vec3 } from 'gl-matrix';
+import { vec3, mat3 } from 'gl-matrix';
 import { metaData, Types as csCoreTypes, cache } from '@cornerstonejs/core';
 import vtkDataArray from '@kitware/vtk.js/Common/Core/DataArray';
 import vtkImageData from '@kitware/vtk.js/Common/DataModel/ImageData';
@@ -16,11 +16,11 @@ export default function createImageDataForStackImage(imageIdReferenceMap: Map<st
   const imageMetaData = metaData.get('imagePlaneModule', image.imageId);
   const {
     imageOrientationPatient,
-    pixelSpacing,
+    pixelSpacing = [1, 1],
     imagePositionPatient,
     columns,
     rows,
-    sliceThickness,
+    sliceThickness = 1,
   } = imageMetaData;
 
   const scalarArray = vtkDataArray.newInstance({
@@ -31,7 +31,8 @@ export default function createImageDataForStackImage(imageIdReferenceMap: Map<st
 
   const imageData = vtkImageData.newInstance();
 
-  let direction, origin;
+  let direction: csCoreTypes.Mat3 = mat3.fromValues(0, 1, 0, 0, 0, -1, -1, 0, 0),
+    origin: csCoreTypes.Point3 = [0, 0, 0];
 
   if (imageOrientationPatient?.length) {
     const rowCosineVec = vec3.fromValues(
@@ -66,6 +67,8 @@ export default function createImageDataForStackImage(imageIdReferenceMap: Map<st
   const spacing = [pixelSpacing[1], pixelSpacing[0], sliceThickness] as csCoreTypes.Point3;
   const dimensions = [columns, rows, 1] as csCoreTypes.Point3;
 
+  imageData.setDirection(direction);
+  imageData.setOrigin(origin);
   imageData.setDimensions(dimensions);
   imageData.setSpacing(spacing);
   imageData.getPointData().setScalars(scalarArray);

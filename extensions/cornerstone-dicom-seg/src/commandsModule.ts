@@ -20,6 +20,7 @@ import {
   getTargetViewport,
 } from './utils/hydrationUtils';
 import generateLabelmaps2DFromImageIdMap from './utils/generateLabelmaps2DFromImageIdMap';
+import getSegmentLabel from './utils/getSegmentLabel';
 
 const { segmentation: segmentationUtils } = utilities;
 const { datasetToBlob } = dcmjs.data;
@@ -103,7 +104,7 @@ const commandsModule = ({
             toolGroupId,
             segmentIndex: 1,
             properties: {
-              label: 'Segment 1',
+              label: getSegmentLabel(segmentationService.getSegmentation(segmentationId)),
             },
           });
 
@@ -343,12 +344,13 @@ const commandsModule = ({
           extensionManager,
         });
 
-        if (promptResult.action !== 1 && promptResult.value) {
+        if (promptResult.action !== 1 && !promptResult.value) {
           return;
         }
       }
 
       const SeriesDescription = promptResult.value || label || 'Research Derived Series';
+      segmentation.label = SeriesDescription;
 
       const generatedData = actions.generateSegmentation({
         segmentationId,

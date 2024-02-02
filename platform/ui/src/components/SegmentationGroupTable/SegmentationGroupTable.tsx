@@ -9,6 +9,7 @@ import SegmentationGroup from './SegmentationGroup';
 
 const SegmentationGroupTable = ({
   segmentations,
+  savedStatusStates,
   // segmentation initial config
   segmentationConfig,
   // UI show/hide
@@ -42,6 +43,7 @@ const SegmentationGroupTable = ({
   setRenderInactiveSegmentations,
   setRenderOutline,
   addSegmentationClassName,
+  CropDisplayAreaService,
 }) => {
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [activeSegmentationId, setActiveSegmentationId] = useState(null);
@@ -113,6 +115,7 @@ const SegmentationGroupTable = ({
                 key={segmentation.id}
                 activeSegmentationId={activeSegmentationId}
                 segmentation={segmentation}
+                savedStatusState={savedStatusStates[segmentation.id]}
                 disableEditing={disableEditing}
                 showAddSegment={showAddSegment}
                 onSegmentationClick={onSegmentationClick}
@@ -131,6 +134,7 @@ const SegmentationGroupTable = ({
                 onToggleSegmentLock={onToggleSegmentLock}
                 onSegmentColorClick={onSegmentColorClick}
                 showDeleteSegment={showDeleteSegment}
+                CropDisplayAreaService={CropDisplayAreaService}
               />
             ))
           )}
@@ -156,6 +160,7 @@ SegmentationGroupTable.propTypes = {
       ),
     })
   ),
+  savedStatusStates: PropTypes.object,
   segmentationConfig: PropTypes.object.isRequired,
   disableEditing: PropTypes.bool,
   showAddSegmentation: PropTypes.bool,
@@ -183,6 +188,7 @@ SegmentationGroupTable.propTypes = {
   setRenderFill: PropTypes.func.isRequired,
   setRenderInactiveSegmentations: PropTypes.func.isRequired,
   setRenderOutline: PropTypes.func.isRequired,
+  CropDisplayAreaService: PropTypes.any,
 };
 
 SegmentationGroupTable.defaultProps = {

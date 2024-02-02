@@ -136,6 +136,17 @@ function Toolbox({ servicesManager, buttonSectionId, commandsManager, title, ...
     };
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const defaultBrushSize = params.get('defaultBrushSize');
+    const brushSizeInMM = convertPixelToMM(+defaultBrushSize, servicesManager)
+    const toolNames = ['CircularBrush', 'SphereBrush', 'CircularEraser', 'SphereEraser'];
+
+    toolNames.forEach(toolName => {
+      handleToolOptionChange(toolName, 'value', brushSizeInMM)
+    })
+  }, []);
+
   return (
     <ToolboxUI
       {...props}
@@ -147,6 +158,15 @@ function Toolbox({ servicesManager, buttonSectionId, commandsManager, title, ...
       onInteraction={onInteraction}
     />
   );
+}
+
+function convertPixelToMM(value, servicesManager) {
+  const { viewportGridService, cornerstoneViewportService } = servicesManager.services;
+  const { activeViewportId } = viewportGridService.getState();
+  const viewport = cornerstoneViewportService.getCornerstoneViewport(activeViewportId);
+  const { spacing } = viewport.getImageData();
+
+  return Math.min(value * spacing[0], value * spacing[1], value * spacing[2]);
 }
 
 export default Toolbox;
