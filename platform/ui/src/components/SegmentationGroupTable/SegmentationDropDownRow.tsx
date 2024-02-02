@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 function SegmentationDropDownRow({
   segmentation,
+  savedStatusState,
   activeSegmentationId,
   disableEditing,
   showAddSegment,
@@ -24,18 +25,6 @@ function SegmentationDropDownRow({
   if (!segmentation) {
     return null;
   }
-
-  const segmentationClickHandler = () => {
-    if (segmentation.id === activeSegmentationId) {
-      onToggleShowSegments(!showSegments);
-    } else {
-      onSegmentationClick(segmentation.id);
-
-      if (!showSegments) {
-        onToggleShowSegments(true);
-      }
-    }
-  };
 
   return (
     <div className="group mx-0.5 flex items-center">
@@ -104,20 +93,24 @@ function SegmentationDropDownRow({
             ],
           ]}
         >
-          <div className="hover:bg-secondary-dark mx-1 grid h-[28px] w-[28px]  cursor-pointer place-items-center rounded-[4px]">
+          <div className="hover:bg-secondary-dark grid h-[28px] w-[28px] cursor-pointer place-items-center rounded-[4px]">
             <Icon name="icon-more-menu"></Icon>
           </div>
         </Dropdown>
       </div>
       <div
-        className="text-aqua-pale h-[26px] w-1/2 flex-grow cursor-pointer p-1 text-[13px]"
-        onClick={segmentationClickHandler}
+        className="text-aqua-pale flex h-[26px] flex-grow cursor-pointer items-center p-1 text-[13px]"
+        onClick={() => onSegmentationClick(segmentation.id)}
       >
         {segmentation.label}
+        <Icon
+          name={`${savedStatusState || 'notifications-success'}`}
+          className="ml-1 h-3.5 w-3.5 self-center fill-current"
+        />
       </div>
       <div className="flex items-center">
         <div
-          className="hover:bg-secondary-dark ml-3 grid h-[28px]  w-[28px] cursor-pointer place-items-center rounded-[4px]"
+          className="hover:bg-secondary-dark grid h-[28px]  w-[28px] cursor-pointer place-items-center rounded-[4px]"
           onClick={() => onToggleSegmentationVisibility(segmentation.id)}
         >
           {segmentation.isVisible ? (
@@ -132,7 +125,10 @@ function SegmentationDropDownRow({
             />
           )}
         </div>
-        <div className="grid h-[28px]  w-[28px] place-items-center rounded-[4px]">
+        <div
+          className="hover:bg-secondary-dark grid h-[28px]  w-[28px] cursor-pointer place-items-center rounded-[4px]"
+          onClick={() => onToggleShowSegments(showSegments => !showSegments)}
+        >
           {showSegments ? (
             <Icon
               name="chevron-down-new"
@@ -156,6 +152,7 @@ SegmentationDropDownRow.propTypes = {
     label: PropTypes.string.isRequired,
     isVisible: PropTypes.bool.isRequired,
   }),
+  savedStatusState: PropTypes.string,
   activeSegmentationId: PropTypes.string,
   disableEditing: PropTypes.bool,
   showAddSegment: PropTypes.bool,

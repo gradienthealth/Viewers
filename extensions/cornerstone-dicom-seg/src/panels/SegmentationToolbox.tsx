@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState, useReducer } from 'react';
 import { AdvancedToolbox, InputDoubleRange, useViewportGrid } from '@ohif/ui';
 import { Types } from '@ohif/extension-cornerstone';
 import { utilities } from '@cornerstonejs/tools';
+import { EVENTS, eventTarget } from '@cornerstonejs/core';
 
 const { segmentation: segmentationUtils } = utilities;
 
@@ -105,6 +106,32 @@ function SegmentationToolbox({ servicesManager, extensionManager }) {
     [toolbarService, dispatch]
   );
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const defaultBrushSize = params.get('defaultBrushSize');
+    const toolCategories = ['Brush', 'Eraser'];
+
+    const elementEnabledHandler = evt => {
+      const setDefaultBrushSize = () => {
+        toolCategories.forEach(toolCategory => {
+          onBrushSizeChange(defaultBrushSize, toolCategory);
+        });
+
+        evt.detail.element.removeEventListener(
+          EVENTS.VOLUME_VIEWPORT_NEW_VOLUME,
+          setDefaultBrushSize
+        );
+        eventTarget.removeEventListener(EVENTS.STACK_VIEWPORT_NEW_STACK, setDefaultBrushSize);
+      };
+
+      evt.detail.element.addEventListener(EVENTS.VOLUME_VIEWPORT_NEW_VOLUME, setDefaultBrushSize);
+      eventTarget.addEventListener(EVENTS.STACK_VIEWPORT_NEW_STACK, setDefaultBrushSize);
+      eventTarget.removeEventListener(EVENTS.ELEMENT_ENABLED, setDefaultBrushSize);
+    };
+
+    eventTarget.addEventListener(EVENTS.ELEMENT_ENABLED, elementEnabledHandler);
+  }, []);
+
   /**
    * sets the tools enabled IF there are segmentations
    */
@@ -183,7 +210,11 @@ function SegmentationToolbox({ servicesManager, extensionManager }) {
       const value = Number(valueAsStringOrNumber);
 
       _getToolNamesFromCategory(toolCategory).forEach(toolName => {
-        updateBrushSize(toolName, value);
+        const convertedValue =
+          toolCategory === 'Brush' || toolCategory === 'Eraser'
+            ? convertPixelToMM(value, servicesManager)
+            : value;
+        updateBrushSize(toolName, convertedValue);
       });
 
       dispatch({
@@ -246,13 +277,13 @@ function SegmentationToolbox({ servicesManager, extensionManager }) {
           onClick: () => setToolActive(TOOL_TYPES.CIRCULAR_BRUSH),
           options: [
             {
-              name: 'Radius (mm)',
+              name: 'Radius (px)',
               id: 'brush-radius',
               type: 'range',
-              min: 0.01,
-              max: 99.5,
+              min: 0.5,
+              max: 10000,
               value: state.Brush.brushSize,
-              step: 0.01,
+              step: 0.5,
               onChange: value => onBrushSizeChange(value, 'Brush'),
             },
             {
@@ -278,13 +309,13 @@ function SegmentationToolbox({ servicesManager, extensionManager }) {
           onClick: () => setToolActive(TOOL_TYPES.CIRCULAR_ERASER),
           options: [
             {
-              name: 'Radius (mm)',
+              name: 'Radius (px)',
               type: 'range',
               id: 'eraser-radius',
-              min: 0.01,
-              max: 99.5,
+              min: 0.5,
+              max: 10000,
               value: state.Eraser.brushSize,
-              step: 0.01,
+              step: 0.5,
               onChange: value => onBrushSizeChange(value, 'Eraser'),
             },
             {
@@ -400,6 +431,15 @@ function _getToolNamesFromCategory(category) {
   }
 
   return toolNames;
+}
+
+function convertPixelToMM(value, servicesManager) {
+  const { viewportGridService, cornerstoneViewportService } = servicesManager.services;
+  const { activeViewportId } = viewportGridService.getState();
+  const viewport = cornerstoneViewportService.getCornerstoneViewport(activeViewportId);
+  const { spacing } = viewport.getImageData();
+
+  return Math.min(value * spacing[0], value * spacing[1], value * spacing[2]);
 }
 
 export default SegmentationToolbox;
