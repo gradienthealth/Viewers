@@ -98,6 +98,7 @@ export default function PanelSegmentation({
                 commandsManager.runCommand('storeSegmentation', {
                   segmentationId: segmentation.id,
                   dataSource: datasources[0],
+                  skipLabelDialog: true,
                 }),
               reportType: 'Segmentation',
               showLoadingModal: false,
