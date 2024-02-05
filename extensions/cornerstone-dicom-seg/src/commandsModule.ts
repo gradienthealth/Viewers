@@ -326,7 +326,7 @@ const commandsModule = ({
      * @returns {Object|void} Returns the naturalized report if successfully stored,
      * otherwise throws an error.
      */
-    storeSegmentation: async ({ segmentationId, dataSource }) => {
+    storeSegmentation: async ({ segmentationId, dataSource, skipLabelDialog = false }) => {
       const segmentation = segmentationService.getSegmentation(segmentationId);
 
       if (!segmentation) {
@@ -339,7 +339,7 @@ const commandsModule = ({
 
       let promptResult: { action?: number; value?: string } = {};
 
-      if (!shouldOverWrite) {
+      if (!(skipLabelDialog || shouldOverWrite)) {
         promptResult = await createReportDialogPrompt(uiDialogService, {
           extensionManager,
         });
