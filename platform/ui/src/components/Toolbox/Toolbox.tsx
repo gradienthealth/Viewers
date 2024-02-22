@@ -138,12 +138,30 @@ function Toolbox({ servicesManager, buttonSectionId, commandsManager, title, ...
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const defaultBrushSize = params.get('defaultBrushSize');
-    const brushSizeInMM = convertPixelToMM(+defaultBrushSize, servicesManager)
-    const toolNames = ['CircularBrush', 'SphereBrush', 'CircularEraser', 'SphereEraser'];
+    // Brush sizes are taken as radius, so taking half the value
+    const defaultBrushSize = (+params.get('defaultBrushSize') || 20) / 2;
+    const minBrushSize = (+params.get('minBrushSize') || 1) / 2;
+    const maxBrushSize = (+params.get('maxBrushSize') || 50) / 2;
 
+    const defaultBrushSizeInMm = convertPixelToMM(defaultBrushSize, servicesManager);
+    let minBrushSizeInMm = convertPixelToMM(minBrushSize, servicesManager);
+    let maxBrushSizeInMm = convertPixelToMM(maxBrushSize, servicesManager);
+    const highestPixelSpacing = getPixelToMmConversionFactor(servicesManager);
+    const lowestBrushRadius = highestPixelSpacing / 2;
+
+    if (minBrushSizeInMm < lowestBrushRadius) {
+      minBrushSizeInMm = lowestBrushRadius;
+    }
+    if (maxBrushSizeInMm < lowestBrushRadius) {
+      maxBrushSizeInMm = highestPixelSpacing;
+    }
+
+    const toolNames = ['CircularBrush', 'SphereBrush', 'CircularEraser', 'SphereEraser'];
     toolNames.forEach(toolName => {
-      handleToolOptionChange(toolName, 'value', brushSizeInMM)
+      handleToolOptionChange(toolName, 'value', defaultBrushSizeInMm.toFixed(2))
+      handleToolOptionChange(toolName, 'min', minBrushSizeInMm.toFixed(2))
+      handleToolOptionChange(toolName, 'max', maxBrushSizeInMm.toFixed(2))
+      handleToolOptionChange(toolName, 'step', lowestBrushRadius.toFixed(2))
     })
   }, []);
 
@@ -161,12 +179,16 @@ function Toolbox({ servicesManager, buttonSectionId, commandsManager, title, ...
 }
 
 function convertPixelToMM(value, servicesManager) {
+  const conversionFactor = getPixelToMmConversionFactor(servicesManager);
+  return value * conversionFactor;
+}
+
+function getPixelToMmConversionFactor(servicesManager) {
   const { viewportGridService, cornerstoneViewportService } = servicesManager.services;
   const { activeViewportId } = viewportGridService.getState();
   const viewport = cornerstoneViewportService.getCornerstoneViewport(activeViewportId);
   const { spacing } = viewport.getImageData();
-
-  return Math.min(value * spacing[0], value * spacing[1], value * spacing[2]);
+  return Math.max(spacing[0], spacing[1]);
 }
 
 export default Toolbox;

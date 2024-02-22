@@ -18,13 +18,13 @@ const toolbarButtons: Button[] = [
           },
           options: [
             {
-              name: 'Radius (px)',
+              name: 'Radius (mm)',
               id: 'brush-radius',
               type: 'range',
               min: 0.5,
-              max: 10000,
+              max: 25,
               step: 0.5,
-              value: 25,
+              value: 5,
               commands: {
                 commandName: 'setBrushSize',
                 commandOptions: { toolNames: ['CircularBrush', 'SphereBrush'] },
@@ -53,13 +53,13 @@ const toolbarButtons: Button[] = [
           },
           options: [
             {
-              name: 'Radius (px)',
+              name: 'Radius (mm)',
               id: 'eraser-radius',
               type: 'range',
               min: 0.5,
-              max: 10000,
+              max: 25,
               step: 0.5,
-              value: 25,
+              value: 5,
               commands: {
                 commandName: 'setBrushSize',
                 commandOptions: { toolNames: ['CircularEraser', 'SphereEraser'] },

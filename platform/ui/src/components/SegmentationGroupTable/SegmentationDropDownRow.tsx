@@ -100,13 +100,18 @@ function SegmentationDropDownRow({
         </Dropdown>
       </div>
       <div
-        className="text-aqua-pale flex h-[26px] flex-grow cursor-pointer items-center p-1 text-[13px]"
+        className="text-aqua-pale flex h-[26px] flex-grow cursor-pointer items-center overflow-x-auto overflow-y-hidden p-1 text-[13px]"
         onClick={() => onSegmentationClick(segmentation.id)}
       >
-        {segmentation.label}
+        <div
+          className="truncate"
+          title={segmentation.label}
+        >
+          {segmentation.label}
+        </div>
         <Icon
           name={`${savedStatusState || 'notifications-success'}`}
-          className="ml-1 h-3.5 w-3.5 self-center fill-current"
+          className="ml-1 h-3.5 w-3.5 shrink-0 self-center fill-current"
         />
       </div>
       <div className="flex items-center">
