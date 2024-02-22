@@ -70,6 +70,7 @@ function SegmentationToolbox({ servicesManager, extensionManager }) {
 
   const [toolsEnabled, setToolsEnabled] = useState(false);
   const [state, dispatch] = useReducer(toolboxReducer, initialState);
+  const [brushProperties, setBrushProperties] = useState({ min: 1, max: 100, step: 1 });
 
   const updateActiveTool = useCallback(() => {
     if (!viewports?.size || activeViewportId === undefined) {
@@ -108,13 +109,35 @@ function SegmentationToolbox({ servicesManager, extensionManager }) {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const defaultBrushSize = params.get('defaultBrushSize');
     const toolCategories = ['Brush', 'Eraser'];
 
     const elementEnabledHandler = evt => {
       const setDefaultBrushSize = () => {
+        // Brush sizes are taken as radius, so taking half the value
+        const defaultBrushSize = (+params.get('defaultBrushSize') || 20) / 2;
+        const minBrushSize = (+params.get('minBrushSize') || 1) / 2;
+        const maxBrushSize = (+params.get('maxBrushSize') || 50) / 2;
+
+        const defaultBrushSizeInMm = convertPixelToMM(defaultBrushSize, servicesManager);
+        let minBrushSizeInMm = convertPixelToMM(minBrushSize, servicesManager);
+        let maxBrushSizeInMm = convertPixelToMM(maxBrushSize, servicesManager);
+        const highestPixelSpacing = getPixelToMmConversionFactor(servicesManager);
+        const lowestBrushRadius = highestPixelSpacing / 2;
+
+        if (minBrushSizeInMm < lowestBrushRadius) {
+          minBrushSizeInMm = lowestBrushRadius;
+        }
+        if (maxBrushSizeInMm < lowestBrushRadius) {
+          maxBrushSizeInMm = highestPixelSpacing;
+        }
+
+        setBrushProperties({
+          min: +minBrushSizeInMm.toFixed(2),
+          max: +maxBrushSizeInMm.toFixed(2),
+          step: +lowestBrushRadius.toFixed(2),
+        });
         toolCategories.forEach(toolCategory => {
-          onBrushSizeChange(defaultBrushSize, toolCategory);
+          onBrushSizeChange(defaultBrushSizeInMm, toolCategory);
         });
 
         evt.detail.element.removeEventListener(
@@ -126,7 +149,7 @@ function SegmentationToolbox({ servicesManager, extensionManager }) {
 
       evt.detail.element.addEventListener(EVENTS.VOLUME_VIEWPORT_NEW_VOLUME, setDefaultBrushSize);
       eventTarget.addEventListener(EVENTS.STACK_VIEWPORT_NEW_STACK, setDefaultBrushSize);
-      eventTarget.removeEventListener(EVENTS.ELEMENT_ENABLED, setDefaultBrushSize);
+      eventTarget.removeEventListener(EVENTS.ELEMENT_ENABLED, elementEnabledHandler);
     };
 
     eventTarget.addEventListener(EVENTS.ELEMENT_ENABLED, elementEnabledHandler);
@@ -210,11 +233,7 @@ function SegmentationToolbox({ servicesManager, extensionManager }) {
       const value = Number(valueAsStringOrNumber);
 
       _getToolNamesFromCategory(toolCategory).forEach(toolName => {
-        const convertedValue =
-          toolCategory === 'Brush' || toolCategory === 'Eraser'
-            ? convertPixelToMM(value, servicesManager)
-            : value;
-        updateBrushSize(toolName, convertedValue);
+        updateBrushSize(toolName, value);
       });
 
       dispatch({
@@ -277,13 +296,13 @@ function SegmentationToolbox({ servicesManager, extensionManager }) {
           onClick: () => setToolActive(TOOL_TYPES.CIRCULAR_BRUSH),
           options: [
             {
-              name: 'Radius (px)',
+              name: 'Radius (mm)',
               id: 'brush-radius',
               type: 'range',
-              min: 0.5,
-              max: 10000,
+              min: brushProperties.min,
+              max: brushProperties.max,
               value: state.Brush.brushSize,
-              step: 0.5,
+              step: brushProperties.step,
               onChange: value => onBrushSizeChange(value, 'Brush'),
             },
             {
@@ -309,13 +328,13 @@ function SegmentationToolbox({ servicesManager, extensionManager }) {
           onClick: () => setToolActive(TOOL_TYPES.CIRCULAR_ERASER),
           options: [
             {
-              name: 'Radius (px)',
+              name: 'Radius (mm)',
               type: 'range',
               id: 'eraser-radius',
-              min: 0.5,
-              max: 10000,
+              min: brushProperties.min,
+              max: brushProperties.max,
               value: state.Eraser.brushSize,
-              step: 0.5,
+              step: brushProperties.step,
               onChange: value => onBrushSizeChange(value, 'Eraser'),
             },
             {
@@ -434,12 +453,16 @@ function _getToolNamesFromCategory(category) {
 }
 
 function convertPixelToMM(value, servicesManager) {
+  const conversionFactor = getPixelToMmConversionFactor(servicesManager);
+  return value * conversionFactor;
+}
+
+function getPixelToMmConversionFactor(servicesManager) {
   const { viewportGridService, cornerstoneViewportService } = servicesManager.services;
   const { activeViewportId } = viewportGridService.getState();
   const viewport = cornerstoneViewportService.getCornerstoneViewport(activeViewportId);
   const { spacing } = viewport.getImageData();
-
-  return Math.min(value * spacing[0], value * spacing[1], value * spacing[2]);
+  return Math.max(spacing[0], spacing[1]);
 }
 
 export default SegmentationToolbox;
