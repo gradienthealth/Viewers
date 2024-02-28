@@ -113,14 +113,9 @@ function SegmentationToolbox({ servicesManager, extensionManager }) {
 
     const elementEnabledHandler = evt => {
       const setDefaultBrushSize = () => {
-        // Brush sizes are taken as radius, so taking half the value
-        const defaultBrushSize = (+params.get('defaultBrushSize') || 20) / 2;
-        const minBrushSize = (+params.get('minBrushSize') || 1) / 2;
-        const maxBrushSize = (+params.get('maxBrushSize') || 50) / 2;
-
-        const defaultBrushSizeInMm = convertPixelToMM(defaultBrushSize, servicesManager);
-        let minBrushSizeInMm = convertPixelToMM(minBrushSize, servicesManager);
-        let maxBrushSizeInMm = convertPixelToMM(maxBrushSize, servicesManager);
+        const defaultBrushSizeInMm = +params.get('defaultBrushSize') || 2;
+        let minBrushSizeInMm = +params.get('minBrushSize') || 2;
+        let maxBrushSizeInMm = +params.get('maxBrushSize') || 3;
         const highestPixelSpacing = getPixelToMmConversionFactor(servicesManager);
         const lowestBrushRadius = highestPixelSpacing / 2;
 
@@ -134,7 +129,7 @@ function SegmentationToolbox({ servicesManager, extensionManager }) {
         setBrushProperties({
           min: +minBrushSizeInMm.toFixed(2),
           max: +maxBrushSizeInMm.toFixed(2),
-          step: +lowestBrushRadius.toFixed(2),
+          step: +((maxBrushSizeInMm - minBrushSizeInMm) / 100).toFixed(2),
         });
         toolCategories.forEach(toolCategory => {
           onBrushSizeChange(defaultBrushSizeInMm, toolCategory);
@@ -450,11 +445,6 @@ function _getToolNamesFromCategory(category) {
   }
 
   return toolNames;
-}
-
-function convertPixelToMM(value, servicesManager) {
-  const conversionFactor = getPixelToMmConversionFactor(servicesManager);
-  return value * conversionFactor;
 }
 
 function getPixelToMmConversionFactor(servicesManager) {
