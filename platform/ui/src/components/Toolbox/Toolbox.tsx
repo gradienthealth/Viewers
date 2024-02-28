@@ -138,14 +138,9 @@ function Toolbox({ servicesManager, buttonSectionId, commandsManager, title, ...
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    // Brush sizes are taken as radius, so taking half the value
-    const defaultBrushSize = (+params.get('defaultBrushSize') || 20) / 2;
-    const minBrushSize = (+params.get('minBrushSize') || 1) / 2;
-    const maxBrushSize = (+params.get('maxBrushSize') || 50) / 2;
-
-    const defaultBrushSizeInMm = convertPixelToMM(defaultBrushSize, servicesManager);
-    let minBrushSizeInMm = convertPixelToMM(minBrushSize, servicesManager);
-    let maxBrushSizeInMm = convertPixelToMM(maxBrushSize, servicesManager);
+    const defaultBrushSizeInMm = +params.get('defaultBrushSize') || 2;
+    let minBrushSizeInMm = +params.get('minBrushSize') || 2;
+    let maxBrushSizeInMm = +params.get('maxBrushSize') || 3;
     const highestPixelSpacing = getPixelToMmConversionFactor(servicesManager);
     const lowestBrushRadius = highestPixelSpacing / 2;
 
@@ -158,10 +153,10 @@ function Toolbox({ servicesManager, buttonSectionId, commandsManager, title, ...
 
     const toolNames = ['CircularBrush', 'SphereBrush', 'CircularEraser', 'SphereEraser'];
     toolNames.forEach(toolName => {
-      handleToolOptionChange(toolName, 'value', defaultBrushSizeInMm.toFixed(2))
-      handleToolOptionChange(toolName, 'min', minBrushSizeInMm.toFixed(2))
-      handleToolOptionChange(toolName, 'max', maxBrushSizeInMm.toFixed(2))
-      handleToolOptionChange(toolName, 'step', lowestBrushRadius.toFixed(2))
+      handleToolOptionChange(toolName, 'value', +defaultBrushSizeInMm.toFixed(2))
+      handleToolOptionChange(toolName, 'min', +minBrushSizeInMm.toFixed(2))
+      handleToolOptionChange(toolName, 'max', +maxBrushSizeInMm.toFixed(2))
+      handleToolOptionChange(toolName, 'step', +((maxBrushSizeInMm - minBrushSizeInMm) / 100).toFixed(2))
     })
   }, []);
 
@@ -176,11 +171,6 @@ function Toolbox({ servicesManager, buttonSectionId, commandsManager, title, ...
       onInteraction={onInteraction}
     />
   );
-}
-
-function convertPixelToMM(value, servicesManager) {
-  const conversionFactor = getPixelToMmConversionFactor(servicesManager);
-  return value * conversionFactor;
 }
 
 function getPixelToMmConversionFactor(servicesManager) {
