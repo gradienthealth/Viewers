@@ -137,11 +137,14 @@ function Toolbox({ servicesManager, buttonSectionId, commandsManager, title, ...
   }, []);
 
   useEffect(() => {
+    const highestPixelSpacing = getPixelToMmConversionFactor(servicesManager);
+    if (!highestPixelSpacing) { return }
+
     const params = new URLSearchParams(window.location.search);
     const defaultBrushSizeInMm = +params.get('defaultBrushSize') || 2;
     let minBrushSizeInMm = +params.get('minBrushSize') || 2;
     let maxBrushSizeInMm = +params.get('maxBrushSize') || 3;
-    const highestPixelSpacing = getPixelToMmConversionFactor(servicesManager);
+
     const lowestBrushRadius = highestPixelSpacing / 2;
 
     if (minBrushSizeInMm < lowestBrushRadius) {
@@ -177,7 +180,13 @@ function getPixelToMmConversionFactor(servicesManager) {
   const { viewportGridService, cornerstoneViewportService } = servicesManager.services;
   const { activeViewportId } = viewportGridService.getState();
   const viewport = cornerstoneViewportService.getCornerstoneViewport(activeViewportId);
-  const { spacing } = viewport.getImageData();
+  const imageData = viewport?.getImageData();
+
+  if (!imageData) {
+    return;
+  }
+
+  const { spacing } = imageData;
   return Math.max(spacing[0], spacing[1]);
 }
 
