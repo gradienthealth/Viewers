@@ -25,11 +25,11 @@ const ACTIONS = {
 
 const initialState = {
   Brush: {
-    brushSize: 15,
+    brushSize: 2,
     mode: 'CircularBrush', // Can be 'CircularBrush' or 'SphereBrush'
   },
   Eraser: {
-    brushSize: 15,
+    brushSize: 2,
     mode: 'CircularEraser', // Can be 'CircularEraser' or 'SphereEraser'
   },
   Shapes: {
@@ -70,7 +70,7 @@ function SegmentationToolbox({ servicesManager, extensionManager }) {
 
   const [toolsEnabled, setToolsEnabled] = useState(false);
   const [state, dispatch] = useReducer(toolboxReducer, initialState);
-  const [brushProperties, setBrushProperties] = useState({ min: 1, max: 100, step: 1 });
+  const [brushProperties, setBrushProperties] = useState({ min: 2, max: 3, step: 0.01 });
 
   const updateActiveTool = useCallback(() => {
     if (!viewports?.size || activeViewportId === undefined) {
@@ -107,33 +107,42 @@ function SegmentationToolbox({ servicesManager, extensionManager }) {
     [toolbarService, dispatch]
   );
 
-  useEffect(() => {
+  const setBrushSizesFromParams = () => {
     const params = new URLSearchParams(window.location.search);
     const toolCategories = ['Brush', 'Eraser'];
+    const defaultBrushSizeInMm = +params.get('defaultBrushSize') || 2;
+    let minBrushSizeInMm = +params.get('minBrushSize') || 2;
+    let maxBrushSizeInMm = +params.get('maxBrushSize') || 3;
+
+    const highestPixelSpacing = getPixelToMmConversionFactor(servicesManager);
+    const lowestBrushRadius = highestPixelSpacing / 2;
+
+    if (minBrushSizeInMm < lowestBrushRadius) {
+      minBrushSizeInMm = lowestBrushRadius;
+    }
+    if (maxBrushSizeInMm < lowestBrushRadius) {
+      maxBrushSizeInMm = highestPixelSpacing;
+    }
+
+    setBrushProperties({
+      min: +minBrushSizeInMm.toFixed(2),
+      max: +maxBrushSizeInMm.toFixed(2),
+      step: +((maxBrushSizeInMm - minBrushSizeInMm) / 100).toFixed(2),
+    });
+    toolCategories.forEach(toolCategory => {
+      onBrushSizeChange(defaultBrushSizeInMm, toolCategory);
+    });
+  };
+
+  useEffect(() => {
+    if (getPixelToMmConversionFactor(servicesManager)) {
+      setBrushSizesFromParams();
+      return;
+    }
 
     const elementEnabledHandler = evt => {
       const setDefaultBrushSize = () => {
-        const defaultBrushSizeInMm = +params.get('defaultBrushSize') || 2;
-        let minBrushSizeInMm = +params.get('minBrushSize') || 2;
-        let maxBrushSizeInMm = +params.get('maxBrushSize') || 3;
-        const highestPixelSpacing = getPixelToMmConversionFactor(servicesManager);
-        const lowestBrushRadius = highestPixelSpacing / 2;
-
-        if (minBrushSizeInMm < lowestBrushRadius) {
-          minBrushSizeInMm = lowestBrushRadius;
-        }
-        if (maxBrushSizeInMm < lowestBrushRadius) {
-          maxBrushSizeInMm = highestPixelSpacing;
-        }
-
-        setBrushProperties({
-          min: +minBrushSizeInMm.toFixed(2),
-          max: +maxBrushSizeInMm.toFixed(2),
-          step: +((maxBrushSizeInMm - minBrushSizeInMm) / 100).toFixed(2),
-        });
-        toolCategories.forEach(toolCategory => {
-          onBrushSizeChange(defaultBrushSizeInMm, toolCategory);
-        });
+        setBrushSizesFromParams();
 
         evt.detail.element.removeEventListener(
           EVENTS.VOLUME_VIEWPORT_NEW_VOLUME,
@@ -146,6 +155,12 @@ function SegmentationToolbox({ servicesManager, extensionManager }) {
       eventTarget.addEventListener(EVENTS.STACK_VIEWPORT_NEW_STACK, setDefaultBrushSize);
       eventTarget.removeEventListener(EVENTS.ELEMENT_ENABLED, elementEnabledHandler);
     };
+
+    const viewportElement = getActiveViewportElement(servicesManager, extensionManager);
+    if (viewportElement) {
+      elementEnabledHandler({ detail: { element: viewportElement } });
+      return;
+    }
 
     eventTarget.addEventListener(EVENTS.ELEMENT_ENABLED, elementEnabledHandler);
   }, []);
@@ -451,8 +466,26 @@ function getPixelToMmConversionFactor(servicesManager) {
   const { viewportGridService, cornerstoneViewportService } = servicesManager.services;
   const { activeViewportId } = viewportGridService.getState();
   const viewport = cornerstoneViewportService.getCornerstoneViewport(activeViewportId);
-  const { spacing } = viewport.getImageData();
+  const imageData = viewport?.getImageData();
+
+  if (!imageData) {
+    return;
+  }
+
+  const { spacing } = imageData;
   return Math.max(spacing[0], spacing[1]);
+}
+
+function getActiveViewportElement(servicesManager, extensionManager) {
+  const utilityModule = extensionManager.getModuleEntry(
+    '@ohif/extension-cornerstone.utilityModule.common'
+  );
+  const { getEnabledElement } = utilityModule.exports;
+  const { viewportGridService } = servicesManager.services;
+
+  const { activeViewportId } = viewportGridService.getState();
+  const { element } = getEnabledElement(activeViewportId) || {};
+  return element;
 }
 
 export default SegmentationToolbox;
