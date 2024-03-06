@@ -7,6 +7,7 @@ import callInputDialog from './callInputDialog';
 import callColorPickerDialog from './colorPickerDialog';
 import { useTranslation } from 'react-i18next';
 import getSegmentLabel from '../utils/getSegmentLabel';
+import { updateSegmentationLabels } from '../utils/updateSegmentationLabels';
 
 const savedStatusReducer = (state, action) => {
   return {
@@ -43,7 +44,9 @@ export default function PanelSegmentation({
     segmentationService.getConfiguration()
   );
 
-  const [segmentations, setSegmentations] = useState(() => segmentationService.getSegmentations());
+  const [segmentations, setSegmentations] = useState(() =>
+    updateSegmentationLabels(segmentationService.getSegmentations(), displaySetService)
+  );
   const [savedStatusStates, dispatch] = useReducer(savedStatusReducer, {});
 
   useEffect(() => {
@@ -56,7 +59,8 @@ export default function PanelSegmentation({
     [added, updated, removed].forEach(evt => {
       const { unsubscribe } = segmentationService.subscribe(evt, () => {
         const segmentations = segmentationService.getSegmentations();
-        setSegmentations(segmentations);
+        const updatedSegmentations = updateSegmentationLabels(segmentations, displaySetService);
+        setSegmentations(updatedSegmentations);
         setSegmentationConfiguration(segmentationService.getConfiguration());
       });
       subscriptions.push(unsubscribe);
