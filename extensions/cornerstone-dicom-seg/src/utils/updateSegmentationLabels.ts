@@ -1,9 +1,17 @@
 export function updateSegmentationLabels(segmentations, displaySetService) {
   return segmentations.map(segmentation => {
-    const segDisplaySet = displaySetService.getDisplaySetByUID(segmentation.displaySetInstanceUID);
-    const referencedDisplaySet = displaySetService.getDisplaySetByUID(
-      segDisplaySet.referencedDisplaySetInstanceUID
-    );
+    const displaySet = displaySetService.getDisplaySetByUID(segmentation.displaySetInstanceUID);
+
+    let referencedDisplaySet;
+    if (displaySet.Modality === 'SEG') {
+      referencedDisplaySet = displaySetService.getDisplaySetByUID(
+        displaySet.referencedDisplaySetInstanceUID
+      );
+    } else {
+      // In case of newly created segmentations, displaySetInstanceUID in the segmentation is of the referenced displaySet.
+      referencedDisplaySet = displaySet;
+    }
+
     const { ViewPosition, ImageLaterality } = referencedDisplaySet.instance;
 
     return {
