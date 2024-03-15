@@ -356,10 +356,15 @@ const commandsModule = ({
         segmentationId,
         options: {
           SeriesDescription,
-          // Use Series and SOP instancesUIDs if displaySet of the segmentation already exists.
+          // Use SeriesInstanceUID, SOPInstanceUID, SeriesNumber, Manufacturer and SeriesDate
+          // if displaySet of the segmentation already exists.
+          // Study level and patient metadata will be used automatically.
           ...(shouldOverWrite && {
             SeriesInstanceUID: displaySet.SeriesInstanceUID,
             SOPInstanceUID: displaySet.instances[0].SOPInstanceUID,
+            SeriesNumber: displaySet.SeriesNumber,
+            Manufacturer: displaySet.instances[0].Manufacturer,
+            SeriesDate: displaySet.SeriesDate,
           }),
         },
       });
