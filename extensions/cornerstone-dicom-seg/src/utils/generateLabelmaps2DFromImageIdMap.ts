@@ -19,20 +19,18 @@ const generateLabelmaps2DFromImageIdMap = imageIdReferenceMap => {
       }
     }
 
-    if (!segmentsOnLabelmap.length) {
-      segmentsOnLabelmap.push(1);
+    if (segmentsOnLabelmap.length) {
+      labelmaps2D[index] = {
+        segmentsOnLabelmap,
+        pixelData,
+        rows,
+        columns,
+      };
+
+      segmentsOnLabelmap.forEach(segmentIndex => {
+        segmentsOnLabelmap3D.add(segmentIndex);
+      });
     }
-
-    labelmaps2D[index] = {
-      segmentsOnLabelmap,
-      pixelData,
-      rows,
-      columns,
-    };
-
-    segmentsOnLabelmap.forEach(segmentIndex => {
-      segmentsOnLabelmap3D.add(segmentIndex);
-    });
   });
 
   const labelmapObj = {
