@@ -372,6 +372,9 @@ export default function PanelSegmentation({
     });
   };
 
+  const params = new URLSearchParams(window.location.search);
+  const showAddSegmentation = params.get('disableAddSegmentation') !== 'true';
+
   return (
     <>
       <div className="ohif-scrollbar flex min-h-0 flex-auto select-none flex-col justify-between overflow-auto">
@@ -380,6 +383,7 @@ export default function PanelSegmentation({
           segmentations={segmentations}
           savedStatusStates={savedStatusStates}
           disableEditing={configuration.disableEditing}
+          showAddSegmentation={showAddSegmentation}
           activeSegmentationId={selectedSegmentationId || ''}
           onSegmentationAdd={onSegmentationAdd}
           onSegmentationClick={onSegmentationClick}

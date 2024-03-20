@@ -75,10 +75,14 @@ const SegmentationGroupTable = ({
         title={t('Segmentations')}
         actionIcons={
           activeSegmentation && [
-            {
-              name: 'row-add',
-              onClick: () => onSegmentationAdd(),
-            },
+            ...(showAddSegmentation && !disableEditing
+              ? [
+                  {
+                    name: 'row-add',
+                    onClick: () => onSegmentationAdd(),
+                  },
+                ]
+              : []),
             {
               name: 'settings-bars',
               onClick: () => setIsConfigOpen(isOpen => !isOpen),
