@@ -403,6 +403,9 @@ export default function PanelSegmentation({
     configuration?.onSegmentationAdd && typeof configuration?.onSegmentationAdd === 'function'
       ? configuration?.onSegmentationAdd
       : onSegmentationAdd;
+  const params = new URLSearchParams(window.location.search);
+  const showAddSegmentation = params.get('disableAddSegmentation') !== 'true';
+
 
   return (
     <SegmentationGroupTableComponent
@@ -411,6 +414,7 @@ export default function PanelSegmentation({
       savedStatusStates={savedStatusStates}
       disableEditing={configuration.disableEditing}
       activeSegmentationId={selectedSegmentationId || ''}
+      showAddSegmentation={showAddSegmentation}
       onSegmentationAdd={onSegmentationAddWrapper}
       showAddSegment={allowAddSegment}
       onSegmentationClick={onSegmentationClick}
