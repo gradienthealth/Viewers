@@ -359,6 +359,19 @@ function commandsModule({
         ],
       });
     },
+    recordSetToolActive: ({ toolName }) => {
+      toolbarService.recordInteraction({
+        interactionType: 'tool',
+        commands: [
+          {
+            commandName: 'setToolActive',
+            commandOptions: {
+              toolName,
+            },
+          },
+        ],
+      });
+    },
     showDownloadViewportModal: () => {
       const { activeViewportId } = viewportGridService.getState();
 
@@ -652,6 +665,9 @@ function commandsModule({
     },
     setToolActive: {
       commandFn: actions.setToolActive,
+    },
+    recordSetToolActive: {
+      commandFn: actions.recordSetToolActive,
     },
     rotateViewportCW: {
       commandFn: actions.rotateViewport,

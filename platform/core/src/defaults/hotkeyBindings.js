@@ -174,14 +174,14 @@ const bindings = [
     keys: ['5'],
   },
   {
-    commandName: 'setToolActive',
+    commandName: 'recordSetToolActive',
     commandOptions: { toolName: 'CircularBrush' },
     label: 'Segmentation Brush',
     keys: ['b'],
     isEditable: true,
   },
   {
-    commandName: 'setToolActive',
+    commandName: 'recordSetToolActive',
     commandOptions: { toolName: 'CircularEraser' },
     label: 'Segmentation Eraser',
     keys: ['e'],
