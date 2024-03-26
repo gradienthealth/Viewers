@@ -357,7 +357,6 @@ const commandsModule = ({
             SOPInstanceUID: displaySet.instances[0].SOPInstanceUID,
             SeriesNumber: displaySet.SeriesNumber,
             Manufacturer: displaySet.instances[0].Manufacturer,
-            SeriesDate: displaySet.SeriesDate,
           }),
         },
       });
