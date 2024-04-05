@@ -14,7 +14,7 @@ window.config = {
   },
   oidc: [{
     authority: "https://accounts.google.com",
-    client_id: "112149084621-0693qa0gtck3f9rd08qpbpuafq29r1n5.apps.googleusercontent.com",
+    client_id: "503845864048-5h2i0kbtrq0sabl0ftq8hedgssgl2n97.apps.googleusercontent.com",
     redirect_uri: "/callback",
     response_type: "id_token token",
     scope: "email profile openid https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.metadata.readonly https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/cloudplatformprojects.readonly https://www.googleapis.com/auth/cloud-healthcare",
