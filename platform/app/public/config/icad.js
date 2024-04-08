@@ -1,5 +1,5 @@
 window.config = {
-  routerBasename: '/icad-gradienthealth/',
+  routerBasename: '/icad-gradienthealth',
   // whiteLabeling: {},
   extensions: [],
   modes: [],
@@ -28,7 +28,7 @@ window.config = {
   oidc: [
     {
       authority: 'https://accounts.google.com',
-      client_id: '503845864048-5h2i0kbtrq0sabl0ftq8hedgssgl2n97.apps.googleusercontent.com',
+      client_id: '503845864048-iueskijtmfs09vsgk08r80nbj56s0gev.apps.googleusercontent.com',
       redirect_uri: '/callback',
       response_type: 'id_token token',
       scope: [
