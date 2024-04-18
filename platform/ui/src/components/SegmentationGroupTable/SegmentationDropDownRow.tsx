@@ -1,10 +1,11 @@
-import React from 'react';
-import { Icon, Dropdown } from '../../components';
+import React, { useState } from 'react';
+import { Icon, Dropdown, ObjectVersionsList } from '../../components';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 
 function SegmentationDropDownRow({
   segmentation,
+  versions,
   savedStatusState,
   activeSegmentationId,
   disableEditing,
@@ -18,8 +19,10 @@ function SegmentationDropDownRow({
   onSegmentationDelete,
   onSegmentAdd,
   onToggleShowSegments,
+  onVersionClick,
   showSegments,
 }) {
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
   const { t } = useTranslation('SegmentationTable');
 
   if (!segmentation) {
@@ -28,6 +31,12 @@ function SegmentationDropDownRow({
 
   return (
     <div className="group mx-0.5 flex items-center">
+      <ObjectVersionsList
+        show={showVersionHistory}
+        versions={versions || []}
+        onVersionSelect={version => onVersionClick(segmentation.id, version)}
+        onClose={() => setShowVersionHistory(false)}
+      />
       <div
         onClick={e => {
           e.stopPropagation();
@@ -78,6 +87,12 @@ function SegmentationDropDownRow({
                 ]
               : []),
             ...[
+              {
+                title: t('Show Version History'),
+                onClick: () => {
+                  setShowVersionHistory(true);
+                },
+              },
               {
                 title: t('Download DICOM SEG'),
                 onClick: () => {
@@ -157,6 +172,7 @@ SegmentationDropDownRow.propTypes = {
     label: PropTypes.string.isRequired,
     isVisible: PropTypes.bool.isRequired,
   }),
+  versions: PropTypes.array,
   savedStatusState: PropTypes.string,
   activeSegmentationId: PropTypes.string,
   disableEditing: PropTypes.bool,
@@ -170,6 +186,7 @@ SegmentationDropDownRow.propTypes = {
   onSegmentationDelete: PropTypes.func,
   onSegmentAdd: PropTypes.func,
   onToggleShowSegments: PropTypes.func,
+  onVersionClick: PropTypes.func,
   showSegments: PropTypes.bool,
 };
 

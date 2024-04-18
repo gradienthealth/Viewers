@@ -6,6 +6,7 @@ import SegmentationGroupSegment from './SegmentationGroupSegment';
 
 const SegmentationGroup = ({
   segmentation,
+  versions,
   savedStatusState,
   activeSegmentationId,
   disableEditing,
@@ -24,6 +25,7 @@ const SegmentationGroup = ({
   onToggleSegmentVisibility,
   onToggleSegmentLock,
   onSegmentColorClick,
+  onVersionClick,
   showDeleteSegment,
   CropDisplayAreaService,
 }) => {
@@ -37,6 +39,7 @@ const SegmentationGroup = ({
       <div className="select-none">
         <SegmentationDropDownRow
           segmentation={segmentation}
+          versions={versions}
           savedStatusState={savedStatusState}
           activeSegmentationId={activeSegmentationId}
           disableEditing={disableEditing}
@@ -50,6 +53,7 @@ const SegmentationGroup = ({
           onSegmentAdd={onSegmentAdd}
           onToggleSegmentationVisibility={onToggleSegmentationVisibility}
           onToggleShowSegments={toggleShowSegments}
+          onVersionClick={onVersionClick}
           showSegments={showSegments}
         />
       </div>
@@ -111,6 +115,7 @@ SegmentationGroup.propTypes = {
       })
     ),
   }),
+  versions: PropTypes.array,
   savedStatusState: PropTypes.string,
   activeSegmentationId: PropTypes.string,
   disableEditing: PropTypes.bool,
@@ -130,6 +135,7 @@ SegmentationGroup.propTypes = {
   onToggleSegmentVisibility: PropTypes.func.isRequired,
   onToggleSegmentLock: PropTypes.func.isRequired,
   onSegmentColorClick: PropTypes.func.isRequired,
+  onVersionClick: PropTypes.func,
   CropDisplayAreaService: PropTypes.any,
 };
 

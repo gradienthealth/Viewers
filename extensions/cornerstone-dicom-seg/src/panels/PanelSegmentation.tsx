@@ -35,6 +35,15 @@ export default function PanelSegmentation({
     userAuthenticationService,
     CropDisplayAreaService,
   } = servicesManager.services;
+  const utilityModule = extensionManager.getModuleEntry(
+    '@gradienthealth/ohif-gradienthealth-extension.utilityModule.version'
+  );
+  const {
+    getObjectVersions,
+    confirmSEGVersionRestore,
+    restoreObjectVersion,
+    parseUrlToBucketAndFileName,
+  } = utilityModule.exports;
 
   const { t } = useTranslation('PanelSegmentation');
 
@@ -44,6 +53,7 @@ export default function PanelSegmentation({
   );
 
   const [segmentations, setSegmentations] = useState(() => segmentationService.getSegmentations());
+  const [versionsMap, setVersionsMap] = useState(new Map());
   const [savedStatusStates, dispatch] = useReducer(savedStatusReducer, {});
 
   useEffect(() => {
@@ -66,6 +76,20 @@ export default function PanelSegmentation({
       subscriptions.forEach(unsub => {
         unsub();
       });
+    };
+  }, []);
+
+  useEffect(() => {
+    updateVersions(segmentations);
+    const { unsubscribe } = segmentationService.subscribe(
+      segmentationService.EVENTS.SEGMENTATION_ADDED,
+      ({ segmentation: newSegmentation }) => {
+        updateVersions([newSegmentation]);
+      }
+    );
+
+    return () => {
+      unsubscribe();
     };
   }, []);
 
@@ -125,6 +149,7 @@ export default function PanelSegmentation({
             const savedSegmentations = Object.keys(payload).filter(
               id => payload[id] === SAVED_STATUS_ICON.SAVED
             );
+            updateVersions(changedSegmentations);
             changedSegmentations = changedSegmentations.filter(
               cs => !savedSegmentations.includes(cs.id)
             );
@@ -346,6 +371,7 @@ export default function PanelSegmentation({
       });
 
       dispatch({ payload: { [segmentationId]: SAVED_STATUS_ICON.SAVED } });
+      updateVersions([segmentations.find(segmentation => segmentation.id === segmentationId)]);
     } catch (error) {
       console.warn(error.message);
       dispatch({ payload: { [segmentationId]: SAVED_STATUS_ICON.ERROR } });
@@ -372,6 +398,91 @@ export default function PanelSegmentation({
     });
   };
 
+  const onVersionClick = (segmentationId, version) => {
+    setSegmentationActive(segmentationId);
+
+    const headers = userAuthenticationService.getAuthorizationHeader();
+    const displaySet = displaySetService.getDisplaySetByUID(segmentationId);
+    const referencedDisplaySetInstanceUID = displaySet.referencedDisplaySetInstanceUID;
+    const referencedDisplaySet = displaySetService.getDisplaySetByUID(
+      referencedDisplaySetInstanceUID
+    );
+    const { activeViewportId } = viewportGridService.getState();
+
+    const url = new URL(displaySet.instances[0].url);
+    url.searchParams.set('generation', version.generation);
+    const newUrl = url.toString();
+    const { bucket, fileName } = parseUrlToBucketAndFileName(newUrl);
+
+    displaySet.instances[0].url = displaySet.instance.url = newUrl;
+    displaySet.instance.imageId = newUrl;
+    displaySet.instance.getImageId = () => newUrl;
+
+    displaySet.isLoaded = false;
+
+    segmentationService.remove(segmentationId);
+
+    displaySet
+      .load({ headers: headers })
+      .then(() => {
+        const toolGroupIds = getToolGroupIds(segmentationId);
+        const promises = toolGroupIds.map(toolGroupId =>
+          segmentationService.addSegmentationRepresentationToToolGroup(
+            toolGroupId,
+            segmentationId,
+            true
+          )
+        );
+        return Promise.all(promises);
+      })
+      .then(async () => {
+        referencedDisplaySet.needsRerendering = true;
+        viewportGridService.setDisplaySetsForViewport({
+          viewportId: activeViewportId,
+          displaySetInstanceUIDs: [referencedDisplaySetInstanceUID],
+        });
+
+        return confirmSEGVersionRestore(activeViewportId, servicesManager);
+      })
+      .then(status => {
+        if (status) {
+          restoreObjectVersion(bucket, fileName, version.generation, headers).then(() =>
+            updateVersions([segmentations.find(segmentation => segmentation.id === segmentationId)])
+          );
+        }
+      })
+      .catch(error => console.warn(error));
+  };
+
+  const updateVersions = updatedSegmentations => {
+    const headers = userAuthenticationService.getAuthorizationHeader();
+    const newVersionsMap = new Map();
+
+    const promises = updatedSegmentations.map(async segmentation => {
+      const displaySet = displaySetService.getDisplaySetByUID(segmentation.id);
+      if (displaySet) {
+        const url = new URL(displaySet.instances[0].url);
+        url.searchParams.delete('generation');
+        const { bucket, fileName } = parseUrlToBucketAndFileName(url.toString());
+        return getObjectVersions(bucket, fileName, headers).then(versions => ({
+          id: segmentation.id,
+          versions,
+        }));
+      }
+    });
+
+    Promise.all(promises).then(results => {
+      results.forEach(result => {
+        if (result) {
+          newVersionsMap.set(result.id, result.versions);
+        }
+      });
+      setVersionsMap(
+        prevState => new Map([...Array.from(prevState), ...Array.from(newVersionsMap)])
+      );
+    });
+  };
+
   const params = new URLSearchParams(window.location.search);
   const showAddSegmentation = params.get('disableAddSegmentation') !== 'true';
 
@@ -381,6 +492,7 @@ export default function PanelSegmentation({
         <SegmentationGroupTable
           title={t('Segmentations')}
           segmentations={segmentations}
+          versionsMap={versionsMap}
           savedStatusStates={savedStatusStates}
           disableEditing={configuration.disableEditing}
           showAddSegmentation={showAddSegmentation}
@@ -400,6 +512,7 @@ export default function PanelSegmentation({
           onToggleSegmentVisibility={onToggleSegmentVisibility}
           onToggleSegmentLock={onToggleSegmentLock}
           onToggleSegmentationVisibility={onToggleSegmentationVisibility}
+          onVersionClick={onVersionClick}
           showDeleteSegment={true}
           segmentationConfig={{ initialConfig: segmentationConfiguration }}
           setRenderOutline={value =>
