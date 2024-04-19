@@ -21,6 +21,7 @@ function SegmentationDropDownRow({
   onToggleShowSegments,
   onVersionClick,
   showSegments,
+  CacheAPIService,
 }) {
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const { t } = useTranslation('SegmentationTable');
@@ -28,6 +29,15 @@ function SegmentationDropDownRow({
   if (!segmentation) {
     return null;
   }
+
+  const cacheVersions = () => {
+    const versionUrls =
+      versions?.map(version => {
+        return `dicomweb:https://storage.googleapis.com/${version.bucket}/${version.name}?generation=${version.generation}`;
+      }) || [];
+
+    CacheAPIService.cacheFiles(versionUrls);
+  };
 
   return (
     <div className="group mx-0.5 flex items-center">
@@ -90,6 +100,8 @@ function SegmentationDropDownRow({
               {
                 title: t('Show Version History'),
                 onClick: () => {
+                  cacheVersions();
+                  onSegmentationClick(segmentation.id);
                   setShowVersionHistory(true);
                 },
               },
@@ -188,6 +200,7 @@ SegmentationDropDownRow.propTypes = {
   onToggleShowSegments: PropTypes.func,
   onVersionClick: PropTypes.func,
   showSegments: PropTypes.bool,
+  CacheAPIService: PropTypes.any,
 };
 
 SegmentationDropDownRow.defaultProps = {

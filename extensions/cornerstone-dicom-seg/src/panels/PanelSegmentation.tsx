@@ -1,5 +1,5 @@
 import { createReportAsync } from '@ohif/extension-default';
-import React, { useEffect, useState, useCallback, useReducer } from 'react';
+import React, { useEffect, useState, useCallback, useReducer, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { SegmentationGroupTable, LegacyButtonGroup, LegacyButton } from '@ohif/ui';
 
@@ -33,7 +33,8 @@ export default function PanelSegmentation({
     uiDialogService,
     displaySetService,
     userAuthenticationService,
-    CropDisplayAreaService,
+    CacheAPIService,
+    uiViewportDialogService,
   } = servicesManager.services;
   const utilityModule = extensionManager.getModuleEntry(
     '@gradienthealth/ohif-gradienthealth-extension.utilityModule.version'
@@ -55,6 +56,7 @@ export default function PanelSegmentation({
   const [segmentations, setSegmentations] = useState(() => segmentationService.getSegmentations());
   const [versionsMap, setVersionsMap] = useState(new Map());
   const [savedStatusStates, dispatch] = useReducer(savedStatusReducer, {});
+  const componentWillUnMount = useRef(false);
 
   useEffect(() => {
     // ~~ Subscription
@@ -163,6 +165,30 @@ export default function PanelSegmentation({
     };
   }, []);
 
+  useEffect(() => {
+    return () => {
+      componentWillUnMount.current = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const loadActiveSegLiveVersion = () => {
+      const activeSegmentation = segmentations?.find(segmentation => segmentation.isActive);
+      if (activeSegmentation) {
+        const liveVersion = versionsMap
+          .get(activeSegmentation.id)
+          ?.find(version => !version.timeDeleted);
+        liveVersion && onVersionClick(activeSegmentation.id, liveVersion);
+      }
+    };
+
+    return () => {
+      if (componentWillUnMount.current) {
+        loadActiveSegLiveVersion();
+      }
+    };
+  }, [segmentations, versionsMap]);
+
   const setSegmentationActive = segmentationId => {
     setReferencedDisplaySet(segmentationId);
 
@@ -178,6 +204,14 @@ export default function PanelSegmentation({
   // Set referenced displaySet of the segmentation to the viewport
   // if it is not displayed in any of the viewports.
   const setReferencedDisplaySet = segmentationId => {
+    const activeSegmentation = segmentations.find(segmentation => segmentation.isActive);
+    if (activeSegmentation.id !== segmentationId) {
+      const liveVersion = versionsMap
+        .get(activeSegmentation.id)
+        ?.find(version => !version.timeDeleted);
+      liveVersion && onVersionClick(activeSegmentation.id, liveVersion);
+    }
+
     const segDisplayset = displaySetService.getDisplaySetByUID(segmentationId);
     if (!segDisplayset) {
       return;
@@ -399,8 +433,6 @@ export default function PanelSegmentation({
   };
 
   const onVersionClick = (segmentationId, version) => {
-    setSegmentationActive(segmentationId);
-
     const headers = userAuthenticationService.getAuthorizationHeader();
     const displaySet = displaySetService.getDisplaySetByUID(segmentationId);
     const referencedDisplaySetInstanceUID = displaySet.referencedDisplaySetInstanceUID;
@@ -410,22 +442,29 @@ export default function PanelSegmentation({
     const { activeViewportId } = viewportGridService.getState();
 
     const url = new URL(displaySet.instances[0].url);
+
+    if (url.searchParams.get('generation') === version.generation) {
+      return;
+    }
+
     url.searchParams.set('generation', version.generation);
     const newUrl = url.toString();
     const { bucket, fileName } = parseUrlToBucketAndFileName(newUrl);
+    const imageIdToFileUriMap = CacheAPIService.getImageIdToFileUriMap();
+    const imageId = imageIdToFileUriMap.get(newUrl) || newUrl;
 
     displaySet.instances[0].url = displaySet.instance.url = newUrl;
-    displaySet.instance.imageId = newUrl;
-    displaySet.instance.getImageId = () => newUrl;
+    displaySet.instance.imageId = imageId;
+    displaySet.instance.getImageId = () => imageId;
 
+    const liveVersion = versionsMap.get(segmentationId).find(version => !version.timeDeleted);
     displaySet.isLoaded = false;
-
+    const toolGroupIds = getToolGroupIds(segmentationId);
     segmentationService.remove(segmentationId);
 
     displaySet
       .load({ headers: headers })
       .then(() => {
-        const toolGroupIds = getToolGroupIds(segmentationId);
         const promises = toolGroupIds.map(toolGroupId =>
           segmentationService.addSegmentationRepresentationToToolGroup(
             toolGroupId,
@@ -442,13 +481,26 @@ export default function PanelSegmentation({
           displaySetInstanceUIDs: [referencedDisplaySetInstanceUID],
         });
 
+        if (liveVersion.generation === version.generation) {
+          return;
+        }
+
         return confirmSEGVersionRestore(activeViewportId, servicesManager);
       })
       .then(status => {
-        if (status) {
-          restoreObjectVersion(bucket, fileName, version.generation, headers).then(() =>
-            updateVersions([segmentations.find(segmentation => segmentation.id === segmentationId)])
-          );
+        switch (status) {
+          case 1:
+            restoreObjectVersion(bucket, fileName, version.generation, headers).then(() =>
+              updateVersions([
+                segmentations.find(segmentation => segmentation.id === segmentationId),
+              ])
+            );
+            break;
+          case 0:
+            onVersionClick(segmentationId, liveVersion);
+            break;
+          default:
+            uiViewportDialogService.hide(); // This case is when we are load live version.
         }
       })
       .catch(error => console.warn(error));
@@ -540,7 +592,7 @@ export default function PanelSegmentation({
           setFillAlphaInactive={value =>
             _setSegmentationConfiguration(selectedSegmentationId, 'fillAlphaInactive', value)
           }
-          CropDisplayAreaService={CropDisplayAreaService}
+          servicesManager={servicesManager}
         />
       </div>
     </>

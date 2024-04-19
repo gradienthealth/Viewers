@@ -45,7 +45,7 @@ const SegmentationGroupTable = ({
   setRenderFill,
   setRenderInactiveSegmentations,
   setRenderOutline,
-  CropDisplayAreaService,
+  servicesManager,
 }) => {
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [activeSegmentationId, setActiveSegmentationId] = useState(null);
@@ -138,7 +138,7 @@ const SegmentationGroupTable = ({
                 onSegmentColorClick={onSegmentColorClick}
                 onVersionClick={onVersionClick}
                 showDeleteSegment={showDeleteSegment}
-                CropDisplayAreaService={CropDisplayAreaService}
+                servicesManager={servicesManager}
               />
             ))
           )}
@@ -194,7 +194,7 @@ SegmentationGroupTable.propTypes = {
   setRenderFill: PropTypes.func.isRequired,
   setRenderInactiveSegmentations: PropTypes.func.isRequired,
   setRenderOutline: PropTypes.func.isRequired,
-  CropDisplayAreaService: PropTypes.any,
+  servicesManager: PropTypes.any,
 };
 
 SegmentationGroupTable.defaultProps = {

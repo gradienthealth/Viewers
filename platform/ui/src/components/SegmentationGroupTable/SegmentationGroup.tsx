@@ -27,8 +27,10 @@ const SegmentationGroup = ({
   onSegmentColorClick,
   onVersionClick,
   showDeleteSegment,
-  CropDisplayAreaService,
+  servicesManager,
 }) => {
+  const { CacheAPIService, CropDisplayAreaService } = servicesManager.services;
+
   const [showSegments, toggleShowSegments] = useState(true);
 
   return (
@@ -55,6 +57,7 @@ const SegmentationGroup = ({
           onToggleShowSegments={toggleShowSegments}
           onVersionClick={onVersionClick}
           showSegments={showSegments}
+          CacheAPIService={CacheAPIService}
         />
       </div>
       {showSegments && (
@@ -136,7 +139,7 @@ SegmentationGroup.propTypes = {
   onToggleSegmentLock: PropTypes.func.isRequired,
   onSegmentColorClick: PropTypes.func.isRequired,
   onVersionClick: PropTypes.func,
-  CropDisplayAreaService: PropTypes.any,
+  servicesManager: PropTypes.any,
 };
 
 export default SegmentationGroup;
