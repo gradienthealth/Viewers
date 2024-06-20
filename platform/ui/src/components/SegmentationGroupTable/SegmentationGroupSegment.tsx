@@ -14,6 +14,7 @@ const SegmentItem = ({
   showDelete,
   disableEditing,
   isLocked = false,
+  onFocusClick,
   onClick,
   onEdit,
   onDelete,
@@ -23,12 +24,6 @@ const SegmentItem = ({
   CropDisplayAreaService,
 }) => {
   const [isNumberBoxHovering, setIsNumberBoxHovering] = useState(false);
-
-  const onFocusClick = (segmentationId, segmentIndex) => {
-    CropDisplayAreaService.focusToSegment(segmentationId, segmentIndex).then(() =>
-      onClick(segmentationId, segmentIndex)
-    );
-  };
 
   const cssColor = `rgb(${color[0]},${color[1]},${color[2]})`;
 
@@ -183,7 +178,7 @@ const HoveringIcons = ({
 
   return (
     <div className="flex items-center">
-      {createIcon('tool-zoom', onFocusClick)}
+      {onFocusClick && createIcon('tool-zoom', onFocusClick)}
       {!disableEditing && createIcon('row-edit', onEdit)}
       {!disableEditing &&
         createIcon(
@@ -210,6 +205,7 @@ SegmentItem.propTypes = {
   isActive: PropTypes.bool.isRequired,
   isVisible: PropTypes.bool.isRequired,
   isLocked: PropTypes.bool,
+  onFocusClick: PropTypes.func,
   onClick: PropTypes.func.isRequired,
   onEdit: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,

@@ -82,6 +82,20 @@ function isNMReconstructable(multiFrameInstance) {
   return imageSubType === 'RECON TOMO' || imageSubType === 'RECON GATED TOMO';
 }
 
+function hasUniquePositions(multiFrameInstance) {
+  const { PerFrameFunctionalGroupsSequence = [] } = multiFrameInstance;
+
+  const uniqueImagePositionPatients = new Set();
+
+  for (let frame = 0; frame < PerFrameFunctionalGroupsSequence.length; frame++) {
+    const perFrameSequence = PerFrameFunctionalGroupsSequence[frame];
+    const imagePositionPatient = perFrameSequence.PlanePositionSequence?.ImagePositionPatient;
+    uniqueImagePositionPatients.add(imagePositionPatient?.toString());
+  }
+
+  return uniqueImagePositionPatients.size === multiFrameInstance.NumberOfFrames;
+}
+
 function processMultiframe(multiFrameInstance) {
   // If we don't have the PixelMeasuresSequence, then the pixel spacing and
   // slice thickness isn't specified or is changing and we can't reconstruct
@@ -97,6 +111,11 @@ function processMultiframe(multiFrameInstance) {
 
   if (!hasPosition(multiFrameInstance)) {
     console.log('No image position information, not reconstructable');
+    return { value: false };
+  }
+
+  if (!hasUniquePositions(multiFrameInstance)) {
+    console.log('Positions of all the frames are not unique, not reconstructable');
     return { value: false };
   }
 

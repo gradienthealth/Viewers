@@ -201,6 +201,12 @@ export default function PanelSegmentation({
     segmentationService.addSegment(segmentationId, { properties: { label } });
   };
 
+  const onSegmentFocusClick = (segmentationId, segmentIndex) => {
+    setSegmentationActive(segmentationId);
+    segmentationService.setActiveSegment(segmentationId, segmentIndex);
+    CropDisplayAreaService.focusToSegment(segmentationId, segmentIndex);
+  };
+
   const onSegmentClick = (segmentationId, segmentIndex) => {
     setReferencedDisplaySet(segmentationId);
     segmentationService.setActiveSegment(segmentationId, segmentIndex);
@@ -392,6 +398,7 @@ export default function PanelSegmentation({
           onSegmentationDownloadRTSS={onSegmentationDownloadRTSS}
           storeSegmentation={storeSegmentation}
           onSegmentationEdit={onSegmentationEdit}
+          onSegmentFocusClick={onSegmentFocusClick}
           onSegmentClick={onSegmentClick}
           onSegmentEdit={onSegmentEdit}
           onSegmentAdd={onSegmentAdd}

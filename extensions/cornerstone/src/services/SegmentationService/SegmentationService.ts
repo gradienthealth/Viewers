@@ -1,6 +1,6 @@
 import cloneDeep from 'lodash.clonedeep';
 
-import { Types as OhifTypes, ServicesManager, PubSubService } from '@ohif/core';
+import { Types as OhifTypes, ServicesManager, PubSubService, utils } from '@ohif/core';
 import {
   cache,
   Enums as csEnums,
@@ -584,9 +584,7 @@ class SegmentationService extends PubSubService {
     } else {
       const getSegImageId = (imageId: string): string => `segimage:${segmentationId}:${imageId}`;
 
-      const referencedImageIds = referencedDisplaySet.instances.reduce((imageIds, instance) => {
-        return [...imageIds, instance.imageId];
-      }, []);
+      const referencedImageIds = utils.getImageIdsFromInstances(referencedDisplaySet.instances);
       const imageIdReferenceMap = new Map();
       const segImageIds: string[] = [];
 
@@ -612,7 +610,7 @@ class SegmentationService extends PubSubService {
 
       const bytes = new Uint8Array(labelmapBufferArray[0]);
       const singleSlicePixelSize = rows * columns;
-      for (let i = 0; i < referencedDisplaySet.instances.length; i++) {
+      for (let i = 0; i < segImageIds.length; i++) {
         const singleSlicePixelData = new Uint8Array(
           bytes.slice(i * singleSlicePixelSize, (i + 1) * singleSlicePixelSize).buffer
         );
@@ -1048,6 +1046,14 @@ class SegmentationService extends PubSubService {
       const getSegImageId = (imageId: string): string => `segimage:${segmentationId}:${imageId}`;
 
       const referencedImageIds = displaySet.instances.reduce((imageIds, instance) => {
+        if (instance.NumberOfFrames > 1) {
+          const frameImageIds = [];
+          for (let frame = 1; frame <= instance.NumberOfFrames; frame++) {
+            frameImageIds.push(`${instance.imageId}&frame=${frame}`);
+          }
+
+          return [...imageIds, ...frameImageIds];
+        }
         return [...imageIds, instance.imageId];
       }, []);
 

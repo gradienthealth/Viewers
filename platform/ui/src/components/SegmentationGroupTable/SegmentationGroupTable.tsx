@@ -26,6 +26,7 @@ const SegmentationGroupTable = ({
   onSegmentationDownloadRTSS,
   storeSegmentation,
   // segment handlers
+  onSegmentFocusClick,
   onSegmentClick,
   onSegmentAdd,
   onSegmentDelete,
@@ -126,6 +127,7 @@ const SegmentationGroupTable = ({
                 storeSegmentation={storeSegmentation}
                 onSegmentAdd={onSegmentAdd}
                 onToggleSegmentationVisibility={onToggleSegmentationVisibility}
+                onSegmentFocusClick={onSegmentFocusClick}
                 onSegmentClick={onSegmentClick}
                 onSegmentDelete={onSegmentDelete}
                 onSegmentEdit={onSegmentEdit}
@@ -172,6 +174,7 @@ SegmentationGroupTable.propTypes = {
   onSegmentationDownload: PropTypes.func.isRequired,
   onSegmentationDownloadRTSS: PropTypes.func.isRequired,
   storeSegmentation: PropTypes.func.isRequired,
+  onSegmentFocusClick: PropTypes.func,
   onSegmentClick: PropTypes.func.isRequired,
   onSegmentAdd: PropTypes.func.isRequired,
   onSegmentDelete: PropTypes.func.isRequired,
