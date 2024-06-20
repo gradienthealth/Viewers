@@ -1,13 +1,12 @@
 import { cache } from '@cornerstonejs/core';
 
-const generateLabelmaps2DFromImageIdMap = imageIdReferenceMap => {
+const generateLabelmaps2DFromImageIdMap = (imageIdReferenceMap: Map<string, string>) => {
   const labelmaps2D = [],
     referencedImages = [],
     segmentsOnLabelmap3D = new Set();
-  Array.from(imageIdReferenceMap.entries()).forEach((entry, index) => {
-    referencedImages.push(cache.getImage(entry[0]));
-
-    const segmentationImage = cache.getImage(entry[1]);
+  Array.from(imageIdReferenceMap.values()).forEach((segImageId, index) => {
+    const segmentationImage = cache.getImage(segImageId);
+    referencedImages.push(segmentationImage);
     const { rows, columns } = segmentationImage;
     const pixelData = segmentationImage.getPixelData();
     const segmentsOnLabelmap = [];

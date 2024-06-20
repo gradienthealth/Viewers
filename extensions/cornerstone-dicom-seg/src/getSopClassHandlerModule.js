@@ -157,7 +157,7 @@ async function _loadSegments({ extensionManager, servicesManager, segDisplaySet,
     const cachedReferencedVolume = cache.getVolume(segDisplaySet.referencedVolumeId);
     imageIds = cachedReferencedVolume.imageIds || cachedReferencedVolume._imageIds;
   } else {
-    imageIds = referencedDisplaySet.instances.map(instance => instance.imageId);
+    imageIds = utils.getImageIdsFromInstances(referencedDisplaySet.instances);
   }
 
   // Todo: what should be defaults here

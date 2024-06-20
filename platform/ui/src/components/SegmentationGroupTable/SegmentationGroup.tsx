@@ -18,6 +18,7 @@ const SegmentationGroup = ({
   storeSegmentation,
   onSegmentAdd,
   onToggleSegmentationVisibility,
+  onSegmentFocusClick,
   onSegmentClick,
   onSegmentDelete,
   onSegmentEdit,
@@ -78,6 +79,7 @@ const SegmentationGroup = ({
                   disableEditing={disableEditing}
                   isLocked={isLocked}
                   isVisible={isVisible}
+                  onFocusClick={onSegmentFocusClick}
                   onClick={onSegmentClick}
                   onEdit={onSegmentEdit}
                   onDelete={onSegmentDelete}
@@ -122,6 +124,7 @@ SegmentationGroup.propTypes = {
   onSegmentationDownload: PropTypes.func.isRequired,
   onSegmentationDownloadRTSS: PropTypes.func.isRequired,
   storeSegmentation: PropTypes.func.isRequired,
+  onSegmentFocusClick: PropTypes.func,
   onSegmentClick: PropTypes.func.isRequired,
   onSegmentAdd: PropTypes.func.isRequired,
   onSegmentDelete: PropTypes.func.isRequired,
