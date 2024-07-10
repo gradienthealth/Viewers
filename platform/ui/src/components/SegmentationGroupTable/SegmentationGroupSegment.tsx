@@ -83,7 +83,7 @@ const SegmentItem = ({
             width: 'calc(100% - 28px)',
           }}
         >
-          <div className="bg-primary-dark flex h-full flex-grow items-center">
+          <div className="flex h-full flex-grow items-center bg-black">
             <div className="pl-2 pr-1.5">
               <div
                 className={classnames('h-[8px] w-[8px] grow-0 rounded-full', {
@@ -211,7 +211,7 @@ const HoveringIcons = ({
 
   return (
     <div className="flex items-center">
-      {createIcon('tool-zoom', onFocusClick)}
+      {createIcon('icon-tool-loupe', onFocusClick)}
       {!disableEditing && createIcon('row-edit', onEdit)}
       {!disableEditing &&
         createIcon(

@@ -28,7 +28,7 @@ function SegmentationDropDownRow({
   }
 
   return (
-    <div className="group mx-0.5 mt-[8px] flex items-center pb-[10px]">
+    <div className="group mx-0.5 mt-[8px] flex items-center pb-[10px] h-5">
       <div
         onClick={e => {
           e.stopPropagation();
@@ -130,7 +130,7 @@ function SegmentationDropDownRow({
           />
         </Tooltip>
         <div
-          className="hover:bg-secondary-dark ml-3 grid h-[28px] w-[28px] cursor-pointer place-items-center rounded-[4px]"
+          className="hover:bg-secondary-dark grid h-[28px] w-[28px] cursor-pointer place-items-center rounded-[4px]"
           onClick={() => onToggleSegmentationVisibility(segmentation.id)}
         >
           {segmentation.isVisible ? (

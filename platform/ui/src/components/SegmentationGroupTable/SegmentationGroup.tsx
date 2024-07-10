@@ -33,7 +33,7 @@ const SegmentationGroup = ({
   return (
     <div
       key={segmentation.id}
-      className={`rounded p-1 ${segmentation.id === activeSegmentationId && 'bg-secondary-main'}`}
+      className={`rounded p-1 ${segmentation.id === activeSegmentationId ? 'bg-secondary-main' : ''}`}
     >
       <div className="select-none">
         <SegmentationDropDownRow
@@ -56,7 +56,7 @@ const SegmentationGroup = ({
         />
       </div>
       {showSegments && (
-        <div className="mt-1.5 flex min-h-0 flex-col">
+        <div className="flex min-h-0 flex-col">
           {segmentation?.segments?.map(segment => {
             if (!segment) {
               return null;
@@ -118,7 +118,7 @@ SegmentationGroup.propTypes = {
   disableEditing: PropTypes.bool,
   showAddSegment: PropTypes.bool,
   showDeleteSegment: PropTypes.bool,
-  addSegmentationClassName: PropTypes.bool,
+  addSegmentationClassName: PropTypes.string,
   onSegmentationClick: PropTypes.func,
   onSegmentationEdit: PropTypes.func.isRequired,
   onSegmentationDelete: PropTypes.func.isRequired,
