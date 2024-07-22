@@ -1,4 +1,4 @@
-import { Enums, cache } from '@cornerstonejs/core';
+import { Enums, cache, eventTarget } from '@cornerstonejs/core';
 
 /**
  * Updates the viewports in preparation for rendering segmentations.
@@ -25,8 +25,12 @@ async function updateViewportsForSegmentationRendering({
   servicesManager: any;
   referencedDisplaySetInstanceUID?: string;
 }) {
-  const { cornerstoneViewportService, segmentationService, viewportGridService } =
-    servicesManager.services;
+  const {
+    cornerstoneViewportService,
+    segmentationService,
+    viewportGridService,
+    displaySetService,
+  } = servicesManager.services;
 
   const viewport = getTargetViewport({ viewportId, viewportGridService });
   const targetViewportId = viewport.viewportOptions.viewportId;
@@ -42,7 +46,7 @@ async function updateViewportsForSegmentationRendering({
 
   // create Segmentation callback which needs to be waited until
   // the volume is created (if coming from stack)
-  const createSegmentationForVolume = async () => {
+  const createSegmentation = async () => {
     const segmentationId = await loadFn();
     segmentationService.hydrateSegmentation(segmentationId);
   };
@@ -53,10 +57,14 @@ async function updateViewportsForSegmentationRendering({
     volumeId.includes(referencedDisplaySetInstanceUID)
   );
 
+  const referencedDisplaySet = displaySetService.getDisplaySetByUID(
+    referencedDisplaySetInstanceUID
+  );
+
   updatedViewports.forEach(async viewport => {
     viewport.viewportOptions = {
       ...viewport.viewportOptions,
-      viewportType: 'volume',
+      viewportType: referencedDisplaySet.isReconstructable ? 'volume' : 'stack',
       needsRerendering: true,
     };
     const viewportId = viewport.viewportId;
@@ -64,14 +72,23 @@ async function updateViewportsForSegmentationRendering({
     const csViewport = cornerstoneViewportService.getCornerstoneViewport(viewportId);
     const prevCamera = csViewport.getCamera();
 
-    // only run the createSegmentationForVolume for the targetViewportId
+    // only run the createSegmentation for the targetViewportId when volume cache is available
     // since the rest will get handled by cornerstoneViewportService
     if (volumeExists && viewportId === targetViewportId) {
-      await createSegmentationForVolume();
+      await createSegmentation();
       return;
     }
+    // TODO: Read from _imageCache and create segmentation when applicable
 
-    const createNewSegmentationWhenVolumeMounts = async evt => {
+    const newViewportEvent = referencedDisplaySet.isReconstructable
+      ? Enums.Events.VOLUME_VIEWPORT_NEW_VOLUME
+      : Enums.Events.STACK_VIEWPORT_NEW_STACK;
+
+    const eventTriggerer = referencedDisplaySet.isReconstructable
+      ? csViewport.element
+      : eventTarget;
+
+    const createNewSegmentationOnNewViewport = async evt => {
       const isTheActiveViewportVolumeMounted = evt.detail.volumeActors?.find(ac =>
         ac.uid.includes(referencedDisplaySetInstanceUID)
       );
@@ -82,25 +99,19 @@ async function updateViewportsForSegmentationRendering({
       const volumeViewport = cornerstoneViewportService.getCornerstoneViewport(viewportId);
       volumeViewport.setCamera(prevCamera);
 
-      volumeViewport.element.removeEventListener(
-        Enums.Events.VOLUME_VIEWPORT_NEW_VOLUME,
-        createNewSegmentationWhenVolumeMounts
-      );
+      eventTriggerer.removeEventListener(newViewportEvent, createNewSegmentationOnNewViewport);
 
-      if (!isTheActiveViewportVolumeMounted) {
+      if (referencedDisplaySet.isReconstructable && !isTheActiveViewportVolumeMounted) {
         // it means it is one of those other updated viewports so just update the camera
         return;
       }
 
       if (viewportId === targetViewportId) {
-        await createSegmentationForVolume();
+        await createSegmentation();
       }
     };
 
-    csViewport.element.addEventListener(
-      Enums.Events.VOLUME_VIEWPORT_NEW_VOLUME,
-      createNewSegmentationWhenVolumeMounts
-    );
+    eventTriggerer.addEventListener(newViewportEvent, createNewSegmentationOnNewViewport);
   });
 
   // Set the displaySets for the viewports that require to be updated
@@ -175,7 +186,7 @@ function getUpdatedViewportsForSegmentation({
         viewportId,
         displaySetInstanceUIDs: viewport.displaySetInstanceUIDs,
         viewportOptions: {
-          viewportType: 'volume',
+          viewportType: viewport.viewportType,
           needsRerendering: true,
         },
       });

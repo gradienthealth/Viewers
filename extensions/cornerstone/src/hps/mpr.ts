@@ -10,7 +10,7 @@ export const mpr: Types.HangingProtocol.Protocol = {
   modifiedDate: '2023-08-15',
   availableTo: {},
   editableBy: {},
-  // Unknown number of priors referenced - so just match any study
+  // Unknown number of priors referenced - so just match any study.
   numberOfPriorsReferenced: 0,
   protocolMatchingRules: [],
   imageLoadStrategy: 'nth',

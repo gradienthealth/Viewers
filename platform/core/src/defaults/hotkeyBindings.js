@@ -173,6 +173,20 @@ const bindings = [
     label: 'W/L Preset 5',
     keys: ['5'],
   },
+  {
+    commandName: 'setToolActive',
+    commandOptions: { toolName: 'CircularBrush' },
+    label: 'Segmentation Brush',
+    keys: ['b'],
+    isEditable: true,
+  },
+  {
+    commandName: 'setToolActive',
+    commandOptions: { toolName: 'CircularEraser' },
+    label: 'Segmentation Eraser',
+    keys: ['e'],
+    isEditable: true,
+  },
   // These don't exist, so don't try applying them....
   // {
   //   commandName: 'setWindowLevel',

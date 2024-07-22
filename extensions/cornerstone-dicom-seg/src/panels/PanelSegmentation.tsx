@@ -1,11 +1,25 @@
 import { createReportAsync } from '@ohif/extension-default';
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useReducer } from 'react';
 import PropTypes from 'prop-types';
 import { SegmentationGroupTable, SegmentationGroupTableExpanded } from '@ohif/ui';
 import { SegmentationPanelMode } from '../types/segmentation';
 import callInputDialog from './callInputDialog';
 import callColorPickerDialog from './colorPickerDialog';
 import { useTranslation } from 'react-i18next';
+import getSegmentLabel from '../utils/getSegmentLabel';
+
+const savedStatusReducer = (state, action) => {
+  return {
+    ...state,
+    ...action.payload,
+  };
+};
+
+const SAVED_STATUS_ICON = {
+  SAVED: 'notifications-success',
+  MODIFIED: 'notifications-warning',
+  ERROR: 'notifications-error',
+};
 
 const components = {
   [SegmentationPanelMode.Expanded]: SegmentationGroupTableExpanded,
@@ -23,18 +37,19 @@ export default function PanelSegmentation({
     viewportGridService,
     uiDialogService,
     displaySetService,
-    cornerstoneViewportService,
+    userAuthenticationService,
+    CropDisplayAreaService,
   } = servicesManager.services;
 
   const { t } = useTranslation('PanelSegmentation');
 
   const [selectedSegmentationId, setSelectedSegmentationId] = useState(null);
-  const [addSegmentationClassName, setAddSegmentationClassName] = useState('');
   const [segmentationConfiguration, setSegmentationConfiguration] = useState(
     segmentationService.getConfiguration()
   );
 
   const [segmentations, setSegmentations] = useState(() => segmentationService.getSegmentations());
+  const [savedStatusStates, dispatch] = useReducer(savedStatusReducer, {});
 
   useEffect(() => {
     // ~~ Subscription
@@ -59,63 +74,111 @@ export default function PanelSegmentation({
     };
   }, []);
 
-  // temporary measure to not allow add segmentation when the selected viewport
-  // is stack viewport
   useEffect(() => {
-    const handleActiveViewportChange = viewportId => {
-      const displaySetUIDs = viewportGridService.getDisplaySetsUIDsForViewport(
-        viewportId || viewportGridService.getActiveViewportId()
-      );
+    let changedSegmentations: any[] = [],
+      timerId;
+    const timoutInSeconds = 5;
 
-      if (!displaySetUIDs) {
-        return;
+    const { unsubscribe } = segmentationService.subscribe(
+      segmentationService.EVENTS.SEGMENTATION_DATA_MODIFIED,
+      ({ segmentation }) => {
+        clearTimeout(timerId);
+        dispatch({ payload: { [segmentation.id]: SAVED_STATUS_ICON.MODIFIED } });
+
+        if (
+          !changedSegmentations.find(
+            changedSegmentation => changedSegmentation.id === segmentation.id
+          )
+        ) {
+          changedSegmentations.push(segmentation);
+        }
+
+        timerId = setTimeout(() => {
+          const datasources = extensionManager.getActiveDataSource();
+
+          const promises = changedSegmentations.map(segmentation =>
+            createReportAsync({
+              servicesManager: servicesManager,
+              getReport: () =>
+                commandsManager.runCommand('storeSegmentation', {
+                  segmentationId: segmentation.id,
+                  dataSource: datasources[0],
+                  skipLabelDialog: true,
+                }),
+              reportType: 'Segmentation',
+              showLoadingModal: false,
+              throwErrors: true,
+            })
+          );
+
+          Promise.allSettled(promises).then(results => {
+            const payload = results.reduce((acc, result, index) => {
+              if (result.value) {
+                changedSegmentations[index].displaySetInstanceUID = result.value[0];
+                displaySetService.getDisplaySetByUID(result.value[0])?.getReferenceDisplaySet();
+              }
+
+              return {
+                ...acc,
+                [changedSegmentations[index].id]:
+                  result.status === 'fulfilled' ? SAVED_STATUS_ICON.SAVED : SAVED_STATUS_ICON.ERROR,
+              };
+            }, {});
+
+            dispatch({ payload });
+
+            const savedSegmentations = Object.keys(payload).filter(
+              id => payload[id] === SAVED_STATUS_ICON.SAVED
+            );
+            changedSegmentations = changedSegmentations.filter(
+              cs => !savedSegmentations.includes(cs.id)
+            );
+          });
+        }, timoutInSeconds * 1000);
       }
+    );
 
-      const isReconstructable =
-        displaySetUIDs?.some(displaySetUID => {
-          const displaySet = displaySetService.getDisplaySetByUID(displaySetUID);
-          return displaySet?.isReconstructable;
-        }) || false;
-
-      if (isReconstructable) {
-        setAddSegmentationClassName('');
-      } else {
-        setAddSegmentationClassName('ohif-disabled');
-      }
-    };
-
-    // Handle initial state
-    handleActiveViewportChange();
-
-    const changedGrid = viewportGridService.EVENTS.ACTIVE_VIEWPORT_ID_CHANGED;
-    const ready = viewportGridService.EVENTS.VIEWPORTS_READY;
-
-    const subsGrid = [];
-    [ready, changedGrid].forEach(evt => {
-      const { unsubscribe } = viewportGridService.subscribe(evt, ({ viewportId }) => {
-        handleActiveViewportChange(viewportId);
-      });
-
-      subsGrid.push(unsubscribe);
-    });
-
-    const changedData = cornerstoneViewportService.EVENTS.VIEWPORT_DATA_CHANGED;
-
-    const subsData = [];
-    [changedData].forEach(evt => {
-      const { unsubscribe } = cornerstoneViewportService.subscribe(evt, () => {
-        handleActiveViewportChange();
-      });
-
-      subsData.push(unsubscribe);
-    });
-
-    // Clean up
     return () => {
-      subsGrid.forEach(unsub => unsub());
-      subsData.forEach(unsub => unsub());
+      unsubscribe();
     };
   }, []);
+
+  const setSegmentationActive = segmentationId => {
+    setReferencedDisplaySet(segmentationId);
+
+    const isSegmentationActive = segmentations.find(seg => seg.id === segmentationId)?.isActive;
+
+    if (isSegmentationActive) {
+      return;
+    }
+
+    segmentationService.setActiveSegmentationForToolGroup(segmentationId);
+  };
+
+  // Set referenced displaySet of the segmentation to the viewport
+  // if it is not displayed in any of the viewports.
+  const setReferencedDisplaySet = segmentationId => {
+    const segDisplayset = displaySetService.getDisplaySetByUID(segmentationId);
+    if (!segDisplayset) {
+      return;
+    }
+
+    const referencedDisplaySetInstanceUID = segDisplayset.referencedDisplaySetInstanceUID;
+    const { viewports, activeViewportId } = viewportGridService.getState();
+    let referencedImageLoaded = false;
+    viewports.forEach(viewport => {
+      if (viewport.displaySetInstanceUIDs.includes(referencedDisplaySetInstanceUID)) {
+        referencedImageLoaded = true;
+      }
+    });
+
+    if (!referencedImageLoaded) {
+      viewportGridService.setDisplaySetsForViewport({
+        viewportId: activeViewportId,
+        displaySetInstanceUIDs: [referencedDisplaySetInstanceUID],
+      });
+    }
+  };
 
   const getToolGroupIds = segmentationId => {
     const toolGroupIds = segmentationService.getToolGroupIdsWithSegmentation(segmentationId);
@@ -130,30 +193,35 @@ export default function PanelSegmentation({
   };
 
   const onSegmentationClick = (segmentationId: string) => {
+    setReferencedDisplaySet(segmentationId);
     segmentationService.setActiveSegmentationForToolGroup(segmentationId);
   };
 
   const onSegmentationDelete = (segmentationId: string) => {
+    setSegmentationActive(segmentationId);
     segmentationService.remove(segmentationId);
   };
 
   const onSegmentAdd = segmentationId => {
-    segmentationService.addSegment(segmentationId);
+    setSegmentationActive(segmentationId);
+    const label = getSegmentLabel(segmentations.find(seg => seg.id === segmentationId));
+    segmentationService.addSegment(segmentationId, { properties: { label } });
   };
 
   const onSegmentClick = (segmentationId, segmentIndex) => {
+    setReferencedDisplaySet(segmentationId);
     segmentationService.setActiveSegment(segmentationId, segmentIndex);
 
     const toolGroupIds = getToolGroupIds(segmentationId);
 
     toolGroupIds.forEach(toolGroupId => {
-      // const toolGroupId =
       segmentationService.setActiveSegmentationForToolGroup(segmentationId, toolGroupId);
       segmentationService.jumpToSegmentCenter(segmentationId, segmentIndex, toolGroupId);
     });
   };
 
   const onSegmentEdit = (segmentationId, segmentIndex) => {
+    setSegmentationActive(segmentationId);
     const segmentation = segmentationService.getSegmentation(segmentationId);
 
     const segment = segmentation.segments[segmentIndex];
@@ -169,6 +237,7 @@ export default function PanelSegmentation({
   };
 
   const onSegmentationEdit = segmentationId => {
+    setSegmentationActive(segmentationId);
     const segmentation = segmentationService.getSegmentation(segmentationId);
     const { label } = segmentation;
 
@@ -189,6 +258,7 @@ export default function PanelSegmentation({
   };
 
   const onSegmentColorClick = (segmentationId, segmentIndex) => {
+    setSegmentationActive(segmentationId);
     const segmentation = segmentationService.getSegmentation(segmentationId);
 
     const segment = segmentation.segments[segmentIndex];
@@ -216,11 +286,13 @@ export default function PanelSegmentation({
   };
 
   const onSegmentDelete = (segmentationId, segmentIndex) => {
+    setSegmentationActive(segmentationId);
     segmentationService.removeSegment(segmentationId, segmentIndex);
   };
 
   // segment hide
   const onToggleSegmentVisibility = (segmentationId, segmentIndex) => {
+    setSegmentationActive(segmentationId);
     const segmentation = segmentationService.getSegmentation(segmentationId);
     const segmentInfo = segmentation.segments[segmentIndex];
     const isVisible = !segmentInfo.isVisible;
@@ -238,10 +310,12 @@ export default function PanelSegmentation({
   };
 
   const onToggleSegmentLock = (segmentationId, segmentIndex) => {
+    setSegmentationActive(segmentationId);
     segmentationService.toggleSegmentLocked(segmentationId, segmentIndex);
   };
 
   const onToggleSegmentationVisibility = segmentationId => {
+    setSegmentationActive(segmentationId);
     segmentationService.toggleSegmentationVisibility(segmentationId);
     const segmentation = segmentationService.getSegmentation(segmentationId);
     const isVisible = segmentation.isVisible;
@@ -272,23 +346,34 @@ export default function PanelSegmentation({
   );
 
   const onSegmentationDownload = segmentationId => {
+    setSegmentationActive(segmentationId);
     commandsManager.runCommand('downloadSegmentation', {
       segmentationId,
     });
   };
 
   const storeSegmentation = async segmentationId => {
+    setSegmentationActive(segmentationId);
     const datasources = extensionManager.getActiveDataSource();
+    let displaySetInstanceUIDs;
 
-    const displaySetInstanceUIDs = await createReportAsync({
-      servicesManager,
-      getReport: () =>
-        commandsManager.runCommand('storeSegmentation', {
-          segmentationId,
-          dataSource: datasources[0],
-        }),
-      reportType: 'Segmentation',
-    });
+    try {
+      displaySetInstanceUIDs = await createReportAsync({
+        servicesManager,
+        getReport: () =>
+          commandsManager.runCommand('storeSegmentation', {
+            segmentationId,
+            dataSource: datasources[0],
+          }),
+        reportType: 'Segmentation',
+        throwErrors: true,
+      });
+
+      dispatch({ payload: { [segmentationId]: SAVED_STATUS_ICON.SAVED } });
+    } catch (error) {
+      console.warn(error.message);
+      dispatch({ payload: { [segmentationId]: SAVED_STATUS_ICON.ERROR } });
+    }
 
     // Show the exported report in the active viewport as read only (similar to SR)
     if (displaySetInstanceUIDs) {
@@ -305,6 +390,7 @@ export default function PanelSegmentation({
   };
 
   const onSegmentationDownloadRTSS = segmentationId => {
+    setSegmentationActive(segmentationId);
     commandsManager.runCommand('downloadRTSS', {
       segmentationId,
     });
@@ -317,15 +403,19 @@ export default function PanelSegmentation({
     configuration?.onSegmentationAdd && typeof configuration?.onSegmentationAdd === 'function'
       ? configuration?.onSegmentationAdd
       : onSegmentationAdd;
+  const params = new URLSearchParams(window.location.search);
+  const showAddSegmentation = params.get('disableAddSegmentation') !== 'true';
+
 
   return (
     <SegmentationGroupTableComponent
       title={t('Segmentations')}
       segmentations={segmentations}
+      savedStatusStates={savedStatusStates}
       disableEditing={configuration.disableEditing}
       activeSegmentationId={selectedSegmentationId || ''}
+      showAddSegmentation={showAddSegmentation}
       onSegmentationAdd={onSegmentationAddWrapper}
-      addSegmentationClassName={addSegmentationClassName}
       showAddSegment={allowAddSegment}
       onSegmentationClick={onSegmentationClick}
       onSegmentationDelete={onSegmentationDelete}
@@ -364,6 +454,7 @@ export default function PanelSegmentation({
       setFillAlphaInactive={value =>
         _setSegmentationConfiguration(selectedSegmentationId, 'fillAlphaInactive', value)
       }
+      CropDisplayAreaService={CropDisplayAreaService}
     />
   );
 }

@@ -3,16 +3,21 @@ window.config = {
   // whiteLabeling: {},
   extensions: [],
   modes: [],
-  customizationService: {},
+  customizationService: {
+    // Shows a custom route -access via http://localhost:3000/custom
+    // helloPage: '@ohif/extension-default.customizationModule.helloPage',
+  },
   showStudyList: true,
   // some windows systems have issues with more than 3 web workers
   maxNumberOfWebWorkers: 3,
+
   // below flag is for performance reasons, but it might not work for all servers
-  showWarningMessageForCrossOrigin: true,
+  omitQuotationForMultipartRequest: true,
+  showWarningMessageForCrossOrigin: false,
   showCPUFallbackMessage: true,
   showLoadingIndicator: true,
   strictZSpacingForVolumeViewport: true,
-  groupEnabledModesFirst: true,
+  use16BitDataType: true,
   maxNumRequests: {
     interaction: 100,
     thumbnail: 75,
@@ -20,55 +25,43 @@ window.config = {
     // above, the number of requests can be go a lot higher.
     prefetch: 25,
   },
-  // filterQueryParam: false,
-  defaultDataSourceName: 'dicomweb',
-  /* Dynamic config allows user to pass "configUrl" query string this allows to load config without recompiling application. The regex will ensure valid configuration source */
-  // dangerouslyUseDynamicConfig: {
-  //   enabled: true,
-  //   // regex will ensure valid configuration source and default is /.*/ which matches any character. To use this, setup your own regex to choose a specific source of configuration only.
-  //   // Example 1, to allow numbers and letters in an absolute or sub-path only.
-  //   // regex: /(0-9A-Za-z.]+)(\/[0-9A-Za-z.]+)*/
-  //   // Example 2, to restricts to either hosptial.com or othersite.com.
-  //   // regex: /(https:\/\/hospital.com(\/[0-9A-Za-z.]+)*)|(https:\/\/othersite.com(\/[0-9A-Za-z.]+)*)/
-  //   regex: /.*/,
-  // },
-  dataSources: [
+  oidc: [
     {
+      authority: 'https://accounts.google.com',
+      client_id:
+        '195181363105-h9e3uujhnd2t6c8dqrdcv01h4bn2fsva.apps.googleusercontent.com',
+      redirect_uri: '/callback',
+      response_type: 'id_token token',
+      scope: [
+        'email',
+        'profile',
+        'openid',
+        'https://www.googleapis.com/auth/spreadsheets',
+        'https://www.googleapis.com/auth/devstorage.read_write',
+        'https://www.googleapis.com/auth/bigquery.readonly',
+        'https://www.googleapis.com/auth/drive.metadata.readonly',
+        'https://www.googleapis.com/auth/drive.readonly',
+        'https://www.googleapis.com/auth/cloudplatformprojects.readonly',
+        'https://www.googleapis.com/auth/cloud-healthcare',
+      ].join(' '),
+      post_logout_redirect_uri: '/logout-redirect.html',
+      revoke_uri: 'https://accounts.google.com/o/oauth2/revoke?token=',
+      automaticSilentRenew: true,
+      revokeAccessTokenOnSignout: true,
+    },
+  ],
+  // filterQueryParam: false,
+  dataSources: [
+    /*{
+      friendlyName: 'dcmjs DICOMWeb Server',
       namespace: '@ohif/extension-default.dataSourcesModule.dicomweb',
       sourceName: 'dicomweb',
       configuration: {
-        friendlyName: 'AWS S3 Static wado server',
         name: 'aws',
-        wadoUriRoot: 'https://d33do7qe4w26qo.cloudfront.net/dicomweb',
-        qidoRoot: 'https://d33do7qe4w26qo.cloudfront.net/dicomweb',
-        wadoRoot: 'https://d33do7qe4w26qo.cloudfront.net/dicomweb',
-        qidoSupportsIncludeField: false,
-        imageRendering: 'wadors',
-        thumbnailRendering: 'wadors',
-        enableStudyLazyLoad: true,
-        supportsFuzzyMatching: false,
-        supportsWildcard: true,
-        staticWado: true,
-        singlepart: 'bulkdata,video',
-        // whether the data source should use retrieveBulkData to grab metadata,
-        // and in case of relative path, what would it be relative to, options
-        // are in the series level or study level (some servers like series some study)
-        bulkDataURI: {
-          enabled: true,
-          relativeResolution: 'studies',
-        },
-        omitQuotationForMultipartRequest: true,
-      },
-    },
-    {
-      namespace: '@ohif/extension-default.dataSourcesModule.dicomweb',
-      sourceName: 'dicomweb2',
-      configuration: {
-        friendlyName: 'AWS S3 Static wado secondary server',
-        name: 'aws',
-        wadoUriRoot: 'https://d28o5kq0jsoob5.cloudfront.net/dicomweb',
-        qidoRoot: 'https://d28o5kq0jsoob5.cloudfront.net/dicomweb',
-        wadoRoot: 'https://d28o5kq0jsoob5.cloudfront.net/dicomweb',
+        // This is only here due to other deps, it is not actually used
+        wadoUriRoot: 'https://storage.cloud.google.com',
+        qidoRoot: 'https://storage.cloud.google.com',
+        wadoRoot: 'https://storage.cloud.google.com',
         qidoSupportsIncludeField: false,
         supportsReject: false,
         imageRendering: 'wadors',
@@ -77,39 +70,42 @@ window.config = {
         supportsFuzzyMatching: false,
         supportsWildcard: true,
         staticWado: true,
-        singlepart: 'bulkdata,video',
-        // whether the data source should use retrieveBulkData to grab metadata,
-        // and in case of relative path, what would it be relative to, options
-        // are in the series level or study level (some servers like series some study)
-        bulkDataURI: {
-          enabled: true,
-          relativeResolution: 'studies',
-        },
-        omitQuotationForMultipartRequest: true,
+        singlepart: 'bulkdata,video,pdf',
+        requestTransferSyntaxUID: '*'
       },
+    },*/
+    {
+      friendlyName: "dcmjs DICOMWeb Server",
+      namespace: "@ohif/extension-default.dataSourcesModule.dicomweb",
+      sourceName: "dicomweb",
+      configuration: {
+        name: "GCP",
+        wadoUriRoot: "https://healthcare.googleapis.com/v1/projects/icad-med/locations/us-central1/datasets/mammo/dicomStores/breast_density/dicomWeb",
+        qidoRoot: "https://healthcare.googleapis.com/v1/projects/icad-med/locations/us-central1/datasets/mammo/dicomStores/breast_density/dicomWeb",
+        wadoRoot: "https://healthcare.googleapis.com/v1/projects/icad-med/locations/us-central1/datasets/mammo/dicomStores/breast_density/dicomWeb",
+        qidoSupportsIncludeField: !0,
+        imageRendering: "wadors",
+        thumbnailRendering: "wadors",
+        enableStudyLazyLoad: !0,
+        supportsFuzzyMatching: !0,
+        supportsWildcard: !1,
+        requestTransferSyntaxUID: '*'
+      }
     },
     {
-      namespace: '@ohif/extension-default.dataSourcesModule.dicomwebproxy',
-      sourceName: 'dicomwebproxy',
+      friendlyName: 'dicom json',
+      namespace:
+        '@gradienthealth/ohif-gradienthealth-extension.dataSourcesModule.bq',
+      sourceName: 'bq',
       configuration: {
-        friendlyName: 'dicomweb delegating proxy',
-        name: 'dicomwebproxy',
-      },
-    },
-    {
-      namespace: '@ohif/extension-default.dataSourcesModule.dicomjson',
-      sourceName: 'dicomjson',
-      configuration: {
-        friendlyName: 'dicom json',
         name: 'json',
       },
     },
     {
+      friendlyName: 'dicom local',
       namespace: '@ohif/extension-default.dataSourcesModule.dicomlocal',
       sourceName: 'dicomlocal',
-      configuration: {
-        friendlyName: 'dicom local',
-      },
+      configuration: {},
     },
   ],
   httpErrorHandler: error => {
@@ -121,7 +117,7 @@ window.config = {
   },
   whiteLabeling: {
     /* Optional: Should return a React component to be rendered in the "Logo" section of the application's Top Navigation bar */
-    createLogoComponentFn: function(React) {
+    createLogoComponentFn: function (React) {
       return React.createElement(
         'a',
         {

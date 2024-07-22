@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
+import { useTranslation } from 'react-i18next';
+
 import { PanelSection } from '../../components';
 import SegmentationConfig from './SegmentationConfig';
-import SegmentationDropDownRow from './SegmentationDropDownRow';
 import NoSegmentationRow from './NoSegmentationRow';
-import AddSegmentRow from './AddSegmentRow';
-import SegmentationGroupSegment from './SegmentationGroupSegment';
-import { useTranslation } from 'react-i18next';
+import SegmentationGroup from './SegmentationGroup';
 
 const SegmentationGroupTable = ({
   segmentations,
+  savedStatusStates,
   // segmentation initial config
   segmentationConfig,
   // UI show/hide
@@ -43,14 +43,10 @@ const SegmentationGroupTable = ({
   setRenderInactiveSegmentations,
   setRenderOutline,
   addSegmentationClassName,
+  CropDisplayAreaService,
 }) => {
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [activeSegmentationId, setActiveSegmentationId] = useState(null);
-
-  const onActiveSegmentationChange = segmentationId => {
-    onSegmentationClick(segmentationId);
-    setActiveSegmentationId(segmentationId);
-  };
 
   useEffect(() => {
     // find the first active segmentation to set
@@ -77,9 +73,17 @@ const SegmentationGroupTable = ({
   return (
     <div className="flex min-h-0 flex-col bg-black text-[13px] font-[300]">
       <PanelSection
-        title={t('Segmentation')}
+        title={t('Segmentations')}
         actionIcons={
           activeSegmentation && [
+            ...(showAddSegmentation && !disableEditing
+              ? [
+                  {
+                    name: 'row-add',
+                    onClick: () => onSegmentationAdd(),
+                  },
+                ]
+              : []),
             {
               name: 'settings-bars',
               onClick: () => setIsConfigOpen(isOpen => !isOpen),
@@ -99,7 +103,7 @@ const SegmentationGroupTable = ({
             segmentationConfig={segmentationConfig}
           />
         )}
-        <div className="bg-primary-dark ">
+        <div className="bg-primary-dark ohif-scrollbar overflow-auto">
           {segmentations?.length === 0 ? (
             <div className="select-none bg-black py-[3px]">
               {showAddSegmentation && !disableEditing && (
@@ -110,62 +114,35 @@ const SegmentationGroupTable = ({
               )}
             </div>
           ) : (
-            <div className="mt-1 select-none">
-              <SegmentationDropDownRow
-                segmentations={segmentations}
+            segmentations.map(segmentation => (
+              <SegmentationGroup
+                key={segmentation.id}
+                activeSegmentationId={activeSegmentationId}
+                segmentation={segmentation}
+                savedStatusState={savedStatusStates[segmentation.id]}
                 disableEditing={disableEditing}
-                activeSegmentation={activeSegmentation}
-                onActiveSegmentationChange={onActiveSegmentationChange}
+                showAddSegment={showAddSegment}
+                onSegmentationClick={onSegmentationClick}
                 onSegmentationDelete={onSegmentationDelete}
                 onSegmentationEdit={onSegmentationEdit}
                 onSegmentationDownload={onSegmentationDownload}
                 onSegmentationDownloadRTSS={onSegmentationDownloadRTSS}
                 storeSegmentation={storeSegmentation}
-                onSegmentationAdd={onSegmentationAdd}
                 addSegmentationClassName={addSegmentationClassName}
+                onSegmentAdd={onSegmentAdd}
                 onToggleSegmentationVisibility={onToggleSegmentationVisibility}
+                onSegmentClick={onSegmentClick}
+                onSegmentDelete={onSegmentDelete}
+                onSegmentEdit={onSegmentEdit}
+                onToggleSegmentVisibility={onToggleSegmentVisibility}
+                onToggleSegmentLock={onToggleSegmentLock}
+                onSegmentColorClick={onSegmentColorClick}
+                showDeleteSegment={showDeleteSegment}
+                CropDisplayAreaService={CropDisplayAreaService}
               />
-              {!disableEditing && showAddSegment && (
-                <AddSegmentRow onClick={() => onSegmentAdd(activeSegmentationId)} />
-              )}
-            </div>
+            ))
           )}
         </div>
-        {activeSegmentation && (
-          <div className="ohif-scrollbar flex h-fit min-h-0 flex-1 flex-col overflow-auto bg-black">
-            {activeSegmentation?.segments?.map(segment => {
-              if (!segment) {
-                return null;
-              }
-
-              const { segmentIndex, color, label, isVisible, isLocked } = segment;
-              return (
-                <div
-                  className="mb-[1px]"
-                  key={segmentIndex}
-                >
-                  <SegmentationGroupSegment
-                    segmentationId={activeSegmentationId}
-                    segmentIndex={segmentIndex}
-                    label={label}
-                    color={color}
-                    isActive={activeSegmentation.activeSegmentIndex === segmentIndex}
-                    disableEditing={disableEditing}
-                    isLocked={isLocked}
-                    isVisible={isVisible}
-                    onClick={onSegmentClick}
-                    onEdit={onSegmentEdit}
-                    onDelete={onSegmentDelete}
-                    showDelete={showDeleteSegment}
-                    onColor={onSegmentColorClick}
-                    onToggleVisibility={onToggleSegmentVisibility}
-                    onToggleLocked={onToggleSegmentLock}
-                  />
-                </div>
-              );
-            })}
-          </div>
-        )}
       </PanelSection>
     </div>
   );
@@ -187,6 +164,7 @@ SegmentationGroupTable.propTypes = {
       ),
     })
   ),
+  savedStatusStates: PropTypes.object,
   segmentationConfig: PropTypes.object.isRequired,
   disableEditing: PropTypes.bool,
   showAddSegmentation: PropTypes.bool,
@@ -214,6 +192,7 @@ SegmentationGroupTable.propTypes = {
   setRenderFill: PropTypes.func.isRequired,
   setRenderInactiveSegmentations: PropTypes.func.isRequired,
   setRenderOutline: PropTypes.func.isRequired,
+  CropDisplayAreaService: PropTypes.any,
 };
 
 SegmentationGroupTable.defaultProps = {
@@ -222,6 +201,7 @@ SegmentationGroupTable.defaultProps = {
   showAddSegmentation: true,
   showAddSegment: true,
   showDeleteSegment: true,
+  addSegmentationClassName: '',
   onSegmentationAdd: () => {},
   onSegmentationEdit: () => {},
   onSegmentationClick: () => {},

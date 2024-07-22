@@ -19,8 +19,10 @@ import {
   getUpdatedViewportsForSegmentation,
   getTargetViewport,
 } from './utils/hydrationUtils';
-const { segmentation: segmentationUtils } = utilities;
+import generateLabelmaps2DFromImageIdMap from './utils/generateLabelmaps2DFromImageIdMap';
+import getSegmentLabel from './utils/getSegmentLabel';
 
+const { segmentation: segmentationUtils } = utilities;
 const { datasetToBlob } = dcmjs.data;
 
 const {
@@ -80,17 +82,6 @@ const commandsModule = ({
       // Todo: add support for multiple display sets
       const displaySetInstanceUID = viewport.displaySetInstanceUIDs[0];
 
-      const displaySet = displaySetService.getDisplaySetByUID(displaySetInstanceUID);
-
-      if (!displaySet.isReconstructable) {
-        uiNotificationService.show({
-          title: 'Segmentation',
-          message: 'Segmentation is not supported for non-reconstructible displaysets yet',
-          type: 'error',
-        });
-        return;
-      }
-
       updateViewportsForSegmentationRendering({
         viewportId,
         servicesManager,
@@ -113,7 +104,7 @@ const commandsModule = ({
             toolGroupId,
             segmentIndex: 1,
             properties: {
-              label: 'Segment 1',
+              label: getSegmentLabel(segmentationService.getSegmentation(segmentationId)),
             },
           });
 
@@ -245,14 +236,23 @@ const commandsModule = ({
      */
     generateSegmentation: ({ segmentationId, options = {} }) => {
       const segmentation = cornerstoneToolsSegmentation.state.getSegmentation(segmentationId);
+      const segmentationLabelmapData = segmentation.representationData.LABELMAP;
 
-      const { referencedVolumeId } = segmentation.representationData.LABELMAP;
+      let referencedImages, labelmapObj;
+      if (segmentationLabelmapData.imageIdReferenceMap) {
+        const { imageIdReferenceMap } = segmentationLabelmapData;
 
-      const segmentationVolume = cache.getVolume(segmentationId);
-      const referencedVolume = cache.getVolume(referencedVolumeId);
-      const referencedImages = referencedVolume.getCornerstoneImages();
+        ({ referencedImages, labelmapObj } =
+          generateLabelmaps2DFromImageIdMap(imageIdReferenceMap));
+      } else {
+        const { referencedVolumeId } = segmentationLabelmapData;
 
-      const labelmapObj = generateLabelMaps2DFrom3D(segmentationVolume);
+        const segmentationVolume = cache.getVolume(segmentationId);
+        const referencedVolume = cache.getVolume(referencedVolumeId);
+        referencedImages = referencedVolume.getCornerstoneImages();
+
+        labelmapObj = generateLabelMaps2DFrom3D(segmentationVolume);
+      }
 
       // Generate fake metadata as an example
       labelmapObj.metadata = [];
@@ -326,28 +326,45 @@ const commandsModule = ({
      * @returns {Object|void} Returns the naturalized report if successfully stored,
      * otherwise throws an error.
      */
-    storeSegmentation: async ({ segmentationId, dataSource }) => {
-      const promptResult = await createReportDialogPrompt(uiDialogService, {
-        extensionManager,
-      });
-
-      if (promptResult.action !== 1 && promptResult.value) {
-        return;
-      }
-
+    storeSegmentation: async ({ segmentationId, dataSource, skipLabelDialog = false }) => {
       const segmentation = segmentationService.getSegmentation(segmentationId);
 
       if (!segmentation) {
         throw new Error('No segmentation found');
       }
+      const { label, displaySetInstanceUID } = segmentation;
 
-      const { label } = segmentation;
+      const displaySet = displaySetService.getDisplaySetByUID(displaySetInstanceUID);
+      const shouldOverWrite = displaySet && displaySet.Modality === 'SEG';
+
+      let promptResult: { action?: number; value?: string } = {};
+
+      if (!(skipLabelDialog || shouldOverWrite)) {
+        promptResult = await createReportDialogPrompt(uiDialogService, {
+          extensionManager,
+        });
+
+        if (promptResult.action !== 1 && !promptResult.value) {
+          return;
+        }
+      }
+
       const SeriesDescription = promptResult.value || label || 'Research Derived Series';
+      segmentation.label = SeriesDescription;
 
       const generatedData = actions.generateSegmentation({
         segmentationId,
         options: {
           SeriesDescription,
+          // Use SeriesInstanceUID, SOPInstanceUID, SeriesNumber, Manufacturer and SeriesDate
+          // if displaySet of the segmentation already exists.
+          // Study level and patient metadata will be used automatically.
+          ...(shouldOverWrite && {
+            SeriesInstanceUID: displaySet.SeriesInstanceUID,
+            SOPInstanceUID: displaySet.instances[0].SOPInstanceUID,
+            SeriesNumber: displaySet.SeriesNumber,
+            Manufacturer: displaySet.instances[0].Manufacturer,
+          }),
         },
       });
 
@@ -365,8 +382,6 @@ const commandsModule = ({
 
       // add the information for where we stored it to the instance as well
       naturalizedReport.wadoRoot = dataSource.getConfig().wadoRoot;
-
-      DicomMetadataStore.addInstances([naturalizedReport], true);
 
       return naturalizedReport;
     },

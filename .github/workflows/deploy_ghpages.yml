@@ -1,0 +1,105 @@
+name: Deploy viewer to github pages
+
+on:
+  push:
+    branches: [ "gradienthealth/segmentation_mode_sheet_integration" ]
+  #pull_request:
+    #branches: [ "main" ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16.x]
+
+    steps:
+        - name: Use Node.js ${{ matrix.node-version }}
+          uses: actions/setup-node@v3
+          with:
+            node-version: ${{ matrix.node-version }}
+
+        - name: Checkout cornerstone3D
+          uses: actions/checkout@v3
+          with:
+            repository: gradienthealth/cornerstone3D-beta
+            ref: gradienthealth/segmentation_mode_sheet_integration
+            path: ./cornerstone3D
+
+        - name: Build cornerstone3D
+          run: |
+            cd ./cornerstone3D
+            yarn install
+            yarn build:all
+
+        - name: Checkout GradientExtensionsAndModes
+          uses: actions/checkout@v3
+          with:
+            repository: gradienthealth/GradientExtensionsAndModes
+            ref: gradienthealth/segmentation_mode_sheet_integration
+            path: ./GradientExtensionsAndModes
+
+        #- name: Build GradientExtensionsAndModes
+        #  run: |
+        #   cd ./GradientExtensionsAndModes/extensions/ohif-gradienthealth-extension
+        #   yarn install
+        #   yarn build:package
+        #   cd ./modes/cohort
+        #   yarn install
+        #   yarn build:package
+
+        - name: Checkout Viewers
+          uses: actions/checkout@v3
+          with:
+            repository: gradienthealth/Viewers
+            path: ./Viewers
+
+        - name: Link
+          run: |
+            cd ./cornerstone3D/packages/adapters/dist
+            yarn link
+            cd ../../core/dist
+            yarn link
+            cd ../../dicomImageLoader/dist
+            yarn link
+            #cd ../../nifti-volume-loader/dist
+            #yarn link
+            cd ../../streaming-image-volume-loader/dist
+            yarn link
+            cd ../../tools/dist
+            yarn link
+            cd ../../../../Viewers
+            yarn link @cornerstonejs/adapters
+            yarn link @cornerstonejs/core
+            yarn link @cornerstonejs/dicom-image-loader
+            #yarn link @cornerstonejs/nifti-volume-loader
+            yarn link @cornerstonejs/streaming-image-volume-loader
+            yarn link @cornerstonejs/tools
+            yarn install
+            yarn run cli link-extension ../GradientExtensionsAndModes/extensions/ohif-gradienthealth-extension
+            yarn run cli link-mode ../GradientExtensionsAndModes/modes/cohort
+            yarn run cli link-mode ../GradientExtensionsAndModes/modes/breast-density-mode
+            yarn run build:gradient
+
+        - name: Checkout gh page
+          uses: actions/checkout@v3
+          with:
+            repository: gradienthealth/gradienthealth.github.io
+            path: ./gradienthealth.github.io
+            token: ${{ secrets.GH_DEPLOY_TOKEN }}
+
+        - name: Copy
+          run: |
+            mv ./gradienthealth.github.io/.git /tmp/
+            rm -r ./gradienthealth.github.io
+            cp -r ./Viewers/platform/app/dist/ ./gradienthealth.github.io
+            mv /tmp/.git ./gradienthealth.github.io
+            cd ./gradienthealth.github.io
+            cp index.html 404.html
+            git config --global user.name "maya-mohan"
+            git config --global user.email "maya@gradienthealth.io"
+            git remote set-url origin https://maya-mohan:${{ secrets.GH_DEPLOY_TOKEN }}@github.com/gradienthealth/gradienthealth.github.io
+            git add .
+            git commit -a -m "publishing viewer"
+            git push -u origin

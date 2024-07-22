@@ -9,6 +9,7 @@ export const toolboxReducer = (state, action) => {
     state[toolbarSectionId] = { activeTool: null, toolOptions: {} };
   }
 
+  const { toolName, optionName, value, properties } = action.payload;
   switch (action.type) {
     case 'SET_ACTIVE_TOOL':
       return {
@@ -19,7 +20,6 @@ export const toolboxReducer = (state, action) => {
         },
       };
     case 'UPDATE_TOOL_OPTION':
-      const { toolName, optionName, value } = action.payload;
       return {
         ...state,
         [toolbarSectionId]: {
@@ -28,6 +28,19 @@ export const toolboxReducer = (state, action) => {
             ...state[toolbarSectionId].toolOptions,
             [toolName]: state[toolbarSectionId].toolOptions[toolName].map(option =>
               option.id === optionName ? { ...option, value } : option
+            ),
+          },
+        },
+      };
+    case 'MODIFY_TOOL_OPTION_PROPERTIES':
+      return {
+        ...state,
+        [toolbarSectionId]: {
+          ...state[toolbarSectionId],
+          toolOptions: {
+            ...state[toolbarSectionId].toolOptions,
+            [toolName]: state[toolbarSectionId].toolOptions[toolName].map(option =>
+              option.id === optionName ? { ...option, ...properties } : option
             ),
           },
         },
@@ -65,6 +78,13 @@ export const ToolboxProvider = ({ children }) => {
     });
   };
 
+  const handleOptionPropertiesModify = (toolbarSectionId, toolName, optionName, properties) => {
+    dispatch({
+      type: 'MODIFY_TOOL_OPTION_PROPERTIES',
+      payload: { toolbarSectionId, toolName, optionName, properties },
+    });
+  };
+
   const initializeToolOptions = (toolbarSectionId, toolOptions) => {
     dispatch({
       type: 'INITIALIZE_TOOL_OPTIONS',
@@ -73,7 +93,12 @@ export const ToolboxProvider = ({ children }) => {
     });
   };
 
-  const api = { handleToolSelect, handleToolOptionChange, initializeToolOptions };
+  const api = {
+    handleToolSelect,
+    handleToolOptionChange,
+    handleOptionPropertiesModify,
+    initializeToolOptions,
+  };
 
   const value = { state, api };
 
@@ -99,6 +124,8 @@ export const useToolbox = toolbarSectionId => {
       handleToolSelect: toolName => api.handleToolSelect(toolbarSectionId, toolName),
       handleToolOptionChange: (toolName, optionName, value) =>
         api.handleToolOptionChange(toolbarSectionId, toolName, optionName, value),
+      handleOptionPropertiesModify: (toolName, optionName, properties) =>
+        api.handleOptionPropertiesModify(toolbarSectionId, toolName, optionName, properties),
       initializeToolOptions: toolOptions =>
         api.initializeToolOptions(toolbarSectionId, toolOptions),
     },

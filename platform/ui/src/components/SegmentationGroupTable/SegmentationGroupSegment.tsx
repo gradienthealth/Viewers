@@ -21,8 +21,15 @@ const SegmentItem = ({
   onToggleVisibility,
   onToggleLocked,
   displayText,
+  CropDisplayAreaService,
 }) => {
   const [isNumberBoxHovering, setIsNumberBoxHovering] = useState(false);
+
+  const onFocusClick = (segmentationId, segmentIndex) => {
+    CropDisplayAreaService.focusToSegment(segmentationId, segmentIndex).then(() =>
+      onClick(segmentationId, segmentIndex)
+    );
+  };
 
   const cssColor = `rgb(${color[0]},${color[1]},${color[2]})`;
 
@@ -76,7 +83,7 @@ const SegmentItem = ({
             width: 'calc(100% - 28px)',
           }}
         >
-          <div className="bg-primary-dark flex h-full flex-grow items-center">
+          <div className="flex h-full flex-grow items-center bg-black">
             <div className="pl-2 pr-1.5">
               <div
                 className={classnames('h-[8px] w-[8px] grow-0 rounded-full', {
@@ -148,6 +155,7 @@ const SegmentItem = ({
                 onToggleVisibility={onToggleVisibility}
                 segmentationId={segmentationId}
                 segmentIndex={segmentIndex}
+                onFocusClick={onFocusClick}
               />
             </div>
           </div>
@@ -184,6 +192,7 @@ const HoveringIcons = ({
   onToggleVisibility,
   segmentationId,
   segmentIndex,
+  onFocusClick,
 }) => {
   const iconClass = 'w-5 h-5 hover:cursor-pointer hover:opacity-60';
 
@@ -202,6 +211,7 @@ const HoveringIcons = ({
 
   return (
     <div className="flex items-center">
+      {createIcon('icon-tool-loupe', onFocusClick)}
       {!disableEditing && createIcon('row-edit', onEdit)}
       {!disableEditing &&
         createIcon(
@@ -234,6 +244,7 @@ SegmentItem.propTypes = {
   onToggleVisibility: PropTypes.func.isRequired,
   onToggleLocked: PropTypes.func,
   displayText: PropTypes.string,
+  CropDisplayAreaService: PropTypes.any,
 };
 
 SegmentItem.defaultProps = {

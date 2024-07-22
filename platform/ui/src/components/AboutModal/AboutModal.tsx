@@ -78,14 +78,14 @@ const AboutModal = ({ buildNumber, versionNumber, commitHash }) => {
       {renderRowTitle(t('Important links'))}
       <div className="mb-8 flex">
         <Link
-          href="https://community.ohif.org/"
+          href="https://github.com/gradienthealth"
           showIcon={true}
         >
-            {t('Visit the forum')}
+          {t('Visit the forum')}
         </Link>
         <span className="ml-4">
           <Link
-            href="https://github.com/OHIF/Viewers/issues/new/choose"
+            href="https://github.com/gradienthealth/Viewers/issues/new/choose"
             showIcon={true}
           >
             {t('Report an issue')}
@@ -93,10 +93,10 @@ const AboutModal = ({ buildNumber, versionNumber, commitHash }) => {
         </span>
         <span className="ml-4">
           <Link
-            href="https://ohif.org/"
+            href="https://gradienthealth.io/"
             showIcon={true}
           >
-          {t('More details')}
+            {t('More details')}
           </Link>
         </span>
       </div>
@@ -104,20 +104,15 @@ const AboutModal = ({ buildNumber, versionNumber, commitHash }) => {
       {renderRowTitle(t('Version information'))}
       <div className="flex flex-col">
         <Row
-          title={t('Repository URL')}
-          value="https://github.com/OHIF/Viewers/"
-          link="https://github.com/OHIF/Viewers/"
+          title="Repository URL"
+          value="https://github.com/gradienthealth/Viewers/tree/main"
+          link="https://github.com/gradienthealth/Viewers/tree/main"
         />
-        <Row
-          title={t('Data citation')}
-          value="https://github.com/OHIF/Viewers/blob/master/DATACITATION.md"
-          link="https://github.com/OHIF/Viewers/blob/master/DATACITATION.md"
-        />
-        {/* <Row
-          title={t('Last master commits')}
-          value="https://github.com/OHIF/Viewers/"
-          link="https://github.com/OHIF/Viewers/"
-        /> */}
+        {/*<Row
+          title="Data Citation"
+          value="https://github.com/gradienthealth/Viewers/blob/master/DATACITATION.md"
+          link="https://github.com/gradienthealth/Viewers/blob/master/DATACITATION.md"
+        />*/}
         <Row
           title={t('Version number')}
           value={versionNumber}

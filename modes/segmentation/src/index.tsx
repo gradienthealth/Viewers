@@ -26,6 +26,12 @@ const segmentation = {
   viewport: '@ohif/extension-cornerstone-dicom-seg.viewportModule.dicom-seg',
 };
 
+const gradienthealth = {
+  form: '@gradienthealth/ohif-gradienthealth-extension.panelModule.form',
+  thumbnailList:
+    '@gradienthealth/ohif-gradienthealth-extension.panelModule.seriesList-without-tracking',
+};
+
 /**
  * Just two dependencies to be able to render a viewport with panels in order
  * to make sure that the mode is working.
@@ -54,13 +60,23 @@ function modeFactory({ modeConfiguration }) {
      * Services and other resources.
      */
     onModeEnter: ({ servicesManager, extensionManager, commandsManager }) => {
-      const { measurementService, toolbarService, toolGroupService } = servicesManager.services;
+      const {
+        measurementService,
+        toolbarService,
+        toolGroupService,
+        GoogleSheetsService,
+        CropDisplayAreaService,
+        CacheAPIService,
+      } = servicesManager.services;
 
       measurementService.clearMeasurements();
 
       // Init Default and SR ToolGroups
       initToolGroups(extensionManager, toolGroupService, commandsManager);
 
+      GoogleSheetsService.init();
+      CropDisplayAreaService.init();
+      CacheAPIService.init();
       toolbarService.addButtons(toolbarButtons);
       toolbarService.addButtons(segmentationButtons);
 
@@ -85,6 +101,9 @@ function modeFactory({ modeConfiguration }) {
         cornerstoneViewportService,
         uiDialogService,
         uiModalService,
+        GoogleSheetsService,
+        CropDisplayAreaService,
+        CacheAPIService,
       } = servicesManager.services;
 
       uiDialogService.dismissAll();
@@ -93,6 +112,9 @@ function modeFactory({ modeConfiguration }) {
       syncGroupService.destroy();
       segmentationService.destroy();
       cornerstoneViewportService.destroy();
+      GoogleSheetsService.destroy();
+      CropDisplayAreaService.destroy();
+      CacheAPIService.destroy();
     },
     /** */
     validationTags: {
@@ -133,11 +155,16 @@ function modeFactory({ modeConfiguration }) {
       {
         path: 'template',
         layoutTemplate: ({ location, servicesManager }) => {
+          const params = new URLSearchParams(location.search);
+          const rightPanels = [
+            segmentation.panelTool,
+            ...(params.get('sheetId') ? [gradienthealth.form] : []),
+          ];
           return {
             id: ohif.layout,
             props: {
-              leftPanels: [ohif.leftPanel],
-              rightPanels: [segmentation.panelTool],
+              leftPanels: [gradienthealth.thumbnailList],
+              rightPanels: rightPanels,
               viewports: [
                 {
                   namespace: cornerstone.viewport,

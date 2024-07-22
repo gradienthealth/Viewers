@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { useToolbar } from '@ohif/core';
 import { ToolboxUI } from './';
 import { useToolbox } from '../../contextProviders';
+import { EVENTS, eventTarget } from '@cornerstonejs/core';
 
 /**
  * A toolbox is a collection of buttons and commands that they invoke, used to provide
@@ -65,15 +66,17 @@ function Toolbox({ servicesManager, buttonSectionId, commandsManager, title, ...
               return option;
             }
 
-            const value =
-              toolboxState.toolOptions?.[parentId]?.find(prop => prop.id === option.id)?.value ??
-              option.value;
+            const { value, min, max, step } =
+              toolboxState.toolOptions?.[parentId]?.find(prop => prop.id === option.id) ?? option;
 
             const updatedOptions = toolboxState.toolOptions?.[parentId];
 
             return {
               ...option,
               value,
+              ...(min && { min }),
+              ...(max && { max }),
+              ...(step && { step }),
               commands: value => {
                 api.handleToolOptionChange(parentId, option.id, value);
 
@@ -136,6 +139,58 @@ function Toolbox({ servicesManager, buttonSectionId, commandsManager, title, ...
     };
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const toolAndOptionNames = [
+      { toolName: 'Brush', optionName: 'brush-radius' },
+      { toolName: 'Eraser', optionName: 'eraser-radius' },
+    ];
+    let highestPixelSpacing = getPixelToMmConversionFactor(servicesManager);
+
+    const setDefaultBrushSize = (evt = null) => {
+      const defaultBrushSizeInMm = +params.get('defaultBrushSize') || 2;
+      let minBrushSizeInMm = +params.get('minBrushSize') || 2;
+      let maxBrushSizeInMm = +params.get('maxBrushSize') || 3;
+
+      highestPixelSpacing = highestPixelSpacing ?? getPixelToMmConversionFactor(servicesManager);
+      const lowestBrushRadius = highestPixelSpacing / 2;
+
+      if (minBrushSizeInMm < lowestBrushRadius) {
+        minBrushSizeInMm = lowestBrushRadius;
+      }
+      if (maxBrushSizeInMm < lowestBrushRadius) {
+        maxBrushSizeInMm = highestPixelSpacing;
+      }
+
+      toolAndOptionNames.forEach(({ toolName, optionName }) => {
+        handleToolOptionChange(toolName, optionName, +defaultBrushSizeInMm.toFixed(2));
+        api.handleOptionPropertiesModify(toolName, optionName, {
+          min: +minBrushSizeInMm.toFixed(2),
+          max: +maxBrushSizeInMm.toFixed(2),
+          step: +((maxBrushSizeInMm - minBrushSizeInMm) / 100).toFixed(2),
+        });
+      });
+      evt?.detail.element.removeEventListener(
+        EVENTS.VOLUME_VIEWPORT_NEW_VOLUME,
+        setDefaultBrushSize
+      );
+      evt && eventTarget.removeEventListener(EVENTS.STACK_VIEWPORT_NEW_STACK, setDefaultBrushSize);
+    };
+
+    if (highestPixelSpacing) {
+      setDefaultBrushSize();
+      return;
+    }
+
+    const elementEnabledHandler = evt => {
+      evt.detail.element.addEventListener(EVENTS.VOLUME_VIEWPORT_NEW_VOLUME, setDefaultBrushSize);
+      eventTarget.addEventListener(EVENTS.STACK_VIEWPORT_NEW_STACK, setDefaultBrushSize);
+      eventTarget.removeEventListener(EVENTS.ELEMENT_ENABLED, elementEnabledHandler);
+    };
+
+    eventTarget.addEventListener(EVENTS.ELEMENT_ENABLED, elementEnabledHandler);
+  }, []);
+
   return (
     <ToolboxUI
       {...props}
@@ -147,6 +202,20 @@ function Toolbox({ servicesManager, buttonSectionId, commandsManager, title, ...
       onInteraction={onInteraction}
     />
   );
+}
+
+function getPixelToMmConversionFactor(servicesManager) {
+  const { viewportGridService, cornerstoneViewportService } = servicesManager.services;
+  const { activeViewportId } = viewportGridService.getState();
+  const viewport = cornerstoneViewportService.getCornerstoneViewport(activeViewportId);
+  const imageData = viewport?.getImageData();
+
+  if (!imageData) {
+    return;
+  }
+
+  const { spacing } = imageData;
+  return Math.max(spacing[0], spacing[1]);
 }
 
 export default Toolbox;
