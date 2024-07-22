@@ -155,6 +155,10 @@ async function _loadSegments({ extensionManager, servicesManager, segDisplaySet,
 
   if (referencedDisplaySet.isReconstructable) {
     const cachedReferencedVolume = cache.getVolume(segDisplaySet.referencedVolumeId);
+    if (!cachedReferencedVolume) {
+      throw new Error('Referenced Volume is missing for the SEG');
+    }
+
     imageIds = cachedReferencedVolume.imageIds || cachedReferencedVolume._imageIds;
   } else {
     imageIds = referencedDisplaySet.instances.map(instance => instance.imageId);
