@@ -288,7 +288,7 @@ const toolbarButtons = [
             {
               commandName: 'setToolActive',
               commandOptions: {
-                toolName: 'StackScroll',
+                toolName: 'SmartStackScroll',
               },
               context: 'CORNERSTONE',
             },

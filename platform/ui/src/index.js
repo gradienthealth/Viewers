@@ -85,6 +85,7 @@ export {
   SegmentationTable,
   SegmentationGroupTable,
   SidePanel,
+  SmartScrollbar,
   SplitButton,
   StudyBrowser,
   StudyItem,
