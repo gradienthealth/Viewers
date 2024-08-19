@@ -20,6 +20,7 @@ import callInputDialog from './utils/callInputDialog';
 import toggleStackImageSync from './utils/stackSync/toggleStackImageSync';
 import { getFirstAnnotationSelected } from './utils/measurementServiceMappings/utils/selection';
 import getActiveViewportEnabledElement from './utils/getActiveViewportEnabledElement';
+import shouldPreventScroll from './utils/shouldPreventScroll';
 import { CornerstoneServices } from './types';
 
 function commandsModule({
@@ -35,6 +36,7 @@ function commandsModule({
     cornerstoneViewportService,
     uiNotificationService,
     measurementService,
+    stateSyncService,
   } = servicesManager.services as CornerstoneServices;
 
   const { measurementServiceSource } = this;
@@ -541,7 +543,7 @@ function commandsModule({
       const options = { imageIndex: jumpIndex };
       cstUtils.jumpToSlice(viewport.element, options);
     },
-    scroll: ({ direction }) => {
+    scroll: ({ direction, isSmartScrolling = false }) => {
       const enabledElement = _getActiveViewportEnabledElement();
 
       if (!enabledElement) {
@@ -550,6 +552,16 @@ function commandsModule({
 
       const { viewport } = enabledElement;
       const options = { delta: direction };
+
+      if (
+        shouldPreventScroll(
+          !isSmartScrolling,
+          viewport.getCurrentImageIdIndex() + direction,
+          servicesManager
+        )
+      ) {
+        return;
+      }
 
       cstUtils.scroll(viewport, options);
     },

@@ -46,6 +46,9 @@ export default function init({ servicesManager, configuration = {} }): void {
   // changes numRows and numCols, the viewports can be remembers and then replaced
   // afterwards.
   stateSyncService.register('viewportsByPosition', { clearOnModeExit: true });
+
+  // Stores the cached frames of each series so that we can prevent scrolling to a slice that is not cached
+  stateSyncService.register('cachedSlicesPerSeries', { clearOnModeExit: true });
 }
 
 const handlePETImageMetadata = ({ SeriesInstanceUID, StudyInstanceUID }) => {

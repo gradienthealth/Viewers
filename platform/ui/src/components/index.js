@@ -79,6 +79,7 @@ import PanelSection from './PanelSection';
 import AdvancedToolbox from './AdvancedToolbox';
 import InputDoubleRange from './InputDoubleRange';
 import LegacyButtonGroup from './LegacyButtonGroup';
+import SmartScrollbar from './SmartScrollbar';
 
 export {
   AboutModal,
@@ -132,6 +133,7 @@ export {
   SegmentationTable,
   SegmentationGroupTable,
   SidePanel,
+  SmartScrollbar,
   SplitButton,
   StudyBrowser,
   StudyItem,

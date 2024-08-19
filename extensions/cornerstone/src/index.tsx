@@ -30,6 +30,7 @@ import * as csWADOImageLoader from './initWADOImageLoader.js';
 import { measurementMappingUtils } from './utils/measurementServiceMappings';
 import type { PublicViewportOptions } from './services/ViewportService/Viewport';
 import ImageOverlayViewerTool from './tools/ImageOverlayViewerTool';
+import shouldPreventScroll from './utils/shouldPreventScroll';
 
 const Component = React.lazy(() => {
   return import(/* webpackPrefetch: true */ './Viewport/OHIFCornerstoneViewport');
@@ -129,6 +130,8 @@ const cornerstoneExtension: Types.Extensions.Extension = {
         exports: {
           toolNames,
           Enums: cs3DToolsEnums,
+          shouldPreventScroll: (keyPressed, imageIdIndex) =>
+            shouldPreventScroll(keyPressed, imageIdIndex, servicesManager),
         },
       },
     ];
