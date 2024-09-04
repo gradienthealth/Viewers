@@ -1,6 +1,7 @@
 import { Enums } from '@cornerstonejs/tools';
 import { toolNames } from './initCornerstoneTools';
 import DicomUpload from './components/DicomUpload/DicomUpload';
+import isOrientationCorrectionNeeded from './utils/isOrientationCorrectionNeeded';
 
 const tools = {
   active: [
@@ -37,6 +38,8 @@ function getCustomizationModule() {
           id: 'cornerstone.overlayViewportTools',
           tools,
         },
+        // TODO: Move this customization to MG specific mode when introduced in OHIF.
+        { id: 'orientationCorrectionCriterion', criteria: isOrientationCorrectionNeeded },
       ],
     },
   ];
