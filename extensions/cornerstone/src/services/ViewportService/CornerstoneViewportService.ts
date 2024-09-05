@@ -10,8 +10,9 @@ import {
   VolumeViewport3D,
   cache,
   Enums as csEnums,
+  metaData,
+  eventTarget,
 } from '@cornerstonejs/core';
-
 import { utilities as csToolsUtils, Enums as csToolsEnums } from '@cornerstonejs/tools';
 import { IViewportService } from './IViewportService';
 import { RENDERING_ENGINE_ID } from './constants';
@@ -20,6 +21,7 @@ import { StackViewportData, VolumeViewportData } from '../../types/CornerstoneCa
 import { Presentation, Presentations } from '../../types/Presentation';
 
 import JumpPresets from '../../utils/JumpPresets';
+import { getImageFlips } from '../../utils/getImageFlips';
 
 const EVENTS = {
   VIEWPORT_DATA_CHANGED: 'event::cornerstoneViewportService:viewportDataChanged',
@@ -325,6 +327,8 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
     viewportInfo: ViewportInfo,
     presentations: Presentations
   ): Promise<void> {
+    const { segmentationService, displaySetService, customizationService } =
+      this.servicesManager.services;
     const displaySetOptions = viewportInfo.getDisplaySetOptions();
 
     const { imageIds, initialImageIndex, displaySetInstanceUID } = viewportData.data;
@@ -354,24 +358,48 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
       }
     }
 
-    const segmentations = this.servicesManager.services.segmentationService.getSegmentations(false);
+    const { criteria: isOrientationCorrectionNeeded } = customizationService.get(
+      'orientationCorrectionCriterion'
+    );
+    const instance = metaData.get('instance', imageIds[initialImageIndexToUse]);
+
+    let hFlip = false,
+      vFlip = false;
+    if ((isOrientationCorrectionNeeded as (input) => boolean)?.(instance)) {
+      ({ hFlip, vFlip } = getImageFlips(instance));
+    }
+
+    const segmentations = segmentationService.getSegmentations(false);
     const toolgroupId = viewportInfo.getToolGroupId();
     for (const segmentation of segmentations) {
       const toolGroupSegmentationRepresentations =
-        this.servicesManager.services.segmentationService.getSegmentationRepresentationsForToolGroup(
-          toolgroupId
-        ) || [];
+        segmentationService.getSegmentationRepresentationsForToolGroup(toolgroupId) || [];
       const isSegmentationInToolGroup = toolGroupSegmentationRepresentations.find(
         representation => representation.segmentationId === segmentation.id
       );
 
+      const callback = evt => {
+        if (viewport.id !== evt.detail.viewportId) {
+          return;
+        }
+
+        eventTarget.removeEventListener(csEnums.Events.STACK_VIEWPORT_IMAGES_ADDED, callback);
+
+        const camera = presentations.positionPresentation?.camera;
+        if (isSegmentationInToolGroup && camera) {
+          viewport.setCamera(camera);
+        } else {
+          (hFlip || vFlip) && viewport.setCamera({ flipHorizontal: hFlip, flipVertical: vFlip });
+        }
+      };
+
+      eventTarget.addEventListener(csEnums.Events.STACK_VIEWPORT_IMAGES_ADDED, callback);
+
       if (!isSegmentationInToolGroup) {
-        const segDisplaySet = this.servicesManager.services.displaySetService.getDisplaySetByUID(
-          segmentation.id
-        );
+        const segDisplaySet = displaySetService.getDisplaySetByUID(segmentation.id);
 
         segDisplaySet &&
-          this.servicesManager.services.segmentationService.addSegmentationRepresentationToToolGroup(
+          segmentationService.addSegmentationRepresentationToToolGroup(
             toolgroupId,
             segmentation.id,
             segDisplaySet.isOverlayDisplaySet
@@ -382,6 +410,11 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
     return viewport.setStack(imageIds, initialImageIndexToUse).then(() => {
       viewport.setProperties({ ...properties });
       const camera = presentations.positionPresentation?.camera;
+
+      !camera &&
+        (hFlip || vFlip) &&
+        viewport.setCamera({ flipHorizontal: hFlip, flipVertical: vFlip });
+
       if (camera) {
         viewport.setCamera(camera);
       }
