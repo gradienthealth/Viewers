@@ -22,6 +22,12 @@ const segmentation = {
   viewport: '@ohif/extension-cornerstone-dicom-seg.viewportModule.dicom-seg',
 };
 
+const gradienthealth = {
+  form: '@gradienthealth/ohif-gradienthealth-extension.panelModule.form',
+  thumbnailList:
+    '@gradienthealth/ohif-gradienthealth-extension.panelModule.seriesList-without-tracking',
+};
+
 /**
  * Just two dependencies to be able to render a viewport with panels in order
  * to make sure that the mode is working.
@@ -50,7 +56,14 @@ function modeFactory({ modeConfiguration }) {
      * Services and other resources.
      */
     onModeEnter: ({ servicesManager, extensionManager, commandsManager }) => {
-      const { measurementService, toolbarService, toolGroupService } = servicesManager.services;
+      const {
+        measurementService,
+        toolbarService,
+        toolGroupService,
+        GoogleSheetsService,
+        CropDisplayAreaService,
+        CacheAPIService,
+      } = servicesManager.services;
 
       measurementService.clearMeasurements();
 
@@ -86,6 +99,9 @@ function modeFactory({ modeConfiguration }) {
         activateTool
       ));
 
+      GoogleSheetsService.init();
+      CropDisplayAreaService.init();
+      CacheAPIService.init();
       toolbarService.init(extensionManager);
       toolbarService.addButtons(toolbarButtons);
       toolbarService.createButtonSection('primary', [
@@ -149,11 +165,16 @@ function modeFactory({ modeConfiguration }) {
       {
         path: 'template',
         layoutTemplate: ({ location, servicesManager }) => {
+          const params = new URLSearchParams(location.search);
+          const rightPanels = [
+            segmentation.panelTool,
+            ...(params.get('sheetId') ? [gradienthealth.form] : []),
+          ];
           return {
             id: ohif.layout,
             props: {
-              leftPanels: [ohif.leftPanel],
-              rightPanels: [segmentation.panelTool],
+              leftPanels: [gradienthealth.thumbnailList],
+              rightPanels: rightPanels,
               viewports: [
                 {
                   namespace: cornerstone.viewport,

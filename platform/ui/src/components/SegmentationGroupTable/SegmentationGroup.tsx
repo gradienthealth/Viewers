@@ -6,6 +6,7 @@ import SegmentationGroupSegment from './SegmentationGroupSegment';
 
 const SegmentationGroup = ({
   segmentation,
+  savedStatusState,
   activeSegmentationId,
   disableEditing,
   showAddSegment,
@@ -24,6 +25,7 @@ const SegmentationGroup = ({
   onToggleSegmentLock,
   onSegmentColorClick,
   showDeleteSegment,
+  CropDisplayAreaService,
 }) => {
   const [showSegments, toggleShowSegments] = useState(true);
 
@@ -35,6 +37,7 @@ const SegmentationGroup = ({
       <div className="select-none">
         <SegmentationDropDownRow
           segmentation={segmentation}
+          savedStatusState={savedStatusState}
           activeSegmentationId={activeSegmentationId}
           disableEditing={disableEditing}
           showAddSegment={showAddSegment}
@@ -51,7 +54,7 @@ const SegmentationGroup = ({
         />
       </div>
       {showSegments && (
-        <div className="ohif-scrollbar mt-1.5 flex min-h-0 flex-col">
+        <div className="mt-1.5 flex min-h-0 flex-col">
           {segmentation?.segments?.map(segment => {
             if (!segment) {
               return null;
@@ -82,6 +85,7 @@ const SegmentationGroup = ({
                   onColor={onSegmentColorClick}
                   onToggleVisibility={onToggleSegmentVisibility}
                   onToggleLocked={onToggleSegmentLock}
+                  CropDisplayAreaService={CropDisplayAreaService}
                 />
               </div>
             );
@@ -107,6 +111,7 @@ SegmentationGroup.propTypes = {
       })
     ),
   }),
+  savedStatusState: PropTypes.string,
   activeSegmentationId: PropTypes.string,
   disableEditing: PropTypes.bool,
   showAddSegment: PropTypes.bool,
@@ -125,6 +130,7 @@ SegmentationGroup.propTypes = {
   onToggleSegmentVisibility: PropTypes.func.isRequired,
   onToggleSegmentLock: PropTypes.func.isRequired,
   onSegmentColorClick: PropTypes.func.isRequired,
+  CropDisplayAreaService: PropTypes.any,
 };
 
 export default SegmentationGroup;

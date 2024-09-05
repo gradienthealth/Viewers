@@ -2,7 +2,7 @@ name: Deploy viewer to github pages
 
 on:
   push:
-    branches: [ "gradienthealth/Stack-Segmentation" ]
+    branches: [ "gradienthealth/segmentation_mode_sheet_integration" ]
   #pull_request:
     #branches: [ "main" ]
 
@@ -24,7 +24,7 @@ jobs:
           uses: actions/checkout@v3
           with:
             repository: gradienthealth/cornerstone3D-beta
-            ref: gradienthealth/stack-segmentation-support-with-zip-image-loader
+            ref: gradienthealth/segmentation_mode_sheet_integration
             path: ./cornerstone3D
 
         - name: Build cornerstone3D
@@ -37,7 +37,7 @@ jobs:
           uses: actions/checkout@v3
           with:
             repository: gradienthealth/GradientExtensionsAndModes
-            ref: gradienthealth/Segmentation-with-DicomJSON
+            ref: gradienthealth/segmentation_mode_sheet_integration
             path: ./GradientExtensionsAndModes
 
         #- name: Build GradientExtensionsAndModes

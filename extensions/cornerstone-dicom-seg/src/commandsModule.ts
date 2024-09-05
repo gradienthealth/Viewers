@@ -19,6 +19,7 @@ import {
   getTargetViewport,
 } from './utils/hydrationUtils';
 import generateLabelmaps2DFromImageIdMap from './utils/generateLabelmaps2DFromImageIdMap';
+import getSegmentLabel from './utils/getSegmentLabel';
 
 const { datasetToBlob } = dcmjs.data;
 
@@ -100,7 +101,7 @@ const commandsModule = ({
             toolGroupId,
             segmentIndex: 1,
             properties: {
-              label: 'Segment 1',
+              label: getSegmentLabel(segmentationService.getSegmentation(segmentationId)),
             },
           });
 
@@ -318,28 +319,45 @@ const commandsModule = ({
      * @returns {Object|void} Returns the naturalized report if successfully stored,
      * otherwise throws an error.
      */
-    storeSegmentation: async ({ segmentationId, dataSource }) => {
-      const promptResult = await createReportDialogPrompt(uiDialogService, {
-        extensionManager,
-      });
-
-      if (promptResult.action !== 1 && promptResult.value) {
-        return;
-      }
-
+    storeSegmentation: async ({ segmentationId, dataSource, skipLabelDialog = false }) => {
       const segmentation = segmentationService.getSegmentation(segmentationId);
 
       if (!segmentation) {
         throw new Error('No segmentation found');
       }
+      const { label, displaySetInstanceUID } = segmentation;
 
-      const { label } = segmentation;
+      const displaySet = displaySetService.getDisplaySetByUID(displaySetInstanceUID);
+      const shouldOverWrite = displaySet && displaySet.Modality === 'SEG';
+
+      let promptResult: { action?: number; value?: string } = {};
+
+      if (!(skipLabelDialog || shouldOverWrite)) {
+        promptResult = await createReportDialogPrompt(uiDialogService, {
+          extensionManager,
+        });
+
+        if (promptResult.action !== 1 && !promptResult.value) {
+          return;
+        }
+      }
+
       const SeriesDescription = promptResult.value || label || 'Research Derived Series';
+      segmentation.label = SeriesDescription;
 
       const generatedData = actions.generateSegmentation({
         segmentationId,
         options: {
           SeriesDescription,
+          // Use SeriesInstanceUID, SOPInstanceUID, SeriesNumber, Manufacturer and SeriesDate
+          // if displaySet of the segmentation already exists.
+          // Study level and patient metadata will be used automatically.
+          ...(shouldOverWrite && {
+            SeriesInstanceUID: displaySet.SeriesInstanceUID,
+            SOPInstanceUID: displaySet.instances[0].SOPInstanceUID,
+            SeriesNumber: displaySet.SeriesNumber,
+            Manufacturer: displaySet.instances[0].Manufacturer,
+          }),
         },
       });
 
@@ -357,8 +375,6 @@ const commandsModule = ({
 
       // add the information for where we stored it to the instance as well
       naturalizedReport.wadoRoot = dataSource.getConfig().wadoRoot;
-
-      DicomMetadataStore.addInstances([naturalizedReport], true);
 
       return naturalizedReport;
     },

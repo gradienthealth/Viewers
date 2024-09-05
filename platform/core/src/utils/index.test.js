@@ -41,6 +41,7 @@ describe('Top level exports', () => {
       'subscribeToNextViewportGridChange',
       'uuidv4',
       'addAccessors',
+      'getDirectionsFromPatientOrientation',
     ].sort();
 
     const exports = Object.keys(utils.default).sort();

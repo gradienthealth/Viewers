@@ -5,6 +5,7 @@ import {
   utilities as csUtils,
   Types as CoreTypes,
   BaseVolumeViewport,
+  metaData,
 } from '@cornerstonejs/core';
 import {
   ToolGroupManager,
@@ -21,6 +22,7 @@ import toggleStackImageSync from './utils/stackSync/toggleStackImageSync';
 import { getFirstAnnotationSelected } from './utils/measurementServiceMappings/utils/selection';
 import getActiveViewportEnabledElement from './utils/getActiveViewportEnabledElement';
 import { CornerstoneServices } from './types';
+import { getImageFlips } from './utils/getImageFlips';
 
 function commandsModule({
   servicesManager,
@@ -35,6 +37,7 @@ function commandsModule({
     cornerstoneViewportService,
     uiNotificationService,
     measurementService,
+    customizationService,
   } = servicesManager.services as CornerstoneServices;
 
   const { measurementServiceSource } = this;
@@ -359,6 +362,19 @@ function commandsModule({
         ],
       });
     },
+    recordSetToolActive: ({ toolName }) => {
+      toolbarService.recordInteraction({
+        interactionType: 'tool',
+        commands: [
+          {
+            commandName: 'setToolActive',
+            commandOptions: {
+              toolName,
+            },
+          },
+        ],
+      });
+    },
     showDownloadViewportModal: () => {
       const { activeViewportId } = viewportGridService.getState();
 
@@ -469,6 +485,16 @@ function commandsModule({
 
       viewport.resetProperties?.();
       viewport.resetCamera();
+
+      const { criteria: isOrientationCorrectionNeeded } = customizationService.get(
+        'orientationCorrectionCriterion'
+      );
+      const instance = metaData.get('instance', viewport.getCurrentImageId());
+
+      if ((isOrientationCorrectionNeeded as (input) => boolean)?.(instance)) {
+        const { hFlip, vFlip } = getImageFlips(instance);
+        (hFlip || vFlip) && viewport.setCamera({ flipHorizontal: hFlip, flipVertical: vFlip });
+      }
 
       viewport.render();
     },
@@ -652,6 +678,9 @@ function commandsModule({
     },
     setToolActive: {
       commandFn: actions.setToolActive,
+    },
+    recordSetToolActive: {
+      commandFn: actions.recordSetToolActive,
     },
     rotateViewportCW: {
       commandFn: actions.rotateViewport,
