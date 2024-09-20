@@ -52,7 +52,7 @@ export default function initWADOImageLoader(
       use16BitDataType:
         Boolean(appConfig.useNorm16Texture) || Boolean(appConfig.preferSizeOverAccuracy),
     },
-    beforeSend: function (xhr) {
+    beforeSend: function (xhr, imageId) {
       //TODO should be removed in the future and request emitted by DicomWebDataSource
       const sourceConfig = extensionManager.getActiveDataSource()?.[0].getConfig() ?? {};
       const headers = userAuthenticationService.getAuthorizationHeader();
@@ -68,6 +68,15 @@ export default function initWADOImageLoader(
 
       if (headers) {
         Object.assign(xhrRequestHeaders, headers);
+      }
+
+      const instance = cornerstone.metaData.get('instance', imageId);
+      const { ExtendedOffsetTable, ExtendedOffsetTableLengths, FileOffsets } = instance;
+      if (FileOffsets && !(ExtendedOffsetTable && ExtendedOffsetTableLengths)) {
+        // A seperate logic is used if offset tables are present in cornerstone3D.
+        const { startByte, endByte } = instance.FileOffsets;
+        const rangeHeader = { Range: `bytes=${startByte}-${endByte}` };
+        Object.assign(xhrRequestHeaders, rangeHeader);
       }
 
       return xhrRequestHeaders;
