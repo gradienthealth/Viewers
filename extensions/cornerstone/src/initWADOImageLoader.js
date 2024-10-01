@@ -71,8 +71,8 @@ export default function initWADOImageLoader(
       }
 
       const instance = cornerstone.metaData.get('instance', imageId);
-      const { ExtendedOffsetTable, ExtendedOffsetTableLengths, FileOffsets } = instance;
-      if (FileOffsets && !(ExtendedOffsetTable && ExtendedOffsetTableLengths)) {
+      const { CustomOffsetTable, CustomOffsetTableLengths, FileOffsets } = instance;
+      if (FileOffsets && !(CustomOffsetTable && CustomOffsetTableLengths)) {
         // A seperate logic is used if offset tables are present in cornerstone3D.
         const { startByte, endByte } = instance.FileOffsets;
         const rangeHeader = { Range: `bytes=${startByte}-${endByte}` };
