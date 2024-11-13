@@ -287,7 +287,7 @@ function commandsModule({
       toolbarService.recordInteraction(props);
     },
     // Enable or disable a toggleable command, without calling the activation
-    // Used to setup already active tools from hanging protocols
+    // Used to setup already active tools from hanging protocols.
     setToolbarToggled: props => {
       toolbarService.setToggled(props.toolId, props.isActive ?? true);
     },
