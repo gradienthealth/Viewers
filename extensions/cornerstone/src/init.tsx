@@ -168,6 +168,7 @@ export default async function init({
     interaction: appConfig?.maxNumRequests?.interaction || 100,
     thumbnail: appConfig?.maxNumRequests?.thumbnail || 75,
     prefetch: appConfig?.maxNumRequests?.prefetch || 10,
+    precache: appConfig?.maxNumRequests?.precache || 10,
   };
 
   initWADOImageLoader(userAuthenticationService, appConfig, extensionManager);
@@ -253,10 +254,10 @@ export default async function init({
 
   /**
    * Runs error handler for failed requests.
-   * @param event 
+   * @param event
    */
   const imageLoadFailedHandler = ({ detail }) => {
-    const handler = errorHandler.getHTTPErrorHandler()
+    const handler = errorHandler.getHTTPErrorHandler();
     handler(detail.error);
   };
 
@@ -290,7 +291,7 @@ export default async function init({
   });
   eventTarget.addEventListener(EVENTS.IMAGE_LOAD_FAILED, imageLoadFailedHandler);
   eventTarget.addEventListener(EVENTS.IMAGE_LOAD_ERROR, imageLoadFailedHandler);
-  
+
   function elementEnabledHandler(evt) {
     const { element } = evt.detail;
 
