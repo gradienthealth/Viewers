@@ -1,5 +1,5 @@
 import { createReportAsync } from '@ohif/extension-default';
-import React, { useEffect, useState, useCallback, useReducer } from 'react';
+import React, { useEffect, useState, useCallback, useReducer, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { SegmentationGroupTable, LegacyButtonGroup, LegacyButton } from '@ohif/ui';
 
@@ -33,8 +33,18 @@ export default function PanelSegmentation({
     uiDialogService,
     displaySetService,
     userAuthenticationService,
-    CropDisplayAreaService,
+    CacheAPIService,
+    uiViewportDialogService,
   } = servicesManager.services;
+  const utilityModule = extensionManager.getModuleEntry(
+    '@gradienthealth/ohif-gradienthealth-extension.utilityModule.version'
+  );
+  const {
+    getObjectVersions,
+    confirmSEGVersionRestore,
+    restoreObjectVersion,
+    parseUrlToBucketAndFileName,
+  } = utilityModule.exports;
 
   const { t } = useTranslation('PanelSegmentation');
 
@@ -44,7 +54,9 @@ export default function PanelSegmentation({
   );
 
   const [segmentations, setSegmentations] = useState(() => segmentationService.getSegmentations());
+  const [versionsMap, setVersionsMap] = useState(new Map());
   const [savedStatusStates, dispatch] = useReducer(savedStatusReducer, {});
+  const componentWillUnMount = useRef(false);
 
   useEffect(() => {
     // ~~ Subscription
@@ -66,6 +78,20 @@ export default function PanelSegmentation({
       subscriptions.forEach(unsub => {
         unsub();
       });
+    };
+  }, []);
+
+  useEffect(() => {
+    updateVersions(segmentations);
+    const { unsubscribe } = segmentationService.subscribe(
+      segmentationService.EVENTS.SEGMENTATION_ADDED,
+      ({ segmentation: newSegmentation }) => {
+        updateVersions([newSegmentation]);
+      }
+    );
+
+    return () => {
+      unsubscribe();
     };
   }, []);
 
@@ -125,6 +151,7 @@ export default function PanelSegmentation({
             const savedSegmentations = Object.keys(payload).filter(
               id => payload[id] === SAVED_STATUS_ICON.SAVED
             );
+            updateVersions(changedSegmentations);
             changedSegmentations = changedSegmentations.filter(
               cs => !savedSegmentations.includes(cs.id)
             );
@@ -137,6 +164,30 @@ export default function PanelSegmentation({
       unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    return () => {
+      componentWillUnMount.current = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const loadActiveSegLiveVersion = () => {
+      const activeSegmentation = segmentations?.find(segmentation => segmentation.isActive);
+      if (activeSegmentation) {
+        const liveVersion = versionsMap
+          .get(activeSegmentation.id)
+          ?.find(version => !version.timeDeleted);
+        liveVersion && onVersionClick(activeSegmentation.id, liveVersion);
+      }
+    };
+
+    return () => {
+      if (componentWillUnMount.current) {
+        loadActiveSegLiveVersion();
+      }
+    };
+  }, [segmentations, versionsMap]);
 
   const setSegmentationActive = segmentationId => {
     setReferencedDisplaySet(segmentationId);
@@ -153,6 +204,14 @@ export default function PanelSegmentation({
   // Set referenced displaySet of the segmentation to the viewport
   // if it is not displayed in any of the viewports.
   const setReferencedDisplaySet = segmentationId => {
+    const activeSegmentation = segmentations.find(segmentation => segmentation.isActive);
+    if (activeSegmentation.id !== segmentationId) {
+      const liveVersion = versionsMap
+        .get(activeSegmentation.id)
+        ?.find(version => !version.timeDeleted);
+      liveVersion && onVersionClick(activeSegmentation.id, liveVersion);
+    }
+
     const segDisplayset = displaySetService.getDisplaySetByUID(segmentationId);
     if (!segDisplayset) {
       return;
@@ -346,6 +405,7 @@ export default function PanelSegmentation({
       });
 
       dispatch({ payload: { [segmentationId]: SAVED_STATUS_ICON.SAVED } });
+      updateVersions([segmentations.find(segmentation => segmentation.id === segmentationId)]);
     } catch (error) {
       console.warn(error.message);
       dispatch({ payload: { [segmentationId]: SAVED_STATUS_ICON.ERROR } });
@@ -372,6 +432,109 @@ export default function PanelSegmentation({
     });
   };
 
+  const onVersionClick = (segmentationId, version) => {
+    const headers = userAuthenticationService.getAuthorizationHeader();
+    const displaySet = displaySetService.getDisplaySetByUID(segmentationId);
+    const referencedDisplaySetInstanceUID = displaySet.referencedDisplaySetInstanceUID;
+    const referencedDisplaySet = displaySetService.getDisplaySetByUID(
+      referencedDisplaySetInstanceUID
+    );
+    const { activeViewportId } = viewportGridService.getState();
+
+    const url = new URL(displaySet.instances[0].url);
+
+    if (url.searchParams.get('generation') === version.generation) {
+      return;
+    }
+
+    url.searchParams.set('generation', version.generation);
+    const newUrl = url.toString();
+    const { bucket, fileName } = parseUrlToBucketAndFileName(newUrl);
+    const imageIdToFileUriMap = CacheAPIService.getImageIdToFileUriMap();
+    const imageId = imageIdToFileUriMap.get(newUrl) || newUrl;
+
+    displaySet.instances[0].url = displaySet.instance.url = newUrl;
+    displaySet.instance.imageId = imageId;
+    displaySet.instance.getImageId = () => imageId;
+
+    const liveVersion = versionsMap.get(segmentationId).find(version => !version.timeDeleted);
+    displaySet.isLoaded = false;
+    const toolGroupIds = getToolGroupIds(segmentationId);
+    segmentationService.remove(segmentationId);
+
+    displaySet
+      .load({ headers: headers })
+      .then(() => {
+        const promises = toolGroupIds.map(toolGroupId =>
+          segmentationService.addSegmentationRepresentationToToolGroup(
+            toolGroupId,
+            segmentationId,
+            true
+          )
+        );
+        return Promise.all(promises);
+      })
+      .then(async () => {
+        referencedDisplaySet.needsRerendering = true;
+        viewportGridService.setDisplaySetsForViewport({
+          viewportId: activeViewportId,
+          displaySetInstanceUIDs: [referencedDisplaySetInstanceUID],
+        });
+
+        if (liveVersion.generation === version.generation) {
+          return;
+        }
+
+        return confirmSEGVersionRestore(activeViewportId, servicesManager);
+      })
+      .then(status => {
+        switch (status) {
+          case 1:
+            restoreObjectVersion(bucket, fileName, version.generation, headers).then(() =>
+              updateVersions([
+                segmentations.find(segmentation => segmentation.id === segmentationId),
+              ])
+            );
+            break;
+          case 0:
+            onVersionClick(segmentationId, liveVersion);
+            break;
+          default:
+            uiViewportDialogService.hide(); // This case is when we are load live version.
+        }
+      })
+      .catch(error => console.warn(error));
+  };
+
+  const updateVersions = updatedSegmentations => {
+    const headers = userAuthenticationService.getAuthorizationHeader();
+    const newVersionsMap = new Map();
+
+    const promises = updatedSegmentations.map(async segmentation => {
+      const displaySet = displaySetService.getDisplaySetByUID(segmentation.id);
+      if (displaySet) {
+        const url = new URL(displaySet.instances[0].url);
+        url.searchParams.delete('generation');
+        const { bucket, fileName } = parseUrlToBucketAndFileName(url.toString());
+        return getObjectVersions(bucket, fileName, headers).then(versions => ({
+          id: segmentation.id,
+          versions,
+        }));
+      }
+    });
+
+    Promise.all(promises).then(results => {
+      results.forEach(result => {
+        if (result) {
+          newVersionsMap.set(result.id, result.versions);
+        }
+      });
+      setVersionsMap(
+        prevState => new Map([...Array.from(prevState), ...Array.from(newVersionsMap)])
+      );
+    });
+  };
+
   const params = new URLSearchParams(window.location.search);
   const showAddSegmentation = params.get('disableAddSegmentation') !== 'true';
 
@@ -381,6 +544,7 @@ export default function PanelSegmentation({
         <SegmentationGroupTable
           title={t('Segmentations')}
           segmentations={segmentations}
+          versionsMap={versionsMap}
           savedStatusStates={savedStatusStates}
           disableEditing={configuration.disableEditing}
           showAddSegmentation={showAddSegmentation}
@@ -400,6 +564,7 @@ export default function PanelSegmentation({
           onToggleSegmentVisibility={onToggleSegmentVisibility}
           onToggleSegmentLock={onToggleSegmentLock}
           onToggleSegmentationVisibility={onToggleSegmentationVisibility}
+          onVersionClick={onVersionClick}
           showDeleteSegment={true}
           segmentationConfig={{ initialConfig: segmentationConfiguration }}
           setRenderOutline={value =>
@@ -427,7 +592,7 @@ export default function PanelSegmentation({
           setFillAlphaInactive={value =>
             _setSegmentationConfiguration(selectedSegmentationId, 'fillAlphaInactive', value)
           }
-          CropDisplayAreaService={CropDisplayAreaService}
+          servicesManager={servicesManager}
         />
       </div>
     </>

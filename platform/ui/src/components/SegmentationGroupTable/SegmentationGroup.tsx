@@ -6,6 +6,7 @@ import SegmentationGroupSegment from './SegmentationGroupSegment';
 
 const SegmentationGroup = ({
   segmentation,
+  versions,
   savedStatusState,
   activeSegmentationId,
   disableEditing,
@@ -24,9 +25,12 @@ const SegmentationGroup = ({
   onToggleSegmentVisibility,
   onToggleSegmentLock,
   onSegmentColorClick,
+  onVersionClick,
   showDeleteSegment,
-  CropDisplayAreaService,
+  servicesManager,
 }) => {
+  const { CacheAPIService, CropDisplayAreaService } = servicesManager.services;
+
   const [showSegments, toggleShowSegments] = useState(true);
 
   return (
@@ -37,6 +41,7 @@ const SegmentationGroup = ({
       <div className="select-none">
         <SegmentationDropDownRow
           segmentation={segmentation}
+          versions={versions}
           savedStatusState={savedStatusState}
           activeSegmentationId={activeSegmentationId}
           disableEditing={disableEditing}
@@ -50,7 +55,9 @@ const SegmentationGroup = ({
           onSegmentAdd={onSegmentAdd}
           onToggleSegmentationVisibility={onToggleSegmentationVisibility}
           onToggleShowSegments={toggleShowSegments}
+          onVersionClick={onVersionClick}
           showSegments={showSegments}
+          CacheAPIService={CacheAPIService}
         />
       </div>
       {showSegments && (
@@ -111,6 +118,7 @@ SegmentationGroup.propTypes = {
       })
     ),
   }),
+  versions: PropTypes.array,
   savedStatusState: PropTypes.string,
   activeSegmentationId: PropTypes.string,
   disableEditing: PropTypes.bool,
@@ -130,7 +138,8 @@ SegmentationGroup.propTypes = {
   onToggleSegmentVisibility: PropTypes.func.isRequired,
   onToggleSegmentLock: PropTypes.func.isRequired,
   onSegmentColorClick: PropTypes.func.isRequired,
-  CropDisplayAreaService: PropTypes.any,
+  onVersionClick: PropTypes.func,
+  servicesManager: PropTypes.any,
 };
 
 export default SegmentationGroup;

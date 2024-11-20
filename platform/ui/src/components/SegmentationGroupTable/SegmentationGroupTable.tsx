@@ -9,6 +9,7 @@ import SegmentationGroup from './SegmentationGroup';
 
 const SegmentationGroupTable = ({
   segmentations,
+  versionsMap,
   savedStatusStates,
   // segmentation initial config
   segmentationConfig,
@@ -34,6 +35,8 @@ const SegmentationGroupTable = ({
   onToggleSegmentVisibility,
   onToggleSegmentLock,
   onSegmentColorClick,
+  // object version handlers
+  onVersionClick,
   // segmentation config handlers
   setFillAlpha,
   setFillAlphaInactive,
@@ -42,7 +45,7 @@ const SegmentationGroupTable = ({
   setRenderFill,
   setRenderInactiveSegmentations,
   setRenderOutline,
-  CropDisplayAreaService,
+  servicesManager,
 }) => {
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [activeSegmentationId, setActiveSegmentationId] = useState(null);
@@ -115,6 +118,7 @@ const SegmentationGroupTable = ({
                 key={segmentation.id}
                 activeSegmentationId={activeSegmentationId}
                 segmentation={segmentation}
+                versions={versionsMap?.get(segmentation.id)}
                 savedStatusState={savedStatusStates[segmentation.id]}
                 disableEditing={disableEditing}
                 showAddSegment={showAddSegment}
@@ -132,8 +136,9 @@ const SegmentationGroupTable = ({
                 onToggleSegmentVisibility={onToggleSegmentVisibility}
                 onToggleSegmentLock={onToggleSegmentLock}
                 onSegmentColorClick={onSegmentColorClick}
+                onVersionClick={onVersionClick}
                 showDeleteSegment={showDeleteSegment}
-                CropDisplayAreaService={CropDisplayAreaService}
+                servicesManager={servicesManager}
               />
             ))
           )}
@@ -159,6 +164,7 @@ SegmentationGroupTable.propTypes = {
       ),
     })
   ),
+  versionsMap: PropTypes.object,
   savedStatusStates: PropTypes.object,
   segmentationConfig: PropTypes.object.isRequired,
   disableEditing: PropTypes.bool,
@@ -180,6 +186,7 @@ SegmentationGroupTable.propTypes = {
   onToggleSegmentVisibility: PropTypes.func.isRequired,
   onToggleSegmentLock: PropTypes.func.isRequired,
   onSegmentColorClick: PropTypes.func.isRequired,
+  onVersionClick: PropTypes.func,
   setFillAlpha: PropTypes.func.isRequired,
   setFillAlphaInactive: PropTypes.func.isRequired,
   setOutlineWidthActive: PropTypes.func.isRequired,
@@ -187,7 +194,7 @@ SegmentationGroupTable.propTypes = {
   setRenderFill: PropTypes.func.isRequired,
   setRenderInactiveSegmentations: PropTypes.func.isRequired,
   setRenderOutline: PropTypes.func.isRequired,
-  CropDisplayAreaService: PropTypes.any,
+  servicesManager: PropTypes.any,
 };
 
 SegmentationGroupTable.defaultProps = {

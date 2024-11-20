@@ -121,7 +121,7 @@ function _load(segDisplaySet, servicesManager, extensionManager, headers) {
       });
     }
 
-    const suppressEvents = true;
+    const suppressEvents = false;
     segmentationService
       .createSegmentationForSEGDisplaySet(segDisplaySet, null, suppressEvents)
       .then(() => {
