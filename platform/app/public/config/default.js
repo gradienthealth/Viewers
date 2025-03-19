@@ -24,7 +24,7 @@ window.config = {
     prefetch: 25,
   },
   // filterQueryParam: false,
-  defaultDataSourceName: 'dicomweb',
+  defaultDataSourceName: 'cod-dicomweb',
   /* Dynamic config allows user to pass "configUrl" query string this allows to load config without recompiling application. The regex will ensure valid configuration source */
   // dangerouslyUseDynamicConfig: {
   //   enabled: true,
@@ -62,6 +62,27 @@ window.config = {
           transform: url => url.replace('/pixeldata.mp4', '/rendered'),
         },
         omitQuotationForMultipartRequest: true,
+      },
+    },
+    {
+      namespace: '@ohif/extension-default.dataSourcesModule.dicomweb',
+      sourceName: 'cod-dicomweb',
+      configuration: {
+        friendlyName: 'Cloud Optimized wado proxy server',
+        name: 'cod',
+        wadoUriRoot: 'https://storage.googleapis.com',
+        qidoRoot:
+          'https://storage.googleapis.com/gradienthealth_cod_dicomweb_public_benchmark/v1/dicomweb',
+        wadoRoot:
+          'https://storage.googleapis.com/gradienthealth_cod_dicomweb_public_benchmark/v1/dicomweb',
+        useCod: true,
+        imageRendering: 'wadors',
+        thumbnailRendering: 'wadors',
+        enableStudyLazyLoad: true,
+        staticWado: false,
+        bulkDataURI: {
+          enabled: false,
+        },
       },
     },
 

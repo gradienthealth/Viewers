@@ -16,6 +16,8 @@ import { retrieveStudyMetadata, deleteStudyMetadataPromise } from './retrieveStu
 import StaticWadoClient from './utils/StaticWadoClient';
 import getDirectURL from '../utils/getDirectURL';
 import { fixBulkDataURI } from './utils/fixBulkDataURI';
+import CodDicomWebServerClient from './codDicomWebServerWrapper';
+import getCodImageId from './getCodImageId';
 
 const { DicomMetaDictionary, DicomDict } = dcmjs.data;
 
@@ -36,6 +38,7 @@ const metadataProvider = classes.MetadataProvider;
  * @param {string} dicomWebConfig.qidoRoot - Base URL to use for QIDO requests
  * @param {string} dicomWebConfig.wadoRoot - Base URL to use for WADO requests
  * @param {string} dicomWebConfig.wadoUri - Base URL to use for WADO URI requests
+ * @param {boolean} dicomWebConfig.useCod - Indicates the viewer should use the cod dicomweb server proxy client
  * @param {boolean} dicomWebConfig.qidoSupportsIncludeField - Whether QIDO supports the "Include" option to request additional fields in response
  * @param {string} dicomWebConfig.imageRendering - wadors | ? (unsure of where/how this is used)
  * @param {string} dicomWebConfig.thumbnailRendering - wadors | ? (unsure of where/how this is used)
@@ -69,7 +72,7 @@ function createDicomWebApi(dicomWebConfig, servicesManager) {
     generateWadoHeader;
 
   const implementation = {
-    initialize: ({ params, query }) => {
+    initialize: async ({ params, query }) => {
       if (dicomWebConfig.onConfiguration && typeof dicomWebConfig.onConfiguration === 'function') {
         dicomWebConfig = dicomWebConfig.onConfiguration(dicomWebConfig, {
           params,
@@ -121,13 +124,22 @@ function createDicomWebApi(dicomWebConfig, servicesManager) {
 
       // TODO -> Two clients sucks, but its better than 1000.
       // TODO -> We'll need to merge auth later.
-      qidoDicomWebClient = dicomWebConfig.staticWado
-        ? new StaticWadoClient(qidoConfig)
-        : new api.DICOMwebClient(qidoConfig);
+      qidoDicomWebClient = dicomWebConfig.useCod
+        ? new CodDicomWebServerClient(qidoConfig)
+        : dicomWebConfig.staticWado
+          ? new StaticWadoClient(qidoConfig)
+          : new api.DICOMwebClient(qidoConfig);
 
-      wadoDicomWebClient = dicomWebConfig.staticWado
-        ? new StaticWadoClient(wadoConfig)
-        : new api.DICOMwebClient(wadoConfig);
+      wadoDicomWebClient = dicomWebConfig.useCod
+        ? new CodDicomWebServerClient(wadoConfig)
+        : dicomWebConfig.staticWado
+          ? new StaticWadoClient(wadoConfig)
+          : new api.DICOMwebClient(wadoConfig);
+
+      if (dicomWebConfig.useCod) {
+        await qidoDicomWebClient.fetchStudiesMetadata(query);
+        await wadoDicomWebClient.fetchStudiesMetadata(query);
+      }
     },
     query: {
       studies: {
@@ -529,7 +541,7 @@ function createDicomWebApi(dicomWebConfig, servicesManager) {
       return imageIds;
     },
     getImageIdsForInstance({ instance, frame = undefined }) {
-      const imageIds = getImageId({
+      const imageIds = (dicomWebConfig.useCod ? getCodImageId : getImageId)({
         instance,
         frame,
         config: dicomWebConfig,
@@ -550,7 +562,12 @@ function createDicomWebApi(dicomWebConfig, servicesManager) {
           ? StudyInstanceUIDs
           : [StudyInstanceUIDs];
 
-      return StudyInstanceUIDsAsArray;
+      const studyUIDs = wadoDicomWebClient.getStudyUIDForDeidStudyUID
+        ? StudyInstanceUIDsAsArray.map(studyUID =>
+            wadoDicomWebClient.getStudyUIDForDeidStudyUID(studyUID)
+          )
+        : StudyInstanceUIDsAsArray;
+      return studyUIDs;
     },
   };
 

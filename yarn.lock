@@ -9641,6 +9641,14 @@ coa@^2.0.2:
     chalk "^2.4.1"
     q "^1.1.2"
 
+cod-dicomweb-server@^1.3.4:
+  version "1.3.4"
+  resolved "https://registry.yarnpkg.com/cod-dicomweb-server/-/cod-dicomweb-server-1.3.4.tgz#925b063a87aa2d70e4ca699e334efbe9e9a48f1e"
+  integrity sha512-uUWCokxWIBnRTxWhMCzOcBZlUZujVTPdWAWg9zUHNEr4QrI86vpYeo/fVaoR2K9/scdCL/0UWzswooPGz7bXhg==
+  dependencies:
+    comlink "^4.4.2"
+    dicom-parser "^1.8.21"
+
 code-point-at@^1.0.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/code-point-at/-/code-point-at-1.1.0.tgz#0d070b4d043a5bea33a2f1a40e2edb3d9a4ccf77"
@@ -9742,6 +9750,11 @@ comlink@^4.4.1:
   version "4.4.1"
   resolved "https://registry.yarnpkg.com/comlink/-/comlink-4.4.1.tgz#e568b8e86410b809e8600eb2cf40c189371ef981"
   integrity sha512-+1dlx0aY5Jo1vHy/tSsIGpSkN4tS9rZSW8FIhG0JH/crs9wwweswIo/POr451r7bZww3hFbPAKnTpimzL/mm4Q==
+
+comlink@^4.4.2:
+  version "4.4.2"
+  resolved "https://registry.yarnpkg.com/comlink/-/comlink-4.4.2.tgz#cbbcd82742fbebc06489c28a183eedc5c60a2bca"
+  integrity sha512-OxGdvBmJuNKSCMO4NTl1L47VRp6xn2wG4F/2hYzB6tiCb709otOxtEYCSvK80PtjODfXXZu8ds+Nw5kVCjqd2g==
 
 comma-separated-tokens@^2.0.0:
   version "2.0.3"
@@ -11161,7 +11174,7 @@ dicom-microscopy-viewer@^0.46.1:
     ol "^7.1"
     uuid "^9.0"
 
-dicom-parser@^1.8.9:
+dicom-parser@^1.8.21, dicom-parser@^1.8.9:
   version "1.8.21"
   resolved "https://registry.yarnpkg.com/dicom-parser/-/dicom-parser-1.8.21.tgz#916fdc77776367976b8457cad462b5b7cf74eaea"
   integrity sha512-lYCweHQDsC8UFpXErPlg86Px2A8bay0HiUY+wzoG3xv5GzgqVHU3lziwSc/Gzn7VV7y2KeP072SzCviuOoU02w==
