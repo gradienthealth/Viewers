@@ -16,6 +16,8 @@ import { retrieveStudyMetadata, deleteStudyMetadataPromise } from './retrieveStu
 import StaticWadoClient from './utils/StaticWadoClient';
 import getDirectURL from '../utils/getDirectURL';
 import { fixBulkDataURI } from './utils/fixBulkDataURI';
+import CodDicomWebServerClient from './codDicomWebServerWrapper';
+import getCodImageId from './getCodImageId';
 
 const { DicomMetaDictionary, DicomDict } = dcmjs.data;
 
@@ -33,6 +35,7 @@ const metadataProvider = classes.MetadataProvider;
  * @param {string} wadoUriRoot - Legacy? (potentially unused/replaced)
  * @param {string} qidoRoot - Base URL to use for QIDO requests
  * @param {string} wadoRoot - Base URL to use for WADO requests
+ * @param {boolean} useCod - Indicates the viewer should use the cod dicomweb server proxy client
  * @param {boolean} qidoSupportsIncludeField - Whether QIDO supports the "Include" option to request additional fields in response
  * @param {string} imageRengering - wadors | ? (unsure of where/how this is used)
  * @param {string} thumbnailRendering - wadors | ? (unsure of where/how this is used)
@@ -51,7 +54,7 @@ function createDicomWebApi(dicomWebConfig, servicesManager) {
     generateWadoHeader;
 
   const implementation = {
-    initialize: ({ params, query }) => {
+    initialize: async ({ params, query }) => {
       if (dicomWebConfig.onConfiguration && typeof dicomWebConfig.onConfiguration === 'function') {
         dicomWebConfig = dicomWebConfig.onConfiguration(dicomWebConfig, {
           params,
@@ -103,13 +106,22 @@ function createDicomWebApi(dicomWebConfig, servicesManager) {
 
       // TODO -> Two clients sucks, but its better than 1000.
       // TODO -> We'll need to merge auth later.
-      qidoDicomWebClient = dicomWebConfig.staticWado
-        ? new StaticWadoClient(qidoConfig)
-        : new api.DICOMwebClient(qidoConfig);
+      qidoDicomWebClient = dicomWebConfig.useCod
+        ? new CodDicomWebServerClient(qidoConfig)
+        : dicomWebConfig.staticWado
+          ? new StaticWadoClient(qidoConfig)
+          : new api.DICOMwebClient(qidoConfig);
 
-      wadoDicomWebClient = dicomWebConfig.staticWado
-        ? new StaticWadoClient(wadoConfig)
-        : new api.DICOMwebClient(wadoConfig);
+      wadoDicomWebClient = dicomWebConfig.useCod
+        ? new CodDicomWebServerClient(wadoConfig)
+        : dicomWebConfig.staticWado
+          ? new StaticWadoClient(wadoConfig)
+          : new api.DICOMwebClient(wadoConfig);
+
+      if (dicomWebConfig.useCod) {
+        await qidoDicomWebClient.fetchStudiesMetadata(query);
+        await wadoDicomWebClient.fetchStudiesMetadata(query);
+      }
     },
     query: {
       studies: {
@@ -411,27 +423,36 @@ function createDicomWebApi(dicomWebConfig, servicesManager) {
         const naturalizedInstances = instances.map(addRetrieveBulkData);
 
         // Adding instanceMetadata to OHIF MetadataProvider
-        naturalizedInstances.forEach((instance, index) => {
+        naturalizedInstances.forEach(instance => {
           instance.wadoRoot = dicomWebConfig.wadoRoot;
           instance.wadoUri = dicomWebConfig.wadoUri;
 
-          const imageId = implementation.getImageIdsForInstance({
-            instance,
-          });
+          const { StudyInstanceUID, SeriesInstanceUID, SOPInstanceUID } = instance;
+
+          const numberOfFrames = instance.NumberOfFrames || 1;
+          // Process all frames consistently, whether single or multiframe
+          for (let i = 0; i < numberOfFrames; i++) {
+            const frameNumber = i + 1;
+            const frameImageId = implementation.getImageIdsForInstance({
+              instance,
+              frame: frameNumber,
+            });
+            // Add imageId specific mapping to this data as the URL isn't necessarily WADO-URI.
+            metadataProvider.addImageIdToUIDs(frameImageId, {
+              StudyInstanceUID,
+              SeriesInstanceUID,
+              SOPInstanceUID,
+              frameNumber: numberOfFrames > 1 ? frameNumber : undefined,
+            });
+          }
 
           // Adding imageId to each instance
           // Todo: This is not the best way I can think of to let external
           // metadata handlers know about the imageId that is stored in the store
-          instance.imageId = imageId;
-
-          // Adding UIDs to metadataProvider
-          // Note: storing imageURI in metadataProvider since stack viewports
-          // will use the same imageURI
-          metadataProvider.addImageIdToUIDs(imageId, {
-            StudyInstanceUID,
-            SeriesInstanceUID: instance.SeriesInstanceUID,
-            SOPInstanceUID: instance.SOPInstanceUID,
+          const imageId = implementation.getImageIdsForInstance({
+            instance,
           });
+          instance.imageId = imageId;
         });
 
         DicomMetadataStore.addInstances(naturalizedInstances, madeInClient);
@@ -492,7 +513,7 @@ function createDicomWebApi(dicomWebConfig, servicesManager) {
       return imageIds;
     },
     getImageIdsForInstance({ instance, frame }) {
-      const imageIds = getImageId({
+      const imageIds = (dicomWebConfig.useCod ? getCodImageId : getImageId)({
         instance,
         frame,
         config: dicomWebConfig,
@@ -513,7 +534,12 @@ function createDicomWebApi(dicomWebConfig, servicesManager) {
           ? StudyInstanceUIDs
           : [StudyInstanceUIDs];
 
-      return StudyInstanceUIDsAsArray;
+      const studyUIDs = wadoDicomWebClient.getStudyUIDForDeidStudyUID
+        ? StudyInstanceUIDsAsArray.map(studyUID =>
+            wadoDicomWebClient.getStudyUIDForDeidStudyUID(studyUID)
+          )
+        : StudyInstanceUIDsAsArray;
+      return studyUIDs;
     },
   };
 
