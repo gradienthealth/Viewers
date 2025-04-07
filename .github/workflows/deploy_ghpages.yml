@@ -2,7 +2,7 @@ name: Deploy viewer to github pages
 
 on:
   push:
-    branches: [ "gradienthealth/segmentation_mode_sheet_integration" ]
+    branches: [ "gradienthealth/ohif-integration-in-atlas" ]
   #pull_request:
     #branches: [ "main" ]
 
@@ -24,7 +24,7 @@ jobs:
           uses: actions/checkout@v3
           with:
             repository: gradienthealth/cornerstone3D-beta
-            ref: gradienthealth/segmentation_mode_sheet_integration
+            ref: gradienthealth/ohif-integration-in-atlas
             path: ./cornerstone3D
 
         - name: Build cornerstone3D
@@ -37,7 +37,7 @@ jobs:
           uses: actions/checkout@v3
           with:
             repository: gradienthealth/GradientExtensionsAndModes
-            ref: gradienthealth/segmentation_mode_sheet_integration
+            ref: gradienthealth/ohif-integration-in-atlas
             path: ./GradientExtensionsAndModes
 
         #- name: Build GradientExtensionsAndModes
@@ -85,21 +85,21 @@ jobs:
         - name: Checkout gh page
           uses: actions/checkout@v3
           with:
-            repository: gradienthealth/gradienthealth.github.io
-            path: ./gradienthealth.github.io
+            repository: gradienthealth/icad-gradienthealth
+            path: ./icad-gradienthealth
             token: ${{ secrets.GH_DEPLOY_TOKEN }}
 
         - name: Copy
           run: |
-            mv ./gradienthealth.github.io/.git /tmp/
-            rm -r ./gradienthealth.github.io
-            cp -r ./Viewers/platform/app/dist/ ./gradienthealth.github.io
-            mv /tmp/.git ./gradienthealth.github.io
-            cd ./gradienthealth.github.io
+            mv ./icad-gradienthealth/.git /tmp/
+            rm -r ./icad-gradienthealth
+            cp -r ./Viewers/platform/app/dist/ ./icad-gradienthealth
+            mv /tmp/.git ./icad-gradienthealth
+            cd ./icad-gradienthealth
             cp index.html 404.html
-            git config --global user.name "maya-mohan"
-            git config --global user.email "maya@gradienthealth.io"
-            git remote set-url origin https://maya-mohan:${{ secrets.GH_DEPLOY_TOKEN }}@github.com/gradienthealth/gradienthealth.github.io
+            git config --global user.name "Adithyan-Dinesh-Trenser"
+            git config --global user.email "adithyan.dinesh@trenser.com"
+            git remote set-url origin https://Adithyan-Dinesh-Trenser:${{ secrets.GH_DEPLOY_TOKEN }}@github.com/gradienthealth/icad-gradienthealth
             git add .
             git commit -a -m "publishing viewer"
             git push -u origin
