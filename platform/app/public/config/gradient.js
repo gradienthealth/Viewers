@@ -1,5 +1,5 @@
 window.config = {
-  routerBasename: '/icad-gradienthealth',
+  routerBasename: '/atlas',
   // whiteLabeling: {},
   extensions: [],
   modes: [],
@@ -75,22 +75,25 @@ window.config = {
       },
     },*/
     {
-      friendlyName: "dcmjs DICOMWeb Server",
-      namespace: "@ohif/extension-default.dataSourcesModule.dicomweb",
-      sourceName: "dicomweb",
+      friendlyName: 'dcmjs DICOMWeb Server',
+      namespace: '@ohif/extension-default.dataSourcesModule.dicomweb',
+      sourceName: 'dicomweb',
       configuration: {
-        name: "GCP",
-        wadoUriRoot: "https://healthcare.googleapis.com/v1/projects/icad-med/locations/us-central1/datasets/mammo/dicomStores/breast_density/dicomWeb",
-        qidoRoot: "https://healthcare.googleapis.com/v1/projects/icad-med/locations/us-central1/datasets/mammo/dicomStores/breast_density/dicomWeb",
-        wadoRoot: "https://healthcare.googleapis.com/v1/projects/icad-med/locations/us-central1/datasets/mammo/dicomStores/breast_density/dicomWeb",
+        name: 'GCP',
+        wadoUriRoot:
+          'https://healthcare.googleapis.com/v1/projects/icad-med/locations/us-central1/datasets/mammo/dicomStores/breast_density/dicomWeb',
+        qidoRoot:
+          'https://healthcare.googleapis.com/v1/projects/icad-med/locations/us-central1/datasets/mammo/dicomStores/breast_density/dicomWeb',
+        wadoRoot:
+          'https://healthcare.googleapis.com/v1/projects/icad-med/locations/us-central1/datasets/mammo/dicomStores/breast_density/dicomWeb',
         qidoSupportsIncludeField: !0,
-        imageRendering: "wadors",
-        thumbnailRendering: "wadors",
+        imageRendering: 'wadors',
+        thumbnailRendering: 'wadors',
         enableStudyLazyLoad: !0,
         supportsFuzzyMatching: !0,
         supportsWildcard: !1,
-        requestTransferSyntaxUID: '*'
-      }
+        requestTransferSyntaxUID: '*',
+      },
     },
     {
       namespace: '@ohif/extension-default.dataSourcesModule.dicomweb',
@@ -258,8 +261,7 @@ window.config = {
     },
     {
       friendlyName: 'dicom json',
-      namespace:
-        '@gradienthealth/ohif-gradienthealth-extension.dataSourcesModule.bq',
+      namespace: '@gradienthealth/ohif-gradienthealth-extension.dataSourcesModule.bq',
       sourceName: 'bq',
       configuration: {
         name: 'json',
