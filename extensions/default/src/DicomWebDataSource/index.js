@@ -113,13 +113,12 @@ function createDicomWebApi(dicomWebConfig, servicesManager) {
           : new api.DICOMwebClient(qidoConfig);
 
       wadoDicomWebClient = dicomWebConfig.useCod
-        ? new CodDicomWebServerClient(wadoConfig)
+        ? qidoDicomWebClient
         : dicomWebConfig.staticWado
           ? new StaticWadoClient(wadoConfig)
           : new api.DICOMwebClient(wadoConfig);
 
       if (dicomWebConfig.useCod) {
-        await qidoDicomWebClient.fetchStudiesMetadata(query);
         await wadoDicomWebClient.fetchStudiesMetadata(query);
       }
     },
