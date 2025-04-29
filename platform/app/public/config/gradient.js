@@ -1,5 +1,5 @@
 window.config = {
-  routerBasename: '/',
+  routerBasename: '/icad-gradienthealth',
   // whiteLabeling: {},
   extensions: [],
   modes: [],
@@ -116,10 +116,28 @@ window.config = {
       namespace: '@ohif/extension-default.dataSourcesModule.dicomweb',
       sourceName: 'thryothor-495511-pacs-deid/v1.0',
       configuration: {
-        friendlyName: 'Cloud Optimized wado proxy server for Thryothor',
-        name: 'cod-thryothor',
+        friendlyName: 'Cloud Optimized wado proxy server for Thryothor deidentified',
+        name: 'cod-thryothor-deid',
         qidoRoot: 'https://storage.googleapis.com/thryothor-495511-pacs-deid/v1.0/dicomweb',
         wadoRoot: 'https://storage.googleapis.com/thryothor-495511-pacs-deid/v1.0/dicomweb',
+        useCod: true,
+        imageRendering: 'wadors',
+        thumbnailRendering: 'wadors',
+        enableStudyLazyLoad: true,
+        staticWado: false,
+        bulkDataURI: {
+          enabled: false,
+        },
+      },
+    },
+    {
+      namespace: '@ohif/extension-default.dataSourcesModule.dicomweb',
+      sourceName: 'thryothor-495511-pacs/v1.0',
+      configuration: {
+        friendlyName: 'Cloud Optimized wado proxy server for Thryothor',
+        name: 'cod-thryothor',
+        qidoRoot: 'https://storage.googleapis.com/thryothor-495511-pacs/v1.0/dicomweb',
+        wadoRoot: 'https://storage.googleapis.com/thryothor-495511-pacs/v1.0/dicomweb',
         useCod: true,
         imageRendering: 'wadors',
         thumbnailRendering: 'wadors',
