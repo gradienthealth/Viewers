@@ -85,21 +85,21 @@ jobs:
       - name: Checkout gh page
         uses: actions/checkout@v3
         with:
-          repository: gradienthealth/icad-gradienthealth
-          path: ./icad-gradienthealth
+          repository: gradienthealth/atlas
+          path: ./atlas
           token: ${{ secrets.GH_DEPLOY_TOKEN }}
 
       - name: Copy
         run: |
-          mv ./icad-gradienthealth/.git /tmp/
-          rm -r ./icad-gradienthealth
-          cp -r ./Viewers/platform/app/dist/ ./icad-gradienthealth
-          mv /tmp/.git ./icad-gradienthealth
-          cd ./icad-gradienthealth
+          mv ./atlas/.git /tmp/
+          rm -r ./atlas
+          cp -r ./Viewers/platform/app/dist/ ./atlas
+          mv /tmp/.git ./atlas
+          cd ./atlas
           cp index.html 404.html
           git config --global user.name "Adithyan-Dinesh-Trenser"
           git config --global user.email "adithyan.dinesh@trenser.com"
-          git remote set-url origin https://Adithyan-Dinesh-Trenser:${{ secrets.GH_DEPLOY_TOKEN }}@github.com/gradienthealth/icad-gradienthealth
+          git remote set-url origin https://Adithyan-Dinesh-Trenser:${{ secrets.GH_DEPLOY_TOKEN }}@github.com/gradienthealth/atlas
           git add .
           git commit -a -m "publishing viewer"
           git push -u origin
