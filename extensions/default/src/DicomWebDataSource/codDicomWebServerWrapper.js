@@ -44,8 +44,8 @@ class CodDicomWebServerClient {
           });
 
           if (study.series.length) {
-          const studyUID = study.series[0].instances[0]['0020000D'].Value[0];
-          this.deidStudyInstanceUIDMap.set(study.deidStudyInstanceUID, studyUID);
+            const studyUID = study.series[0].instances[0]['0020000D'].Value[0];
+            this.deidStudyInstanceUIDMap.set(study.deidStudyInstanceUID, studyUID);
             return true;
           }
 
@@ -148,7 +148,7 @@ class CodDicomWebServerClient {
 
     return new Promise(resolve => {
       if (studyFound) {
-        resolve(studyFound.series.flatMap(aSeries => aSeries.instances));
+        resolve(studyFound.series.map(aSeries => aSeries.instances[0]));
       } else {
         resolve([]);
       }
