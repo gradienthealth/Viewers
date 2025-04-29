@@ -1,5 +1,5 @@
 window.config = {
-  routerBasename: '/icad-gradienthealth',
+  routerBasename: '/atlas',
   // whiteLabeling: {},
   extensions: [],
   modes: [],
