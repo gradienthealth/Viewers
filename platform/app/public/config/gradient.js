@@ -75,24 +75,6 @@ window.config = {
       },
     },*/
     {
-      friendlyName: "dcmjs DICOMWeb Server",
-      namespace: "@ohif/extension-default.dataSourcesModule.dicomweb",
-      sourceName: "dicomweb",
-      configuration: {
-        name: "GCP",
-        wadoUriRoot: "https://healthcare.googleapis.com/v1/projects/icad-med/locations/us-central1/datasets/mammo/dicomStores/breast_density/dicomWeb",
-        qidoRoot: "https://healthcare.googleapis.com/v1/projects/icad-med/locations/us-central1/datasets/mammo/dicomStores/breast_density/dicomWeb",
-        wadoRoot: "https://healthcare.googleapis.com/v1/projects/icad-med/locations/us-central1/datasets/mammo/dicomStores/breast_density/dicomWeb",
-        qidoSupportsIncludeField: !0,
-        imageRendering: "wadors",
-        thumbnailRendering: "wadors",
-        enableStudyLazyLoad: !0,
-        supportsFuzzyMatching: !0,
-        supportsWildcard: !1,
-        requestTransferSyntaxUID: '*'
-      }
-    },
-    {
       namespace: '@ohif/extension-default.dataSourcesModule.dicomweb',
       sourceName: 'cod-dicomweb',
       configuration: {
@@ -150,10 +132,10 @@ window.config = {
     },
     {
       namespace: '@ohif/extension-default.dataSourcesModule.dicomweb',
-      sourceName: 'deid-cod-peregrine',
+      sourceName: 'peregrine-78707-pacs-deid/v1.0',
       configuration: {
-        friendlyName: 'Cloud Optimized wado proxy server for Peregrine',
-        name: 'cod-peregrine',
+        friendlyName: 'Cloud Optimized wado proxy server for Peregrine deidentified',
+        name: 'cod-peregrine-deid',
         qidoRoot: 'https://storage.googleapis.com/peregrine-78707-pacs-deid/v1.0/dicomweb',
         wadoRoot: 'https://storage.googleapis.com/peregrine-78707-pacs-deid/v1.0/dicomweb',
         useCod: true,
@@ -168,10 +150,28 @@ window.config = {
     },
     {
       namespace: '@ohif/extension-default.dataSourcesModule.dicomweb',
-      sourceName: 'deid-cod-quelea',
+      sourceName: 'peregrine-78707-pacs/v1.0',
       configuration: {
-        friendlyName: 'Cloud Optimized wado proxy server for Quelea',
-        name: 'cod-quelea',
+        friendlyName: 'Cloud Optimized wado proxy server for Peregrine',
+        name: 'cod-peregrine',
+        qidoRoot: 'https://storage.googleapis.com/peregrine-78707-pacs/v1.0/dicomweb',
+        wadoRoot: 'https://storage.googleapis.com/peregrine-78707-pacs/v1.0/dicomweb',
+        useCod: true,
+        imageRendering: 'wadors',
+        thumbnailRendering: 'wadors',
+        enableStudyLazyLoad: true,
+        staticWado: false,
+        bulkDataURI: {
+          enabled: false,
+        },
+      },
+    },
+    {
+      namespace: '@ohif/extension-default.dataSourcesModule.dicomweb',
+      sourceName: 'quelea-19938-pacs-deid/v1.0',
+      configuration: {
+        friendlyName: 'Cloud Optimized wado proxy server for Quelea deidentified',
+        name: 'cod-quelea-deid',
         qidoRoot: 'https://storage.googleapis.com/quelea-19938-pacs-deid/v1.0/dicomweb',
         wadoRoot: 'https://storage.googleapis.com/quelea-19938-pacs-deid/v1.0/dicomweb',
         useCod: true,
@@ -186,10 +186,28 @@ window.config = {
     },
     {
       namespace: '@ohif/extension-default.dataSourcesModule.dicomweb',
-      sourceName: 'deid-cod-tachyeres',
+      sourceName: 'quelea-19938-pacs/v1.0',
       configuration: {
-        friendlyName: 'Cloud Optimized wado proxy server for Tachyeres',
-        name: 'cod-tachyeres',
+        friendlyName: 'Cloud Optimized wado proxy server for Quelea',
+        name: 'cod-quelea',
+        qidoRoot: 'https://storage.googleapis.com/quelea-19938-pacs/v1.0/dicomweb',
+        wadoRoot: 'https://storage.googleapis.com/quelea-19938-pacs/v1.0/dicomweb',
+        useCod: true,
+        imageRendering: 'wadors',
+        thumbnailRendering: 'wadors',
+        enableStudyLazyLoad: true,
+        staticWado: false,
+        bulkDataURI: {
+          enabled: false,
+        },
+      },
+    },
+    {
+      namespace: '@ohif/extension-default.dataSourcesModule.dicomweb',
+      sourceName: 'tachyeres-387144-pacs-deid/v1.0',
+      configuration: {
+        friendlyName: 'Cloud Optimized wado proxy server for Tachyeres deidentified',
+        name: 'cod-tachyeres-deid',
         qidoRoot: 'https://storage.googleapis.com/tachyeres-387144-pacs-deid/v1.0/dicomweb',
         wadoRoot: 'https://storage.googleapis.com/tachyeres-387144-pacs-deid/v1.0/dicomweb',
         useCod: true,
@@ -204,10 +222,28 @@ window.config = {
     },
     {
       namespace: '@ohif/extension-default.dataSourcesModule.dicomweb',
-      sourceName: 'deid-cod-auritus',
+      sourceName: 'tachyeres-387144-pacs/v1.0',
       configuration: {
-        friendlyName: 'Cloud Optimized wado proxy server for Auritus',
-        name: 'cod-auritus',
+        friendlyName: 'Cloud Optimized wado proxy server for Tachyeres',
+        name: 'cod-tachyeres',
+        qidoRoot: 'https://storage.googleapis.com/tachyeres-387144-pacs/v1.0/dicomweb',
+        wadoRoot: 'https://storage.googleapis.com/tachyeres-387144-pacs/v1.0/dicomweb',
+        useCod: true,
+        imageRendering: 'wadors',
+        thumbnailRendering: 'wadors',
+        enableStudyLazyLoad: true,
+        staticWado: false,
+        bulkDataURI: {
+          enabled: false,
+        },
+      },
+    },
+    {
+      namespace: '@ohif/extension-default.dataSourcesModule.dicomweb',
+      sourceName: 'auritus-681591-pacs-deid/v1.0',
+      configuration: {
+        friendlyName: 'Cloud Optimized wado proxy server for Auritus deidentified',
+        name: 'cod-auritus-deid',
         qidoRoot: 'https://storage.googleapis.com/auritus-681591-pacs-deid/v1.0/dicomweb',
         wadoRoot: 'https://storage.googleapis.com/auritus-681591-pacs-deid/v1.0/dicomweb',
         useCod: true,
@@ -222,10 +258,28 @@ window.config = {
     },
     {
       namespace: '@ohif/extension-default.dataSourcesModule.dicomweb',
-      sourceName: 'deid-cod-xenops',
+      sourceName: 'auritus-681591-pacs/v1.0',
       configuration: {
-        friendlyName: 'Cloud Optimized wado proxy server for Xenops',
-        name: 'cod-xenops',
+        friendlyName: 'Cloud Optimized wado proxy server for Auritus',
+        name: 'cod-auritus',
+        qidoRoot: 'https://storage.googleapis.com/auritus-681591-pacs/v1.0/dicomweb',
+        wadoRoot: 'https://storage.googleapis.com/auritus-681591-pacs/v1.0/dicomweb',
+        useCod: true,
+        imageRendering: 'wadors',
+        thumbnailRendering: 'wadors',
+        enableStudyLazyLoad: true,
+        staticWado: false,
+        bulkDataURI: {
+          enabled: false,
+        },
+      },
+    },
+    {
+      namespace: '@ohif/extension-default.dataSourcesModule.dicomweb',
+      sourceName: 'xenops-995729-pacs-deid/v1.0',
+      configuration: {
+        friendlyName: 'Cloud Optimized wado proxy server for Xenops deidentified',
+        name: 'cod-xenops-deid',
         qidoRoot: 'https://storage.googleapis.com/xenops-995729-pacs-deid/v1.0/dicomweb',
         wadoRoot: 'https://storage.googleapis.com/xenops-995729-pacs-deid/v1.0/dicomweb',
         useCod: true,
@@ -240,12 +294,48 @@ window.config = {
     },
     {
       namespace: '@ohif/extension-default.dataSourcesModule.dicomweb',
-      sourceName: 'deid-cod-flava',
+      sourceName: 'xenops-995729-pacs/v1.0',
+      configuration: {
+        friendlyName: 'Cloud Optimized wado proxy server for Xenops',
+        name: 'cod-xenops',
+        qidoRoot: 'https://storage.googleapis.com/xenops-995729-pacs/v1.0/dicomweb',
+        wadoRoot: 'https://storage.googleapis.com/xenops-995729-pacs/v1.0/dicomweb',
+        useCod: true,
+        imageRendering: 'wadors',
+        thumbnailRendering: 'wadors',
+        enableStudyLazyLoad: true,
+        staticWado: false,
+        bulkDataURI: {
+          enabled: false,
+        },
+      },
+    },
+    {
+      namespace: '@ohif/extension-default.dataSourcesModule.dicomweb',
+      sourceName: 'flava-141889-pacs-deid/v1.0',
+      configuration: {
+        friendlyName: 'Cloud Optimized wado proxy server for Flava deidentified',
+        name: 'cod-flava-deid',
+        qidoRoot: 'https://storage.googleapis.com/flava-141889-pacs-deid/v1.0/dicomweb',
+        wadoRoot: 'https://storage.googleapis.com/flava-141889-pacs-deid/v1.0/dicomweb',
+        useCod: true,
+        imageRendering: 'wadors',
+        thumbnailRendering: 'wadors',
+        enableStudyLazyLoad: true,
+        staticWado: false,
+        bulkDataURI: {
+          enabled: false,
+        },
+      },
+    },
+    {
+      namespace: '@ohif/extension-default.dataSourcesModule.dicomweb',
+      sourceName: 'flava-141889-pacs/v1.0',
       configuration: {
         friendlyName: 'Cloud Optimized wado proxy server for Flava',
         name: 'cod-flava',
-        qidoRoot: 'https://storage.googleapis.com/flava-141889-pacs-deid/v1.0/dicomweb',
-        wadoRoot: 'https://storage.googleapis.com/flava-141889-pacs-deid/v1.0/dicomweb',
+        qidoRoot: 'https://storage.googleapis.com/flava-141889-pacs/v1.0/dicomweb',
+        wadoRoot: 'https://storage.googleapis.com/flava-141889-pacs/v1.0/dicomweb',
         useCod: true,
         imageRendering: 'wadors',
         thumbnailRendering: 'wadors',
@@ -296,7 +386,7 @@ window.config = {
       );
     },
   },
-  defaultDataSourceName: 'dicomweb',
+  defaultDataSourceName: 'cod-dicomweb',
   hotkeys: [
     {
       commandName: 'incrementActiveViewport',
