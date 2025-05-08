@@ -1,5 +1,5 @@
 window.config = {
-  routerBasename: '/atlas',
+  routerBasename: null,
   // whiteLabeling: {},
   extensions: [],
   modes: [],
