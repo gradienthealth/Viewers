@@ -2,7 +2,7 @@ name: Deploy viewer to github pages
 
 on:
   push:
-    branches: ['gradienthealth/ohif-integration-in-atlas']
+    branches: ['gradienthealth/rebase-viewer-to-v3.10.1']
   #pull_request:
   #branches: [ "main" ]
 
@@ -12,7 +12,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [16.x]
+        node-version: [20.9.x]
 
     steps:
       - name: Use Node.js ${{ matrix.node-version }}
@@ -24,7 +24,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: gradienthealth/cornerstone3D-beta
-          ref: gradienthealth/ohif-integration-in-atlas
+          ref: gradienthealth/rebase-viewer-to-v3.10.1
           path: ./cornerstone3D
 
       - name: Build cornerstone3D
@@ -37,7 +37,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: gradienthealth/GradientExtensionsAndModes
-          ref: gradienthealth/ohif-integration-in-atlas
+          ref: gradienthealth/rebase-viewer-to-v3.10.1
           path: ./GradientExtensionsAndModes
 
       #- name: Build GradientExtensionsAndModes
@@ -59,47 +59,52 @@ jobs:
         run: |
           cd ./cornerstone3D/packages/adapters/dist
           yarn link
+          cd ../../ai/dist
+          yarn link
           cd ../../core/dist
           yarn link
           cd ../../dicomImageLoader/dist
           yarn link
+          cd ../../labelmap-interpolation/dist
+          yarn link
           #cd ../../nifti-volume-loader/dist
           #yarn link
-          cd ../../streaming-image-volume-loader/dist
+          cd ../../polymorphic-segmentation/dist
           yarn link
           cd ../../tools/dist
           yarn link
           cd ../../../../Viewers
           yarn link @cornerstonejs/adapters
+          yarn link @cornerstonejs/ai
           yarn link @cornerstonejs/core
           yarn link @cornerstonejs/dicom-image-loader
           #yarn link @cornerstonejs/nifti-volume-loader
-          yarn link @cornerstonejs/streaming-image-volume-loader
+          yarn link @cornerstonejs/labelmap-interpolation
+          yarn link @cornerstonejs/polymorphic-segmentation
           yarn link @cornerstonejs/tools
           yarn install
           yarn run cli link-extension ../GradientExtensionsAndModes/extensions/ohif-gradienthealth-extension
-          yarn run cli link-mode ../GradientExtensionsAndModes/modes/cohort
           yarn run cli link-mode ../GradientExtensionsAndModes/modes/breast-density-mode
           yarn run build:gradient
 
       - name: Checkout gh page
         uses: actions/checkout@v3
         with:
-          repository: gradienthealth/atlas
-          path: ./atlas
+          repository: gradienthealth/gradienthealth.github.io
+          path: ./gradienthealth.github.io
           token: ${{ secrets.GH_DEPLOY_TOKEN }}
 
       - name: Copy
         run: |
-          mv ./atlas/.git /tmp/
-          rm -r ./atlas
-          cp -r ./Viewers/platform/app/dist/ ./atlas
-          mv /tmp/.git ./atlas
-          cd ./atlas
+          mv ./gradienthealth.github.io/.git /tmp/
+          rm -r ./gradienthealth.github.io
+          cp -r ./Viewers/platform/app/dist/ ./gradienthealth.github.io
+          mv /tmp/.git ./gradienthealth.github.io
+          cd ./gradienthealth.github.io
           cp index.html 404.html
           git config --global user.name "Adithyan-Dinesh-Trenser"
           git config --global user.email "adithyan.dinesh@trenser.com"
-          git remote set-url origin https://Adithyan-Dinesh-Trenser:${{ secrets.GH_DEPLOY_TOKEN }}@github.com/gradienthealth/atlas
+          git remote set-url origin https://Adithyan-Dinesh-Trenser:${{ secrets.GH_DEPLOY_TOKEN }}@github.com/gradienthealth/gradienthealth.github.io
           git add .
           git commit -a -m "publishing viewer"
           git push -u origin
