@@ -381,7 +381,7 @@ window.config = {
           href: '/',
         },
         React.createElement('img', {
-          src: '/assets/gradient.svg',
+          src: '/gradient.svg',
         })
       );
     },
