@@ -2,7 +2,7 @@ name: Deploy viewer to github pages
 
 on:
   push:
-    branches: ['gradienthealth/rebase-viewer-to-v3.10.1']
+    branches: ['gradienthealth/studies-downloader-route']
   #pull_request:
   #branches: [ "main" ]
 
