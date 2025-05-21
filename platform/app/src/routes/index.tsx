@@ -12,6 +12,7 @@ import buildModeRoutes from './buildModeRoutes';
 import PrivateRoute from './PrivateRoute';
 import PropTypes from 'prop-types';
 import { routerBase, routerBasename } from '../utils/publicUrl';
+import Download from './DownloadStudies';
 
 const NotFoundServer = ({
   message = 'Unable to query for studies at this time. Check your data source configuration or network connection',
@@ -73,6 +74,10 @@ const bakedInRoutes = [
   {
     path: `/localbasic`,
     children: Local.bind(null, { modePath: 'viewer/dicomlocal' }),
+  },
+  {
+    path: `/download`,
+    children: Download,
   },
 ];
 
