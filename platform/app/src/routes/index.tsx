@@ -84,7 +84,7 @@ const bakedInRoutes = [
     children: Local.bind(null, { modePath: 'viewer/dicomlocal' }),
   },
   {
-    path: `/download`,
+    path: `/download/:bucket/*`,
     children: Download,
   },
 ];
