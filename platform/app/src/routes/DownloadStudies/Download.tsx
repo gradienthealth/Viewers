@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import JSZip from 'jszip';
+import React, { useEffect, useState } from 'react';
 import untar from 'js-untar';
 
 interface SeriesMetadataPath {
@@ -26,7 +25,12 @@ interface SeriesMetadata {
 }
 
 const Download: React.FC = () => {
-  const [urlInput, setUrlInput] = useState('');
+  const [bucketDetails, setBucketDetails] = useState({
+    bucket: '',
+    bucketPrefix: 'dicomweb',
+    studyUIDs: [],
+    token: '',
+  });
   const [loading, setLoading] = useState(false);
   const [confirmationMessage, setConfirmationMessage] = useState('');
   const [seriesList, setSeriesList] = useState<string[]>([]);
@@ -34,11 +38,27 @@ const Download: React.FC = () => {
   const [fetchCompletedVisible, setFetchCompletedVisible] = useState(false);
   const [folderHandle, setFolderHandle] = useState(null);
 
-  // Store fetched metadata and tar files for download
-  const [fetchedMetadata, setFetchedMetadata] = useState<SeriesMetadata[]>([]);
+  // Store tar files details for download
   const [tarFiles, setTarFiles] = useState<{ url: string; size: number }[]>([]);
   const [sizeUnit, setSizeUnit] = useState('GB');
   const [totalSizeDisplay, setTotalSizeDisplay] = useState('');
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const pathParts = url.pathname.split('/');
+    const bucket = pathParts[2];
+    const bucketPrefix = pathParts.slice(3).join('/');
+    const params = url.searchParams;
+    const studyUIDs = params.getAll('StudyInstanceUIDs');
+    const token = params.get('token');
+
+    setBucketDetails({
+      bucket,
+      bucketPrefix: bucketPrefix ? `${bucketPrefix}/dicomweb` : 'dicomweb',
+      studyUIDs,
+      token,
+    });
+  }, []);
 
   async function findSeriesMetadataPathsForStudy(
     bucketName: string,
@@ -220,43 +240,8 @@ const Download: React.FC = () => {
   }
 
   const handleSubmit = async () => {
-    if (!urlInput.trim()) {
-      alert('Please enter a URL.');
-      return;
-    }
-
+    const { bucket, bucketPrefix, studyUIDs, token } = bucketDetails;
     try {
-      const url = new URL(urlInput.trim());
-
-      if (url.protocol !== 'https:' || url.hostname !== 'gradienthealth.github.io') {
-        alert('URL must start with https://gradienthealth.github.io');
-        return;
-      }
-
-      const pathSegments = url.pathname.split('/').filter(Boolean);
-
-      if (pathSegments.length < 2 || pathSegments[0] !== 'download') {
-        alert('URL path must start with /download');
-        return;
-      }
-
-      const bucket = pathSegments[1];
-      if (!bucket) {
-        alert('URL must contain a bucket name after /download');
-        return;
-      }
-
-      let bucketPrefix = 'dicomweb';
-      if (pathSegments.length > 2) {
-        bucketPrefix = pathSegments[2] + '/dicomweb';
-      } else {
-        bucketPrefix = 'dicomweb';
-      }
-
-      const params = url.searchParams;
-      const studyUIDs = params.getAll('StudyInstanceUIDs');
-      const token = params.get('token');
-
       if (!studyUIDs.length) {
         alert('No StudyInstanceUIDs found to fetch metadata.');
         return;
@@ -340,7 +325,6 @@ const Download: React.FC = () => {
       setLoading(false);
 
       // Show confirmation UI
-      setFetchedMetadata(fetchedMetadata);
       setConfirmationMessage('');
 
       // Calculate total size and create urls of tar files
@@ -392,13 +376,23 @@ const Download: React.FC = () => {
       setSizeUnit(sizeUnit);
       setTotalSizeDisplay(totalSizeDisplay);
       setTarFiles(tarFiles);
-      setConfirmationMessage(
-        `Found ${totalSeriesCount} series with total size ${totalSizeDisplay}.${
-          totalSavedSeriesCount
-            ? ` ${totalSavedSeriesCount} series with a toal size ${totalSavedSizeDisplay} already found saved`
-            : ''
-        } Click Start to fetch the rest of the data.`
-      );
+
+      const seriesToFetch = `Found ${totalSeriesCount} series with a total size of ${totalSizeDisplay}.`;
+      const seriesAlreadyFetched = totalSavedSeriesCount
+        ? (totalSavedSeriesCount === totalSeriesCount
+            ? `These ${totalSavedSeriesCount} series are`
+            : `${totalSavedSeriesCount} out of these are with the size of ${totalSavedSizeDisplay} are`) +
+          ` already available in the selected folder.`
+        : '';
+      const clickStartMessage =
+        totalSeriesCount > totalSavedSeriesCount
+          ? totalSavedSeriesCount
+            ? 'Click Start to fetch the rest of the Data.'
+            : 'Click Start to fetch the Data.'
+          : '';
+      setConfirmationMessage(`${seriesToFetch}
+        ${seriesAlreadyFetched}
+        ${clickStartMessage}`);
 
       // Prepare series list display
       const seriesListItems = tarFiles.map(tarFile =>
@@ -425,7 +419,7 @@ const Download: React.FC = () => {
       try {
         const fetchedTarFile = await fetch(tarFiles[i].url, {
           headers: {
-            Authorization: `Bearer ${new URL(urlInput).searchParams.get('token')}`,
+            Authorization: `Bearer ${bucketDetails.token}`,
           },
         }).then(res => res.arrayBuffer());
         await appendInstances(downloadable, tarFiles[i].url, fetchedTarFile);
@@ -472,23 +466,7 @@ const Download: React.FC = () => {
   return (
     <div className="flex min-h-screen flex-col items-center bg-gray-900 p-6 text-white">
       <div className="w-full max-w-3xl">
-        <div className="mb-4 flex flex-row items-center gap-4">
-          <label
-            htmlFor="urlInput"
-            className="whitespace-nowrap text-lg font-bold"
-          >
-            Paste the URL here
-          </label>
-          <input
-            type="text"
-            id="urlInput"
-            name="urlInput"
-            placeholder="Enter URL here"
-            className="flex-grow rounded border border-gray-400 p-2 text-black"
-            value={urlInput}
-            onChange={e => setUrlInput(e.target.value)}
-            disabled={loading}
-          />
+        <div className="mb-4 flex flex-row items-center justify-center gap-4">
           <button
             id="submitBtn"
             type="button"
@@ -496,13 +474,13 @@ const Download: React.FC = () => {
             onClick={handleSubmit}
             disabled={loading}
           >
-            Submit and select Download folder
+            Select Download folder
           </button>
         </div>
 
         {confirmationMessage && (
           <div className="mx-auto mb-4 max-w-3xl rounded border border-blue-600 bg-blue-900 p-4">
-            <p className="mb-2">{confirmationMessage}</p>
+            <p className="mb-2 whitespace-pre-line">{confirmationMessage}</p>
             <ul
               id="series-list"
               className="mb-2 max-h-52 list-disc overflow-y-auto pl-5 text-sm"
@@ -517,7 +495,7 @@ const Download: React.FC = () => {
               className="rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700"
               onClick={handleStart}
             >
-              Start
+              {seriesList.length ? 'Start Download' : 'Ok'}
             </button>
           </div>
         )}
