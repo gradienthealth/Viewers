@@ -86,6 +86,7 @@ const bakedInRoutes = [
   {
     path: `/download/:bucket/*`,
     children: Download,
+    private: true,
   },
 ];
 

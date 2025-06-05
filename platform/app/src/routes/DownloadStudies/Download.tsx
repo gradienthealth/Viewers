@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { codDownload } from 'cod-retrieve';
+import { useSystem } from '@ohif/core';
 
 const Download: React.FC = () => {
   const [bucketDetails, setBucketDetails] = useState({
@@ -22,6 +23,10 @@ const Download: React.FC = () => {
   const [fetchCompletedVisible, setFetchCompletedVisible] = useState(false);
   const [sizeUnit, setSizeUnit] = useState('GB');
 
+  const { servicesManager } = useSystem();
+  const { userAuthenticationService } = servicesManager.services;
+  const headers: unknown = userAuthenticationService.getAuthorizationHeader();
+
   useEffect(() => {
     const url = new URL(window.location.href);
     const pathParts = url.pathname.split('/');
@@ -40,49 +45,49 @@ const Download: React.FC = () => {
   }, []);
 
   const handleSubmit = async () => {
-    const { bucket, studyUIDs, token } = bucketDetails;
+    const { bucket, bucketPrefix, studyUIDs } = bucketDetails;
+    let token = bucketDetails.token;
     try {
       if (!studyUIDs.length) {
         alert('No StudyInstanceUIDs found to fetch metadata.');
         return;
       }
 
-      if (!token) {
-        alert('No token found for authorization.');
-        return;
-      }
-
-      const headers = {
-        Authorization: `Bearer ${token}`,
-      };
-
       setLoading(true);
       setConfirmationMessage('');
       setProgress({ fetchCount: 0, fetchedSize: 0, progressing: false });
       setFetchCompletedVisible(false);
 
-      // Validate token by making a lightweight authenticated request to bucket metadata
-      try {
-        const tokenValidationResponse = await fetch(
-          `https://storage.googleapis.com/${bucket}?maxResults=10`,
-          {
-            headers,
+      if (token) {
+        const headers = {
+          Authorization: `Bearer ${token}`,
+        };
+
+        // Validate token by making a lightweight authenticated request to bucket metadata
+        try {
+          const tokenValidationResponse = await fetch(
+            `https://storage.googleapis.com/storage/v1/b/${bucket}/o?prefix=${bucketPrefix.split('/dicomweb')[0]}/&delimiter=/`,
+            { headers }
+          );
+          if (!tokenValidationResponse.ok) {
+            alert(
+              'Token is expired or unauthorized. Please provide a valid token or remove the token query param to use the Viewer login token.'
+            );
+            setLoading(false);
+            return;
           }
-        );
-        if (!tokenValidationResponse.ok) {
-          alert('Token is expired or unauthorized. Please provide a valid token.');
+        } catch (error) {
+          alert('Error validating token: ' + error.message);
           setLoading(false);
           return;
         }
-      } catch (error) {
-        alert('Error validating token: ' + error.message);
-        setLoading(false);
-        return;
+      } else {
+        token = (headers as Record<string, string>).Authorization.split('Bearer ')[1];
       }
 
       try {
         await codDownload.initDirectory();
-        codDownload.initBucket(window.location.href);
+        codDownload.initBucket({ bucket, bucketPrefix, token });
       } catch (err) {
         // User cancelled folder selection or error occurred
         console.warn('Folder selection cancelled or failed');
