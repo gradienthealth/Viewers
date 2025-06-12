@@ -8,16 +8,24 @@ const Download: React.FC = () => {
     bucketPrefix: 'dicomweb',
     studyUIDs: [],
     token: '',
+    zip: false,
   });
-  const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
   const [confirmationMessage, setConfirmationMessage] = useState('');
   const [seriesList, setSeriesList] = useState<string[]>([]);
-  const [progress, setProgress] = useState({ fetchCount: 0, fetchedSize: 0, progressing: false });
+  const [progress, setProgress] = useState({
+    fetchCount: 0,
+    fetchedSize: 0,
+    savedCount: 0,
+    savedTotal: 0,
+    progressing: false,
+  });
   const [stats, setStats] = useState({
     totalSeriesCount: 0,
     totalSavedSeriesCount: 0,
     totalSizeBytes: 0,
     totalSavedSizeBytes: 0,
+    series: [],
     items: [],
   });
   const [fetchCompletedVisible, setFetchCompletedVisible] = useState(false);
@@ -35,12 +43,14 @@ const Download: React.FC = () => {
     const params = url.searchParams;
     const studyUIDs = params.getAll('StudyInstanceUIDs');
     const token = params.get('token');
+    const zip = (params.get('zip') || '').toLowerCase() === 'true';
 
     setBucketDetails({
       bucket,
       bucketPrefix: bucketPrefix ? `${bucketPrefix}/dicomweb` : 'dicomweb',
       studyUIDs,
       token,
+      zip,
     });
   }, []);
 
@@ -53,9 +63,15 @@ const Download: React.FC = () => {
         return;
       }
 
-      setLoading(true);
+      setLoadingMessage('Validating token and initializing Directory...');
       setConfirmationMessage('');
-      setProgress({ fetchCount: 0, fetchedSize: 0, progressing: false });
+      setProgress({
+        fetchCount: 0,
+        fetchedSize: 0,
+        savedCount: 0,
+        savedTotal: 0,
+        progressing: false,
+      });
       setFetchCompletedVisible(false);
 
       if (token) {
@@ -73,12 +89,12 @@ const Download: React.FC = () => {
             alert(
               'Token is expired or unauthorized. Please provide a valid token or remove the token query param to use the Viewer login token.'
             );
-            setLoading(false);
+            setLoadingMessage('');
             return;
           }
         } catch (error) {
           alert('Error validating token: ' + error.message);
-          setLoading(false);
+          setLoadingMessage('');
           return;
         }
       } else {
@@ -94,11 +110,14 @@ const Download: React.FC = () => {
         return;
       }
 
+      setLoadingMessage('Fetching Medatata and calculating Stats...');
+
       const {
         totalSeriesCount,
         totalSavedSeriesCount,
         totalSizeBytes,
         totalSavedSizeBytes,
+        series,
         items,
       } = await codDownload.getStats(studyUIDs);
 
@@ -112,8 +131,6 @@ const Download: React.FC = () => {
       if (sizeUnit === 'MB') {
         totalSavedSizeDisplay = (totalSavedSizeBytes / 1024 ** 2).toFixed(2) + ' MB';
       }
-      setSizeUnit(sizeUnit);
-      setLoading(false);
 
       const seriesToFetch = `Found ${totalSeriesCount} series with a total size of ${totalSizeDisplay}.`;
       const seriesAlreadyFetched = totalSavedSeriesCount
@@ -128,48 +145,82 @@ const Download: React.FC = () => {
             ? 'Click Start to fetch the rest of the Data.'
             : 'Click Start to fetch the Data.'
           : '';
-      setConfirmationMessage(`${seriesToFetch}
-        ${seriesAlreadyFetched}
-        ${clickStartMessage}`);
 
+      setConfirmationMessage(`${seriesToFetch}
+          ${seriesAlreadyFetched}
+          ${clickStartMessage}`);
+      setSizeUnit(sizeUnit);
+      setLoadingMessage('');
       setStats({
         totalSeriesCount,
         totalSavedSeriesCount,
         totalSizeBytes,
         totalSavedSizeBytes,
+        series,
         items,
       });
-      setSeriesList(items);
+      setSeriesList(series);
     } catch (e) {
       alert('Invalid URL format. ' + e.message);
       console.warn(e);
-      setLoading(false);
+      setLoadingMessage('');
     }
   };
 
   const handleStart = async () => {
-    setConfirmationMessage('');
-    setProgress({ fetchCount: 0, fetchedSize: 0, progressing: true });
+    const { studyUIDs, zip } = bucketDetails;
 
-    const extractedCallback = ({ url, size, files }) => {
-      console.log({ url, size, files });
+    setConfirmationMessage('');
+    setProgress({
+      fetchCount: 0,
+      fetchedSize: 0,
+      savedCount: 0,
+      savedTotal: stats.items.length,
+      progressing: true,
+    });
+
+    const downloadedCallback = ({ url, size, file }) => {
       setProgress(prevState => ({
         fetchCount: prevState.fetchCount + 1,
         fetchedSize: (prevState.fetchedSize += size),
+        savedCount: prevState.savedCount,
+        savedTotal: prevState.savedTotal,
+        progressing: true,
+      }));
+    };
+
+    const savedCallback = ({ url, file }) => {
+      setProgress(prevState => ({
+        fetchCount: prevState.fetchCount,
+        fetchedSize: prevState.fetchedSize,
+        savedCount: prevState.savedCount + 1,
+        savedTotal: prevState.savedTotal,
         progressing: true,
       }));
     };
 
     const completedCallback = ({ files }) => {
-      setProgress({ fetchCount: 0, fetchedSize: 0, progressing: false });
+      setProgress({
+        fetchCount: 0,
+        fetchedSize: 0,
+        savedCount: 0,
+        savedTotal: 0,
+        progressing: false,
+      });
+      setLoadingMessage('');
       setFetchCompletedVisible(true);
     };
 
-    const job = await codDownload.download(bucketDetails.studyUIDs);
-    job.onExtract(extractedCallback);
-    job.onComplete(completedCallback);
+    if (seriesList.length) {
+      const job = await codDownload.download(studyUIDs, zip);
+      job.onDownload(downloadedCallback);
+      job.onSave(savedCallback);
+      job.onComplete(completedCallback);
 
-    await job.start();
+      await job.start();
+    } else {
+      completedCallback({ files: [] });
+    }
   };
 
   // Spinner animation class for Tailwind
@@ -185,7 +236,7 @@ const Download: React.FC = () => {
             type="button"
             className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
             onClick={handleSubmit}
-            disabled={loading}
+            disabled={!!loadingMessage || progress.progressing}
           >
             Select Download folder
           </button>
@@ -213,32 +264,57 @@ const Download: React.FC = () => {
           </div>
         )}
 
-        {loading && (
+        {!!loadingMessage && (
           <div className="my-6 text-center">
             <div className={spinnerClass}></div>
-            <div className="mt-2">Loading...</div>
+            <div className="mt-2">{loadingMessage}</div>
           </div>
         )}
 
         {progress.progressing && (
-          <div className="mx-auto my-4 max-w-3xl">
-            <progress
-              id="progressBar"
-              className="h-5 w-full rounded"
-              value={(progress.fetchCount / seriesList.length) * 100}
-              max={100}
-            />
-            <div
-              id="progress-stats"
-              className="mt-2 text-center text-sm font-bold"
-            >
-              {`${progress.fetchCount}/ ${stats.totalSeriesCount - stats.totalSavedSeriesCount} fetched. ` +
-                (sizeUnit === 'MB'
-                  ? `${(progress.fetchedSize / 1024 ** 2).toFixed(2)} MB/ ${((stats.totalSizeBytes - stats.totalSavedSizeBytes) / 1024 ** 2).toFixed(2)} MB`
-                  : `${(progress.fetchedSize / 1024 ** 3).toFixed(2)} GB/ ${((stats.totalSizeBytes - stats.totalSavedSizeBytes) / 1024 ** 3).toFixed(2)} GB`) +
-                ` fetched`}
+          // Fetch progress and Saved progress
+          <>
+            <div className="mx-auto my-4 max-w-3xl">
+              <progress
+                id="fetchProgressBar"
+                className="h-5 w-full rounded"
+                value={(progress.fetchCount / seriesList.length) * 100}
+                max={100}
+              />
+              <div
+                id="fetch-progress-stats"
+                className="mt-2 text-center text-sm font-bold"
+              >
+                {`${progress.fetchCount}/ ${stats.totalSeriesCount - stats.totalSavedSeriesCount} series fetched. ` +
+                  (sizeUnit === 'MB'
+                    ? `${(progress.fetchedSize / 1024 ** 2).toFixed(2)} MB/ ${((stats.totalSizeBytes - stats.totalSavedSizeBytes) / 1024 ** 2).toFixed(2)} MB`
+                    : `${(progress.fetchedSize / 1024 ** 3).toFixed(2)} GB/ ${((stats.totalSizeBytes - stats.totalSavedSizeBytes) / 1024 ** 3).toFixed(2)} GB`) +
+                  ` fetched`}
+              </div>
             </div>
-          </div>
+
+            <div className="mx-auto my-4 max-w-3xl">
+              <progress
+                id="savedProgressBar"
+                className="h-5 w-full rounded"
+                value={(progress.savedCount / progress.savedTotal) * 100}
+                max={100}
+              />
+              <div
+                id="saved-progress-stats"
+                className="mt-2 text-center text-sm font-bold"
+              >
+                {`${progress.savedCount}/ ${progress.savedTotal} dicom files extracted and saved.`}
+              </div>
+            </div>
+
+            {bucketDetails.zip && progress.savedCount === progress.savedTotal && (
+              <div className="my-6 text-center">
+                <div className={spinnerClass}></div>
+                <div className="mt-2">Zipping the studies...</div>
+              </div>
+            )}
+          </>
         )}
 
         {fetchCompletedVisible && (
