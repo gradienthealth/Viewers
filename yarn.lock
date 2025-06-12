@@ -6273,12 +6273,13 @@ cod-dicomweb-server@^1.3.4:
     comlink "^4.4.2"
     dicom-parser "^1.8.21"
 
-cod-retrieve@^1.0.4:
-  version "1.0.4"
-  resolved "https://registry.yarnpkg.com/cod-retrieve/-/cod-retrieve-1.0.4.tgz#d10053cf76a1e8b6a6cb5aa5c4404b63a8a6aa86"
-  integrity sha512-Sb7+5jsS7+a/BDHJvfTMJyw+DFcraR7Mh8EpDZdO4dWkvIDHSd0Sq2FZEq8Ez8LBdxu2C3vBcXhd6W5W5efLOQ==
+cod-retrieve@^1.0.5:
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/cod-retrieve/-/cod-retrieve-1.0.5.tgz#d70e25f3b35656de3defc625eb592d738de14054"
+  integrity sha512-+RrCDkr62p9I2F9JF5a22lZqrbY3kInsN+I/eV7yX48wVuPU2025vYHsvKbSuCqtp4FWyBCSZVLP2HdhD4UU9g==
   dependencies:
     js-untar "^2.0.0"
+    jszip "^3.10.1"
 
 code-point-at@^1.0.0:
   version "1.1.0"
