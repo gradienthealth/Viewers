@@ -179,10 +179,20 @@ const Download: React.FC = () => {
       progressing: true,
     });
 
+    const progressCallback = ({ url, bytesDownloaded, bytesTotal }) => {
+      setProgress(prevState => ({
+        fetchCount: prevState.fetchCount,
+        fetchedSize: (prevState.fetchedSize += bytesDownloaded),
+        savedCount: prevState.savedCount,
+        savedTotal: prevState.savedTotal,
+        progressing: true,
+      }));
+    };
+
     const downloadedCallback = ({ url, size, file }) => {
       setProgress(prevState => ({
         fetchCount: prevState.fetchCount + 1,
-        fetchedSize: (prevState.fetchedSize += size),
+        fetchedSize: prevState.fetchedSize,
         savedCount: prevState.savedCount,
         savedTotal: prevState.savedTotal,
         progressing: true,
@@ -213,6 +223,7 @@ const Download: React.FC = () => {
 
     if (seriesList.length) {
       const job = await codDownload.download(studyUIDs, zip);
+      job.onProgress(progressCallback);
       job.onDownload(downloadedCallback);
       job.onSave(savedCallback);
       job.onComplete(completedCallback);
@@ -222,6 +233,15 @@ const Download: React.FC = () => {
       completedCallback({ files: [] });
     }
   };
+
+  const totalSeriesToFetch = stats.totalSeriesCount - stats.totalSavedSeriesCount;
+  const totalBytesToFetch = stats.totalSizeBytes - stats.totalSavedSizeBytes;
+  const fetchedBytesToUse = Math.min(progress.fetchedSize, totalBytesToFetch);
+  const bytesFetchedText =
+    (sizeUnit === 'MB'
+      ? `${(fetchedBytesToUse / 1024 ** 2).toFixed(2)} MB / ${(totalBytesToFetch / 1024 ** 2).toFixed(2)} MB`
+      : `${(fetchedBytesToUse / 1024 ** 3).toFixed(2)} GB / ${(totalBytesToFetch / 1024 ** 3).toFixed(2)} GB`) +
+    ' fetched.';
 
   // Spinner animation class for Tailwind
   const spinnerClass =
@@ -278,18 +298,15 @@ const Download: React.FC = () => {
               <progress
                 id="fetchProgressBar"
                 className="h-5 w-full rounded"
-                value={(progress.fetchCount / seriesList.length) * 100}
+                value={(progress.fetchedSize / totalBytesToFetch) * 100}
                 max={100}
               />
               <div
                 id="fetch-progress-stats"
                 className="mt-2 text-center text-sm font-bold"
               >
-                {`${progress.fetchCount}/ ${stats.totalSeriesCount - stats.totalSavedSeriesCount} series fetched. ` +
-                  (sizeUnit === 'MB'
-                    ? `${(progress.fetchedSize / 1024 ** 2).toFixed(2)} MB/ ${((stats.totalSizeBytes - stats.totalSavedSizeBytes) / 1024 ** 2).toFixed(2)} MB`
-                    : `${(progress.fetchedSize / 1024 ** 3).toFixed(2)} GB/ ${((stats.totalSizeBytes - stats.totalSavedSizeBytes) / 1024 ** 3).toFixed(2)} GB`) +
-                  ` fetched`}
+                {`${progress.fetchCount} / ${totalSeriesToFetch} series fetched,  ` +
+                  bytesFetchedText}
               </div>
             </div>
 
