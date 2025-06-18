@@ -53,6 +53,8 @@ NotFoundStudy.propTypes = {
   message: PropTypes.string,
 };
 
+const DOWNLOAD_ROUTE_PATH = `/download/:bucket/*`;
+
 // TODO: Include "routes" debug route if dev build
 const bakedInRoutes = [
   {
@@ -76,7 +78,7 @@ const bakedInRoutes = [
     children: Local.bind(null, { modePath: 'viewer/dicomlocal' }),
   },
   {
-    path: `/download/:bucket/*`,
+    path: DOWNLOAD_ROUTE_PATH,
     children: Download,
     private: true,
   },
@@ -154,13 +156,23 @@ const createRoutes = ({
   return (
     <Routes>
       {allRoutes.map((route, i) => {
+        // Skip login for the download path when a token is provided via URL parameters.
+        const allowLogin = !(
+          route.path === DOWNLOAD_ROUTE_PATH &&
+          new URLSearchParams(window.location.search).get('token')
+        );
+
         return route.private === true ? (
           <Route
             key={i}
             path={route.path}
             element={
               <PrivateRoute
-                handleUnauthenticated={() => userAuthenticationService.handleUnauthenticated()}
+                handleUnauthenticated={
+                  allowLogin
+                    ? () => userAuthenticationService.handleUnauthenticated()
+                    : () => <RouteWithErrorBoundary route={route} />
+                }
               >
                 <RouteWithErrorBoundary route={route} />
               </PrivateRoute>
