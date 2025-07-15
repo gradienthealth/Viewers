@@ -43,7 +43,7 @@ const Download: React.FC = () => {
     const params = url.searchParams;
     const studyUIDs = params.getAll('StudyInstanceUIDs');
     const token = params.get('token');
-    const zip = (params.get('zip') || '').toLowerCase() === 'true';
+    const zip = (params.get('zip') || '').toLowerCase() !== 'false';
 
     setBucketDetails({
       bucket,
@@ -55,7 +55,7 @@ const Download: React.FC = () => {
   }, []);
 
   const handleSubmit = async () => {
-    const { bucket, bucketPrefix, studyUIDs } = bucketDetails;
+    const { bucket, bucketPrefix, studyUIDs, zip } = bucketDetails;
     let token = bucketDetails.token;
     try {
       if (!studyUIDs.length) {
@@ -102,7 +102,7 @@ const Download: React.FC = () => {
       }
 
       try {
-        await codDownload.initDirectory();
+        await codDownload.initDirectory(zip);
         codDownload.initBucket({ bucket, bucketPrefix, token });
       } catch (err) {
         // User cancelled folder selection or error occurred
@@ -221,7 +221,7 @@ const Download: React.FC = () => {
       setFetchCompletedVisible(true);
     };
 
-    if (seriesList.length) {
+    if (seriesList.length || zip) {
       const job = await codDownload.download(studyUIDs, zip);
       job.onProgress(progressCallback);
       job.onDownload(downloadedCallback);
@@ -294,36 +294,42 @@ const Download: React.FC = () => {
         {progress.progressing && (
           // Fetch progress and Saved progress
           <>
-            <div className="mx-auto my-4 max-w-3xl">
-              <progress
-                id="fetchProgressBar"
-                className="h-5 w-full rounded"
-                value={(progress.fetchedSize / totalBytesToFetch) * 100}
-                max={100}
-              />
-              <div
-                id="fetch-progress-stats"
-                className="mt-2 text-center text-sm font-bold"
-              >
-                {`${progress.fetchCount} / ${totalSeriesToFetch} series fetched,  ` +
-                  bytesFetchedText}
-              </div>
-            </div>
+            {totalSeriesToFetch ? (
+              <>
+                <div className="mx-auto my-4 max-w-3xl">
+                  <progress
+                    id="fetchProgressBar"
+                    className="h-5 w-full rounded"
+                    value={(progress.fetchedSize / totalBytesToFetch) * 100}
+                    max={100}
+                  />
+                  <div
+                    id="fetch-progress-stats"
+                    className="mt-2 text-center text-sm font-bold"
+                  >
+                    {`${progress.fetchCount} / ${totalSeriesToFetch} series fetched,  ` +
+                      bytesFetchedText}
+                  </div>
+                </div>
 
-            <div className="mx-auto my-4 max-w-3xl">
-              <progress
-                id="savedProgressBar"
-                className="h-5 w-full rounded"
-                value={(progress.savedCount / progress.savedTotal) * 100}
-                max={100}
-              />
-              <div
-                id="saved-progress-stats"
-                className="mt-2 text-center text-sm font-bold"
-              >
-                {`${progress.savedCount}/ ${progress.savedTotal} dicom files extracted and saved.`}
-              </div>
-            </div>
+                <div className="mx-auto my-4 max-w-3xl">
+                  <progress
+                    id="savedProgressBar"
+                    className="h-5 w-full rounded"
+                    value={(progress.savedCount / progress.savedTotal) * 100}
+                    max={100}
+                  />
+                  <div
+                    id="saved-progress-stats"
+                    className="mt-2 text-center text-sm font-bold"
+                  >
+                    {`${progress.savedCount}/ ${progress.savedTotal} dicom files extracted and saved.`}
+                  </div>
+                </div>
+              </>
+            ) : (
+              ''
+            )}
 
             {bucketDetails.zip && progress.savedCount === progress.savedTotal && (
               <div className="my-6 text-center">

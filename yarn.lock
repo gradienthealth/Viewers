@@ -7794,19 +7794,21 @@ co@^4.6.0:
   resolved "https://registry.yarnpkg.com/co/-/co-4.6.0.tgz#6ea6bdf3d853ae54ccb8e47bfa0bf3f9031fb184"
   integrity sha512-QVb0dM5HvG+uaxitm8wONl7jltx8dqhfU33DcqtOZcLSVIKSDDLDi7+0LbAKiyI8hD9u42m2YxXSkMGWThaecQ==
 
-cod-dicomweb-server@^1.3.4:
-  version "1.3.4"
-  resolved "https://registry.yarnpkg.com/cod-dicomweb-server/-/cod-dicomweb-server-1.3.4.tgz#925b063a87aa2d70e4ca699e334efbe9e9a48f1e"
-  integrity sha512-uUWCokxWIBnRTxWhMCzOcBZlUZujVTPdWAWg9zUHNEr4QrI86vpYeo/fVaoR2K9/scdCL/0UWzswooPGz7bXhg==
+cod-dicomweb-server@^1.3.6:
+  version "1.3.6"
+  resolved "https://registry.yarnpkg.com/cod-dicomweb-server/-/cod-dicomweb-server-1.3.6.tgz#f105a51fd0acfaf0871fdda7701e1f3cad473c97"
+  integrity sha512-mrfmVfIrPZ3IeESgnBCWDz+RWdEI3SmuzZRxi+EncP3w6C/cv8pnPdYsHYz2uizP1+B0I+h7AjY9BdB40JCaeg==
   dependencies:
     comlink "^4.4.2"
     dicom-parser "^1.8.21"
+    idb-keyval "^6.2.2"
 
-cod-retrieve@^1.0.6:
-  version "1.0.6"
-  resolved "https://registry.yarnpkg.com/cod-retrieve/-/cod-retrieve-1.0.6.tgz#96a417c5bed3ef396b8132eefb9cb00849fe4d2d"
-  integrity sha512-cv7+QGN2EEC47lunv0g+j6/xS3Rganikw4QRRH0STXQeBWTIZVlwOkEfyNLdyVSAiZ723Qu7pos5vE36YvLr+g==
+cod-retrieve@^1.0.8:
+  version "1.0.8"
+  resolved "https://registry.yarnpkg.com/cod-retrieve/-/cod-retrieve-1.0.8.tgz#2c24b2a2407156716e0b5a99a646ef4d01616467"
+  integrity sha512-EzdVOfKWbqbVSkrF59hCoglkP+UodtQ9WQraiBmybC2K6lVVzdoWZBkGdyj10IIjka0rFyIBd18kV2bwyDjJXQ==
   dependencies:
+    idb-keyval "^6.2.2"
     js-untar "^2.0.0"
     jszip "^3.10.1"
 
@@ -12011,6 +12013,11 @@ icss-utils@^5.0.0, icss-utils@^5.1.0:
   version "5.1.0"
   resolved "https://registry.yarnpkg.com/icss-utils/-/icss-utils-5.1.0.tgz#c6be6858abd013d768e98366ae47e25d5887b1ae"
   integrity sha512-soFhflCVWLfRNOPU3iv5Z9VUdT44xFRbzjLsEzSr5AQmgqPMTHdU3PMT1Cf1ssx8fLNJDA1juftYl+PUcv3MqA==
+
+idb-keyval@^6.2.2:
+  version "6.2.2"
+  resolved "https://registry.yarnpkg.com/idb-keyval/-/idb-keyval-6.2.2.tgz#b0171b5f73944854a3291a5cdba8e12768c4854a"
+  integrity sha512-yjD9nARJ/jb1g+CvD0tlhUHOrJ9Sy0P8T9MF3YaLlHnSRpwPfpTX0XIvpmw3gAJUmEu3FiICLBDPXVwyEvrleg==
 
 idb@^7.0.1:
   version "7.1.1"
