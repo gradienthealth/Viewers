@@ -35,15 +35,16 @@ function PanelStudyBrowser({
   onDoubleClickThumbnailHandlerCallBack,
 }) {
   const { servicesManager, commandsManager, extensionManager } = useSystem();
-  const { displaySetService, customizationService } = servicesManager.services;
+  const { displaySetService, customizationService, GoogleSheetsService } = servicesManager.services;
   const navigate = useNavigate();
   const studyMode = customizationService.getCustomization('studyBrowser.studyMode') || 'all';
 
   const internalImageViewer = useImageViewer();
-  const StudyInstanceUIDs = internalImageViewer.StudyInstanceUIDs;
+  const studyUIDs = internalImageViewer.StudyInstanceUIDs;
 
   const [{ activeViewportId, viewports, isHangingProtocolLayout }] = useViewportGrid();
   const [activeTabName, setActiveTabName] = useState(studyMode);
+  const [StudyInstanceUIDs, setStudyInstanceUIDs] = useState(studyUIDs);
   const [expandedStudyInstanceUIDs, setExpandedStudyInstanceUIDs] = useState([
     ...StudyInstanceUIDs,
   ]);
@@ -110,6 +111,22 @@ function PanelStudyBrowser({
       customizationService,
     ]
   );
+
+  useEffect(() => {
+    const { unsubscribe } = GoogleSheetsService.subscribe(
+      GoogleSheetsService.EVENTS.GOOGLE_SHEETS_CHANGE,
+      () => {
+        const queryParams = new URLSearchParams(window.location.search);
+        const studyUIDs = dataSource.getStudyInstanceUIDs({ params: {}, query: queryParams });
+        setStudyInstanceUIDs(studyUIDs);
+        setExpandedStudyInstanceUIDs(studyUIDs);
+        setStudyDisplayList([]);
+      }
+    );
+    return () => {
+      unsubscribe();
+    };
+  }, []);
 
   // ~~ studyDisplayList
   useEffect(() => {

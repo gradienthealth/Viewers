@@ -57,6 +57,10 @@ const dicomRT = {
   sopClassHandler: '@ohif/extension-cornerstone-dicom-rt.sopClassHandlerModule.dicom-rt',
 };
 
+const gradienthealth = {
+  form: '@gradienthealth/ohif-gradienthealth-extension.panelModule.form',
+};
+
 const extensionDependencies = {
   // Can derive the versions at least process.env.from npm_package_version
   '@ohif/extension-default': '^3.0.0',
@@ -82,8 +86,14 @@ function modeFactory({ modeConfiguration }) {
      * Lifecycle hooks
      */
     onModeEnter: function ({ servicesManager, extensionManager, commandsManager }: withAppTypes) {
-      const { measurementService, toolbarService, toolGroupService, customizationService } =
-        servicesManager.services;
+      const {
+        measurementService,
+        toolbarService,
+        toolGroupService,
+        customizationService,
+        CacheAPIService,
+        GoogleSheetsService,
+      } = servicesManager.services;
 
       measurementService.clearMeasurements();
 
@@ -142,6 +152,9 @@ function modeFactory({ modeConfiguration }) {
         },
       });
 
+      CacheAPIService.init();
+      GoogleSheetsService.init();
+
       // // ActivatePanel event trigger for when a segmentation or measurement is added.
       // // Do not force activation so as to respect the state the user may have left the UI in.
       // _activatePanelTriggersSubscriptions = [
@@ -179,6 +192,8 @@ function modeFactory({ modeConfiguration }) {
         cornerstoneViewportService,
         uiDialogService,
         uiModalService,
+        CacheAPIService,
+        GoogleSheetsService,
       } = servicesManager.services;
 
       _activatePanelTriggersSubscriptions.forEach(sub => sub.unsubscribe());
@@ -190,6 +205,8 @@ function modeFactory({ modeConfiguration }) {
       syncGroupService.destroy();
       segmentationService.destroy();
       cornerstoneViewportService.destroy();
+      CacheAPIService.destroy();
+      GoogleSheetsService.destroy();
     },
     validationTags: {
       study: [],
@@ -219,7 +236,7 @@ function modeFactory({ modeConfiguration }) {
             props: {
               leftPanels: [tracked.thumbnailList],
               leftPanelResizable: true,
-              rightPanels: [cornerstone.segmentation, tracked.measurements],
+              rightPanels: [cornerstone.segmentation, tracked.measurements, gradienthealth.form],
               rightPanelClosed: true,
               rightPanelResizable: true,
               viewports: [
