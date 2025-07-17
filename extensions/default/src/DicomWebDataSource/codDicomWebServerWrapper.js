@@ -19,16 +19,20 @@ class CodDicomWebServerClient {
 
     this._codServer = new CodDicomWebServer({ domain: parseDomainFromBaseURL(this.baseURL) });
     this.deidStudyInstanceUIDMap = new Map(); // Map of study instance UIDs to deid study instance UIDs
+    this._studiesMetadata = [];
   }
 
   /**
    * @param {URLSearchParams} queryParams
    */
   async fetchStudiesMetadata(queryParams) {
-    this._studiesMetadata = await this.filesFromStudyInstanceUID({
+    this.bucket = queryParams.get('bucket');
+    this.bucketPrefix = queryParams.get('bucket-prefix');
+
+    const studiesMetadata = await this.filesFromStudyInstanceUID({
       wadoURL: this.wadoURL,
-      bucketName: queryParams.get('bucket'),
-      prefix: queryParams.get('bucket-prefix'),
+      bucketName: this.bucket,
+      prefix: this.bucketPrefix,
       studyuids: queryParams.getAll('StudyInstanceUIDs'),
       headers: this.headers,
     })
@@ -56,6 +60,8 @@ class CodDicomWebServerClient {
         this.errorInterceptor(error);
         return [];
       });
+
+    this._studiesMetadata.push(...studiesMetadata.filter(Boolean));
   }
 
   /**
@@ -63,7 +69,7 @@ class CodDicomWebServerClient {
    */
   getStudyUIDForDeidStudyUID(deidStudyInstanceUID) {
     const studyWithDeidStudyUID = this._studiesMetadata.find(
-      study => (study.deidStudyInstanceUID = deidStudyInstanceUID)
+      study => study.deidStudyInstanceUID === deidStudyInstanceUID
     );
 
     return this._getProperty(studyWithDeidStudyUID, Properties.StudyUID);
@@ -80,19 +86,25 @@ class CodDicomWebServerClient {
 
     return (
       data[property]?.Value[0] ||
-      data.instances?.[0][property].Value[0] ||
-      data.series?.[0].instances[0][property].Value[0]
+      data.instances?.[0][property]?.Value[0] ||
+      data.series?.[0].instances[0][property]?.Value[0]
     );
   }
 
   /**
    * @param {Object[]} studies
-   * @param {string} studyInstanceUID
+   * @param {{ 'StudyInstanceUID':string, [s: string]: any; }} queryParams
    */
-  _findStudy(studies = [], studyInstanceUID) {
-    return studies.find(
-      study => this._getProperty(study, Properties.StudyUID) === studyInstanceUID
-    );
+  _findStudy(studies = [], queryParams) {
+    return studies.find(study => {
+      if (this._getProperty(study, Properties.StudyUID) === queryParams.StudyInstanceUID) {
+        return true;
+      }
+
+      return !!Object.entries(queryParams).find(
+        ([tag, value]) => this._getProperty(study, tag) === value
+      );
+    });
   }
 
   /**
@@ -110,8 +122,14 @@ class CodDicomWebServerClient {
    * @param {string} options.studyInstanceUID
    * @param {string} options.seriesInstanceUID
    */
-  retrieveSeriesMetadata({ studyInstanceUID, seriesInstanceUID }) {
-    const studyFound = this._findStudy(this._studiesMetadata, studyInstanceUID);
+  async retrieveSeriesMetadata({ studyInstanceUID, seriesInstanceUID }) {
+    let studyFound = this._findStudy(this._studiesMetadata, { StudyInstanceUID: studyInstanceUID });
+
+    if (!studyFound) {
+      await this._fetchStudyMetadataByUID(studyInstanceUID);
+      studyFound = this._findStudy(this._studiesMetadata, { StudyInstanceUID: studyInstanceUID });
+    }
+
     const seriesFound = this._findSeries(studyFound?.series, seriesInstanceUID);
 
     return new Promise((resolve, reject) => {
@@ -127,8 +145,13 @@ class CodDicomWebServerClient {
    * @param {Object} options
    * @param {string} options.studyInstanceUID
    */
-  retrieveStudyMetadata({ studyInstanceUID }) {
-    const studyFound = this._findStudy(this._studiesMetadata, studyInstanceUID);
+  async retrieveStudyMetadata({ studyInstanceUID }) {
+    let studyFound = this._findStudy(this._studiesMetadata, { StudyInstanceUID: studyInstanceUID });
+
+    if (!studyFound) {
+      await this._fetchStudyMetadataByUID(studyInstanceUID);
+      studyFound = this._findStudy(this._studiesMetadata, { StudyInstanceUID: studyInstanceUID });
+    }
 
     return new Promise((resolve, reject) => {
       if (studyFound) {
@@ -143,8 +166,13 @@ class CodDicomWebServerClient {
    * @param {Object} options
    * @param {string} options.studyInstanceUID
    */
-  searchForSeries({ studyInstanceUID }) {
-    const studyFound = this._findStudy(this._studiesMetadata, studyInstanceUID);
+  async searchForSeries({ studyInstanceUID }) {
+    let studyFound = this._findStudy(this._studiesMetadata, { StudyInstanceUID: studyInstanceUID });
+
+    if (!studyFound) {
+      await this._fetchStudyMetadataByUID(studyInstanceUID);
+      studyFound = this._findStudy(this._studiesMetadata, { StudyInstanceUID: studyInstanceUID });
+    }
 
     return new Promise(resolve => {
       if (studyFound) {
@@ -160,8 +188,8 @@ class CodDicomWebServerClient {
    * @param {Object} options.queryParams
    * @param {string} options.queryParams.StudyInstanceUID
    */
-  searchForStudies({ queryParams }) {
-    const studyFound = this._studiesMetadata.find(study => {
+  async searchForStudies({ queryParams }) {
+    let studyFound = this._studiesMetadata.find(study => {
       if (this._getProperty(study, Properties.StudyUID) === queryParams.StudyInstanceUID) {
         return true;
       }
@@ -176,6 +204,11 @@ class CodDicomWebServerClient {
       return false;
     });
 
+    if (!studyFound && queryParams.StudyInstanceUID) {
+      await this._fetchStudyMetadataByUID(queryParams.StudyInstanceUID);
+      studyFound = this._findStudy(this._studiesMetadata, queryParams);
+    }
+
     return new Promise(resolve => {
       if (studyFound) {
         resolve([studyFound.series[0].instances[0]]);
@@ -183,6 +216,18 @@ class CodDicomWebServerClient {
         resolve([]);
       }
     });
+  }
+
+  /**
+   * @param {string} studyInstanceUID
+   */
+  async _fetchStudyMetadataByUID(studyInstanceUID) {
+    const search = new URLSearchParams({
+      ...(this.bucket ? { bucket: this.bucket } : {}),
+      ...(this.bucketPrefix ? { 'bucket-prefix': this.bucketPrefix } : {}),
+      StudyInstanceUIDs: studyInstanceUID,
+    });
+    await this.fetchStudiesMetadata(search);
   }
 
   /**
