@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
+import SmartImageScrollbar from './SmartImageScrollbar';
 import ViewportImageScrollbar from './ViewportImageScrollbar';
 import CustomizableViewportOverlay from './CustomizableViewportOverlay';
 import ViewportOrientationMarkers from './ViewportOrientationMarkers';
@@ -45,7 +46,7 @@ function CornerstoneOverlays(props: withAppTypes) {
 
   return (
     <div className="noselect">
-      <ViewportImageScrollbar
+      <SmartImageScrollbar
         viewportId={viewportId}
         viewportData={viewportData}
         element={element}

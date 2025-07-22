@@ -36,6 +36,7 @@ import CornerstoneViewportDownloadForm from './utils/CornerstoneViewportDownload
 import { updateSegmentBidirectionalStats } from './utils/updateSegmentationStats';
 import { generateSegmentationCSVReport } from './utils/generateSegmentationCSVReport';
 import { getUpdatedViewportsForSegmentation } from './utils/hydrationUtils';
+import shouldPreventScroll from './utils/shouldPreventScroll';
 
 const { DefaultHistoryMemo } = csUtils.HistoryMemo;
 const toggleSyncFunctions = {
@@ -919,6 +920,16 @@ function commandsModule({
       }
 
       const { viewport } = enabledElement;
+
+      if (
+        shouldPreventScroll(
+          !options.isSmartScrolling,
+          viewport.getCurrentImageIdIndex() + options.direction,
+          servicesManager
+        )
+      ) {
+        return;
+      }
 
       csUtils.scroll(viewport, options);
     },

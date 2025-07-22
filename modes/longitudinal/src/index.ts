@@ -132,7 +132,7 @@ function modeFactory({ modeConfiguration }) {
         'ImageSliceSync',
         'ReferenceLines',
         'ImageOverlayViewer',
-        'StackScroll',
+        'SmartStackScroll',
         'invert',
         'Probe',
         'Cine',
