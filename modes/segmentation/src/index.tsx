@@ -84,7 +84,7 @@ function modeFactory({ modeConfiguration }) {
         'flipHorizontal',
         'ReferenceLines',
         'ImageOverlayViewer',
-        'StackScroll',
+        'SmartStackScroll',
         'invert',
         'Cine',
         'Magnify',

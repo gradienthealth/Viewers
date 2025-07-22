@@ -44,7 +44,8 @@ import {
   usePositionPresentationStore,
   useSegmentationPresentationStore,
   useSynchronizersStore,
-  useSelectedSegmentationsForViewportStore,
+  //useSelectedSegmentationsForViewportStore,
+  useCachedSlicesPerDisplaysetStore,
 } from './stores';
 import { useToggleOneUpViewportGridStore } from '@ohif/extension-default';
 import { useActiveViewportSegmentationRepresentations } from './hooks/useActiveViewportSegmentationRepresentations';
@@ -55,6 +56,7 @@ import PanelMeasurement from './panels/PanelMeasurement';
 import { useSegmentations } from './hooks/useSegmentations';
 import { StudySummaryFromMetadata } from './components/StudySummaryFromMetadata';
 import CornerstoneViewportDownloadForm from './utils/CornerstoneViewportDownloadForm';
+import shouldPreventScroll from './utils/shouldPreventScroll';
 import utils from './utils';
 import { useMeasurementTracking } from './hooks/useMeasurementTracking';
 import { setUpSegmentationEventHandlers } from './utils/setUpSegmentationEventHandlers';
@@ -159,9 +161,10 @@ const cornerstoneExtension: Types.Extensions.Extension = {
     useSynchronizersStore.getState().clearSynchronizersStore();
     useToggleOneUpViewportGridStore.getState().clearToggleOneUpViewportGridStore();
     useSegmentationPresentationStore.getState().clearSegmentationPresentationStore();
-    useSelectedSegmentationsForViewportStore
-      .getState()
-      .clearSelectedSegmentationsForViewportStore();
+    // useSelectedSegmentationsForViewportStore
+    //   .getState()
+    //   .clearSelectedSegmentationsForViewportStore();
+    useCachedSlicesPerDisplaysetStore.getState().clearCachedSlicesPerDisplaysetStore();
     segmentationService.removeAllSegmentations();
   },
 
@@ -220,6 +223,7 @@ const cornerstoneExtension: Types.Extensions.Extension = {
           },
           getEnabledElement,
           dicomLoaderService,
+          useCachedSlicesPerDisplaysetStore,
         },
       },
       {
@@ -233,6 +237,8 @@ const cornerstoneExtension: Types.Extensions.Extension = {
         exports: {
           toolNames,
           Enums: cs3DToolsEnums,
+          shouldPreventScroll: (keyPressed, imageIdIndex) =>
+            shouldPreventScroll(keyPressed, imageIdIndex, servicesManager),
         },
       },
       {

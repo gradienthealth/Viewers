@@ -77,7 +77,7 @@ export function onModeEnter({ servicesManager, extensionManager, commandsManager
     'ImageSliceSync',
     'ReferenceLines',
     'ImageOverlayViewer',
-    'StackScroll',
+    'SmartStackScroll',
     'invert',
     'Probe',
     'Cine',
