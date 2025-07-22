@@ -55,6 +55,7 @@ import { EasingFunctionEnum } from './utils/transitions';
 import { createSegmentationForViewport } from './utils/createSegmentationForViewport';
 import { utilities as segmentationUtilities } from '@cornerstonejs/tools/segmentation';
 import i18n from '@ohif/i18n';
+import shouldPreventScroll from './utils/shouldPreventScroll';
 
 const { add, intersect, subtract, copy } = cstUtils.contourSegmentation;
 
@@ -1262,6 +1263,16 @@ function commandsModule({
       }
 
       const { viewport } = enabledElement;
+
+      if (
+        shouldPreventScroll(
+          !options.isSmartScrolling,
+          viewport.getCurrentImageIdIndex() + options.direction,
+          servicesManager
+        )
+      ) {
+        return;
+      }
 
       csUtils.scroll(viewport, options);
     },

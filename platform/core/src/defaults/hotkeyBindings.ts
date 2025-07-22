@@ -105,14 +105,28 @@ const bindings = [
   },
   {
     commandName: 'nextImage',
-    label: 'Next Image',
+    commandOptions: { isSmartScrolling: true },
+    label: 'Smart Next Image',
     keys: ['down'],
     isEditable: true,
   },
   {
     commandName: 'previousImage',
-    label: 'Previous Image',
+    commandOptions: { isSmartScrolling: true },
+    label: 'Smart Previous Image',
     keys: ['up'],
+    isEditable: true,
+  },
+  {
+    commandName: 'nextImage',
+    label: 'Next Image',
+    keys: ['ctrl+down'],
+    isEditable: true,
+  },
+  {
+    commandName: 'previousImage',
+    label: 'Previous Image',
+    keys: ['ctrl+up'],
     isEditable: true,
   },
   {
