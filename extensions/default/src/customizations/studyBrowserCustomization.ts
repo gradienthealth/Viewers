@@ -17,6 +17,16 @@ export default {
       iconName: 'ViewportViews',
       commands: 'addDisplaySetAsLayer',
     },
+    {
+      id: 'downloadSeries',
+      label: 'Download Series',
+      iconName: 'Download',
+      onClick: ({ commandsManager, displaySetInstanceUID }: withAppTypes) => {
+        commandsManager.runCommand('downloadSeriesFile', {
+          displaySetInstanceUID,
+        });
+      },
+    },
   ],
   'studyBrowser.sortFunctions': [
     {

@@ -1,4 +1,4 @@
-import { CodDicomWebServer } from 'cod-dicomweb-server';
+import { internal } from '@cornerstonejs/dicom-image-loader';
 
 const Properties = {
   StudyUID: '0020000D',
@@ -17,7 +17,7 @@ class CodDicomWebServerClient {
     this.headers = config.headers;
     this.errorInterceptor = config.errorInterceptor;
 
-    this._codServer = new CodDicomWebServer({ domain: parseDomainFromBaseURL(this.baseURL) });
+    this._codServer = internal.getWadoRsWebServer();
     this.deidStudyInstanceUIDMap = new Map(); // Map of study instance UIDs to deid study instance UIDs
     this._studiesMetadata = [];
   }
