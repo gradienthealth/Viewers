@@ -1,4 +1,5 @@
 import { Types, DicomMetadataStore } from '@ohif/core';
+import { internal } from '@cornerstonejs/dicom-image-loader';
 
 import { ContextMenuController } from './CustomizableContextMenu';
 import DicomTagBrowser from './DicomTagBrowser/DicomTagBrowser';
@@ -66,8 +67,8 @@ const commandsModule = ({
      */
     addDisplaySetAsLayer: ({ viewportId, displaySetInstanceUID, removeFirst = false }) => {
       if (!viewportId) {
-          const { activeViewportId } = servicesManager.services.viewportGridService.getState();
-          viewportId = activeViewportId;
+        const { activeViewportId } = servicesManager.services.viewportGridService.getState();
+        viewportId = activeViewportId;
       }
 
       if (!viewportId || !displaySetInstanceUID) {
@@ -761,6 +762,20 @@ const commandsModule = ({
 
       setTimeout(() => actions.scrollActiveThumbnailIntoView(), 0);
     },
+
+    downloadSeriesFile: ({ displaySetInstanceUID }) => {
+      const displaySet = displaySetService.getDisplaySetByUID(displaySetInstanceUID);
+      const codServer = internal.getWadoRsWebServer();
+      const seriesDownloaded = codServer.downloadSeriesFile(displaySet.SeriesInstanceUID);
+
+      uiNotificationService.show({
+        title: 'Download Series file',
+        message: seriesDownloaded
+          ? `Series ${displaySet.SeriesInstanceUID} Downloaded`
+          : `Error downloading Series ${displaySet.SeriesInstanceUID}`,
+        type: seriesDownloaded ? 'success' : 'error',
+      });
+    },
   };
 
   const definitions = {
@@ -789,6 +804,7 @@ const commandsModule = ({
     scrollActiveThumbnailIntoView: actions.scrollActiveThumbnailIntoView,
     addDisplaySetAsLayer: actions.addDisplaySetAsLayer,
     removeDisplaySetLayer: actions.removeDisplaySetLayer,
+    downloadSeriesFile: actions.downloadSeriesFile,
   };
 
   return {
