@@ -255,14 +255,17 @@ class CodDicomWebServerClient {
       const series = folders.map(async (/** @type {string} */ folderPath) => {
         const deidSeriesInstanceUID = folderPath.split('/series/')[1].split(delimiter)[0];
         const wadoUrl = `${urlRoot}/studies/${deidStudyInstanceuid}/series/${deidSeriesInstanceUID}/metadata`;
-        return {
-          deidSeriesInstanceUID,
-          instances: await this._codServer.fetchCod(wadoUrl, headers),
-        };
+        return this._codServer
+          .fetchCod(wadoUrl, headers)
+          .then(instances => ({
+            deidSeriesInstanceUID,
+            instances,
+          }))
+          .catch(() => null);
       });
       return Promise.all(series).then(result => ({
         deidStudyInstanceUID: deidStudyInstanceuid,
-        series: result,
+        series: result.filter(Boolean),
       }));
     });
     return await Promise.all(studyMetadata);
