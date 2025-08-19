@@ -169,7 +169,7 @@ function createDicomWebApi(dicomWebConfig: DicomWebConfig, servicesManager) {
       // TODO -> Two clients sucks, but its better than 1000.
       // TODO -> We'll need to merge auth later.
       qidoDicomWebClient = dicomWebConfig.useCod
-        ? new CodDicomWebServerClient(qidoConfig)
+        ? new CodDicomWebServerClient(qidoConfig, query)
         : dicomWebConfig.staticWado
           ? new StaticWadoClient(qidoConfig)
           : new api.DICOMwebClient(qidoConfig);

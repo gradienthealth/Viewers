@@ -5,11 +5,14 @@ const Properties = {
   SeriesUID: '0020000E',
 };
 
+const DEFAULT_USER_PROJECT = 'laplace-viewer';
+
 class CodDicomWebServerClient {
   /**
    * @param {Object} config
+   * @param {URLSearchParams} [query]
    */
-  constructor(config) {
+  constructor(config, query) {
     this.baseURL = config.url;
     this.qidoURL = this.baseURL;
     this.wadoURL = this.baseURL;
@@ -20,6 +23,10 @@ class CodDicomWebServerClient {
     this._codServer = internal.getWadoRsWebServer();
     this.deidStudyInstanceUIDMap = new Map(); // Map of study instance UIDs to deid study instance UIDs
     this._studiesMetadata = [];
+
+    internal.setCodHeaders({
+      'X-Goog-User-Project': query?.get('userProject') || DEFAULT_USER_PROJECT,
+    });
   }
 
   /**
