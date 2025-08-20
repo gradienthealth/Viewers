@@ -3,8 +3,9 @@ import PropTypes from 'prop-types';
 
 const token = new URLSearchParams(window.location.search).get('token');
 
+// Setting localStorage as oidc store so that the session details can be accessed across browser tabs
 const user = JSON.parse(
-  sessionStorage.getItem(
+  localStorage.getItem(
     'oidc.user:https://accounts.google.com:195181363105-h9e3uujhnd2t6c8dqrdcv01h4bn2fsva.apps.googleusercontent.com'
   )
 );
