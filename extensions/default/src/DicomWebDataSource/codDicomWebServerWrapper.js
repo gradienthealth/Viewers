@@ -72,6 +72,15 @@ class CodDicomWebServerClient {
   }
 
   /**
+   * @param {string} bucketName
+   * @param {string} prefix
+   */
+  setBucketDetails(bucketName, prefix) {
+    this.bucket = bucketName;
+    this.bucketPrefix = prefix;
+  }
+
+  /**
    * @param {string} deidStudyInstanceUID
    */
   getStudyUIDForDeidStudyUID(deidStudyInstanceUID) {
@@ -248,7 +257,7 @@ class CodDicomWebServerClient {
   async filesFromStudyInstanceUID({ wadoURL, bucketName, prefix, studyuids, headers }) {
     const delimiter = '/';
     const domain = parseDomainFromBaseURL(wadoURL);
-    const bucketComponents = wadoURL.split(domain + delimiter)[1].split(delimiter);
+    const bucketComponents = wadoURL.split(domain + delimiter)[1]?.split(delimiter) || [];
     const bucket = bucketName || bucketComponents[0];
     const bucketPrefix = prefix || bucketComponents.slice(1).join(delimiter) || 'dicomweb';
     const urlRoot = `${domain}/${bucket}/${bucketPrefix}`;
@@ -266,7 +275,10 @@ class CodDicomWebServerClient {
           .fetchCod(wadoUrl, headers)
           .then(instances => ({
             deidSeriesInstanceUID,
-            instances,
+            instances: instances.map(instance => ({
+              ...instance,
+              BucketPath: { Value: [`${bucket}/${bucketPrefix}`] },
+            })),
           }))
           .catch(() => null);
       });
