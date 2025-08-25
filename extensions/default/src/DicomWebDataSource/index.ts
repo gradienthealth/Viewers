@@ -39,6 +39,9 @@ export type DicomWebConfig = {
   wadoRoot?: string; // - Base URL to use for WADO requests
   wadoUri?: string; // - Base URL to use for WADO URI requests
   useCod?: boolean; // - Indicates the viewer should use the cod dicomweb server proxy client
+  /** Indicates to use the bucket details from the URL params.
+   * To have a bucket independent COD datasource */
+  useURLParams?: boolean;
   qidoSupportsIncludeField?: boolean; // - Whether QIDO supports the "Include" option to request additional fields in response
   imageRendering?: string; // - wadors | ? (unsure of where/how this is used)
   thumbnailRendering?: string;
@@ -374,9 +377,14 @@ function createDicomWebApi(dicomWebConfig: DicomWebConfig, servicesManager) {
           sortFunction,
           madeInClient = false,
           returnPromises = false,
+          bucketDetails = {},
         } = {}) => {
           if (!StudyInstanceUID) {
             throw new Error('Unable to query for SeriesMetadata without StudyInstanceUID');
+          }
+
+          if (bucketDetails.bucket) {
+            wadoDicomWebClient.setBucketDetails(bucketDetails.bucket, bucketDetails.bucketPrefix);
           }
 
           if (dicomWebConfig.enableStudyLazyLoad) {
