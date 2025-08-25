@@ -96,6 +96,25 @@ window.config = {
     },
     {
       namespace: '@ohif/extension-default.dataSourcesModule.dicomweb',
+      sourceName: 'cod',
+      configuration: {
+        friendlyName: 'Cloud Optimized wado proxy server with bucket from URL params',
+        name: 'cod',
+        qidoRoot: 'https://storage.googleapis.com',
+        wadoRoot: 'https://storage.googleapis.com',
+        useCod: true,
+        useURLParams: true,
+        imageRendering: 'wadors',
+        thumbnailRendering: 'wadors',
+        enableStudyLazyLoad: true,
+        staticWado: false,
+        bulkDataURI: {
+          enabled: false,
+        },
+      },
+    },
+    {
+      namespace: '@ohif/extension-default.dataSourcesModule.dicomweb',
       sourceName: 'thryothor-495511-pacs-deid/v1.0',
       configuration: {
         friendlyName: 'Cloud Optimized wado proxy server for Thryothor deidentified',

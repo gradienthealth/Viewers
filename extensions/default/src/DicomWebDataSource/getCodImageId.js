@@ -21,5 +21,12 @@ export default function getCodImageId({ instance, frame, config }) {
     wadoRsImageId = getWADORSImageId(instance, config, frame);
   }
 
+  if (config.useURLParams && !instance.imageId && instance.BucketPath) {
+    wadoRsImageId = wadoRsImageId.replace(
+      config.wadoRoot,
+      `${config.wadoRoot}/${instance.BucketPath}`
+    );
+  }
+
   return wadoRsImageId.replace('wadors:', 'cod:');
 }
