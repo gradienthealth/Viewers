@@ -33,13 +33,20 @@ class CodDicomWebServerClient {
    * @param {URLSearchParams} queryParams
    */
   async fetchStudiesMetadata(queryParams) {
-    this.bucket = queryParams.get('bucket');
-    this.bucketPrefix = queryParams.get('bucket-prefix');
+    const bucketNames = queryParams.getAll('bucket');
+    const bucketPrefix = queryParams.get('bucket-prefix');
 
-    const studiesMetadata = await this.filesFromStudyInstanceUID({
+    this.buckets = bucketNames.map(bucketName => ({
+      bucketName,
+      bucketPrefix: bucketPrefix,
+    }));
+
+    const studiesMetadata = await Promise.all(
+      (this.buckets.length ? this.buckets : [{}]).flatMap(async ({ bucketName, bucketPrefix }) => {
+        return await this.filesFromStudyInstanceUID({
       wadoURL: this.wadoURL,
-      bucketName: this.bucket,
-      prefix: this.bucketPrefix,
+          bucketName: bucketName,
+          prefix: bucketPrefix,
       studyuids: queryParams.getAll('StudyInstanceUIDs'),
       headers: this.headers,
     })
@@ -67,17 +74,24 @@ class CodDicomWebServerClient {
         this.errorInterceptor(error);
         return [];
       });
+      })
+    );
 
-    this._studiesMetadata.push(...studiesMetadata.filter(Boolean));
+    const filteredStudies = studiesMetadata.flat().filter(Boolean);
+
+    if (filteredStudies.length) {
+      this._studiesMetadata.push({
+        deidStudyInstanceUID: filteredStudies[0].deidStudyInstanceUID,
+        series: filteredStudies.flatMap(({ series }) => series),
+      });
+    }
   }
 
   /**
-   * @param {string} bucketName
-   * @param {string} prefix
+   * @param {{ bucketName: string, bucketPrefix: string }[]} buckets
    */
-  setBucketDetails(bucketName, prefix) {
-    this.bucket = bucketName;
-    this.bucketPrefix = prefix;
+  setBuckets(buckets) {
+    this.buckets = buckets;
   }
 
   /**
@@ -239,10 +253,17 @@ class CodDicomWebServerClient {
    */
   async _fetchStudyMetadataByUID(studyInstanceUID) {
     const search = new URLSearchParams({
-      ...(this.bucket ? { bucket: this.bucket } : {}),
-      ...(this.bucketPrefix ? { 'bucket-prefix': this.bucketPrefix } : {}),
       StudyInstanceUIDs: studyInstanceUID,
     });
+    if (this.buckets) {
+      this.buckets.forEach(({ bucketName, bucketPrefix }) => {
+        search.append('bucket', bucketName);
+        if (search.get('bucket-prefix') !== bucketPrefix) {
+          search.append('bucket-prefix', bucketPrefix);
+        }
+      });
+    }
+
     await this.fetchStudiesMetadata(search);
   }
 

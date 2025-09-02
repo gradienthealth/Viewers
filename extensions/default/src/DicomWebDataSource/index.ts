@@ -283,8 +283,12 @@ function createDicomWebApi(dicomWebConfig: DicomWebConfig, servicesManager) {
             throw new Error('Unable to query for SeriesMetadata without StudyInstanceUID');
           }
 
-          if (bucketDetails.bucket) {
-            wadoDicomWebClient.setBucketDetails(bucketDetails.bucket, bucketDetails.bucketPrefix);
+          if (bucketDetails.buckets?.length) {
+            const buckets = bucketDetails.buckets.map(bucketName => ({
+              bucketName,
+              bucketPrefix: bucketDetails.bucketPrefix,
+            }));
+            wadoDicomWebClient.setBuckets(buckets);
           }
 
           if (dicomWebConfig.enableStudyLazyLoad) {
