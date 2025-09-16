@@ -26,6 +26,7 @@
     "cm": "npx git-cz",
     "build": "lerna run build:viewer --stream",
     "build:gradient": "lerna run build:gradient --stream",
+    "build:gradient:production": "lerna run build:gradient:production --stream",
     "build:icad": "lerna run build:icad --stream",
     "build:dev": "lerna run build:dev --stream",
     "build:ci": "lerna run build:viewer:ci --stream",
