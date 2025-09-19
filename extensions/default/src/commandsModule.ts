@@ -766,13 +766,14 @@ const commandsModule = ({
     downloadSeriesFile: ({ displaySetInstanceUID }) => {
       const displaySet = displaySetService.getDisplaySetByUID(displaySetInstanceUID);
       const codServer = internal.getWadoRsWebServer();
-      const seriesDownloaded = codServer.downloadSeriesFile(displaySet.SeriesInstanceUID);
+      const deidSeriesInstanceUID = displaySet.instance.DeidSeriesInstanceUID;
+      const seriesDownloaded = codServer.downloadSeriesFile(deidSeriesInstanceUID);
 
       uiNotificationService.show({
         title: 'Download Series file',
         message: seriesDownloaded
-          ? `Series ${displaySet.SeriesInstanceUID} Downloaded`
-          : `Error downloading Series ${displaySet.SeriesInstanceUID}`,
+          ? `Series ${deidSeriesInstanceUID} Downloaded`
+          : `Error downloading Series ${deidSeriesInstanceUID}`,
         type: seriesDownloaded ? 'success' : 'error',
       });
     },
