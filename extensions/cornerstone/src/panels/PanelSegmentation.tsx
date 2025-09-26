@@ -113,18 +113,15 @@ export default function PanelSegmentation({ children }: withAppTypes) {
     if (!instance) {
       return { segmentationId, isExportable: false };
     }
-
+    /*
     const SOPInstanceUID = instance.SOPInstanceUID || instance.SopInstanceUID;
     const SeriesInstanceUID = instance.SeriesInstanceUID;
     const displaySet = displaySetService.getDisplaySetForSOPInstanceUID(
       SOPInstanceUID,
       SeriesInstanceUID
     );
-
-    return {
-      segmentationId,
-      isExportable: displaySet?.isReconstructable,
-    };
+    */
+    return { segmentationId, isExportable: true };
   });
 
   // Common props for SegmentationTable

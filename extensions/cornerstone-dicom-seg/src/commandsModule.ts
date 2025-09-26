@@ -220,17 +220,25 @@ const commandsModule = ({
       }
 
       const { label } = segmentation;
-      const defaultDataSource = dataSource ?? extensionManager.getActiveDataSource();
+      // If DisplaySet of the segmentation exists, then over write it.
+      const displaySet = displaySetService.getDisplaySetByUID(segmentationId);
+      const defaultDataSource = dataSource ?? extensionManager.getActiveDataSource()[0];
 
-      const {
-        value: reportName,
-        dataSourceName: selectedDataSource,
-        action,
-      } = await createReportDialogPrompt({
-        servicesManager,
-        extensionManager,
-        title: 'Store Segmentation',
-      });
+      let reportName: string, selectedDataSource: string, action: number;
+
+      if (displaySet) {
+        action = PROMPT_RESPONSES.CREATE_REPORT;
+      } else {
+        ({
+          value: reportName,
+          dataSourceName: selectedDataSource,
+          action,
+        } = await createReportDialogPrompt({
+          servicesManager,
+          extensionManager,
+          title: 'Store Segmentation',
+        }));
+      }
 
       if (action === PROMPT_RESPONSES.CREATE_REPORT) {
         try {
@@ -242,6 +250,11 @@ const commandsModule = ({
             segmentationId,
             options: {
               SeriesDescription: reportName || label || 'Research Derived Series',
+              // Use Series and SOP instancesUIDs if displaySet of the segmentation already exists.
+              ...(displaySet && {
+                SeriesInstanceUID: displaySet.SeriesInstanceUID,
+                SOPInstanceUID: displaySet.instances[0].SOPInstanceUID,
+              }),
             },
           });
 
@@ -254,9 +267,10 @@ const commandsModule = ({
           await selectedDataSourceConfig.store.dicom(naturalizedReport);
 
           // add the information for where we stored it to the instance as well
-          naturalizedReport.wadoRoot = selectedDataSourceConfig.getConfig().wadoRoot;
+          // naturalizedReport.wadoRoot = selectedDataSourceConfig.getConfig().wadoRoot;
 
-          DicomMetadataStore.addInstances([naturalizedReport], true);
+          // The instance is added in the createReportAsync after here
+          // DicomMetadataStore.addInstances([naturalizedReport], true);
 
           return naturalizedReport;
         } catch (error) {

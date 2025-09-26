@@ -1,4 +1,9 @@
 import { internal } from '@cornerstonejs/dicom-image-loader';
+import { data as dcmjsData, normalizers } from 'dcmjs';
+import pako from 'pako';
+
+const { DicomMessage, DicomMetaDictionary, datasetToBlob } = dcmjsData;
+const { Normalizer } = normalizers;
 
 const Properties = {
   StudyUID: '0020000D',
@@ -44,36 +49,36 @@ class CodDicomWebServerClient {
     const studiesMetadata = await Promise.all(
       (this.buckets.length ? this.buckets : [{}]).flatMap(async ({ bucketName, bucketPrefix }) => {
         return await this.filesFromStudyInstanceUID({
-      wadoURL: this.wadoURL,
+          wadoURL: this.wadoURL,
           bucketName: bucketName,
           prefix: bucketPrefix,
-      studyuids: queryParams.getAll('StudyInstanceUIDs'),
-      headers: this.headers,
-    })
-      .then(studies => {
-        return studies.filter(study => {
-          study.series = study.series.filter(aSeries => {
-            if (aSeries.instances.length) {
-              return true;
-            }
+          studyuids: queryParams.getAll('StudyInstanceUIDs'),
+          headers: this.headers,
+        })
+          .then(studies => {
+            return studies.filter(study => {
+              study.series = study.series.filter(aSeries => {
+                if (aSeries.instances.length) {
+                  return true;
+                }
 
-            console.warn('No instance found in series ' + aSeries.deidSeriesInstanceUID);
-            return false;
+                console.warn('No instance found in series ' + aSeries.deidSeriesInstanceUID);
+                return false;
+              });
+
+              if (study.series.length) {
+                const studyUID = study.series[0].instances[0]['0020000D'].Value[0];
+                this.deidStudyInstanceUIDMap.set(study.deidStudyInstanceUID, studyUID);
+                return true;
+              }
+
+              return false;
+            });
+          })
+          .catch(error => {
+            this.errorInterceptor(error);
+            return [];
           });
-
-          if (study.series.length) {
-            const studyUID = study.series[0].instances[0]['0020000D'].Value[0];
-            this.deidStudyInstanceUIDMap.set(study.deidStudyInstanceUID, studyUID);
-            return true;
-          }
-
-          return false;
-        });
-      })
-      .catch(error => {
-        this.errorInterceptor(error);
-        return [];
-      });
       })
     );
 
@@ -254,6 +259,107 @@ class CodDicomWebServerClient {
         resolve([]);
       }
     });
+  }
+
+  async storeInstances({ datasets, displaySetService }) {
+    const mapSegSeriesFromDataSet = (dataset, dicomData, fileSize) => {
+      return {
+        study_uid: dataset.StudyInstanceUID,
+        series_uid: dataset.SeriesInstanceUID,
+        cod: {
+          instances: {
+            [dataset.SOPInstanceUID]: {
+              metadata: { ...dicomData },
+              url: dataset.url,
+              headers: {},
+              offset_tables: {},
+              size: fileSize,
+              dependencies: [],
+              diff_hash_dupe_paths: [],
+              version: '1.0',
+              modified_datetime: new Date().toISOString(),
+            },
+          },
+        },
+      };
+    };
+
+    for (let index = 0; index < datasets.length; index++) {
+      const dataset = datasets[index];
+      const denaturalized = DicomMetaDictionary.denaturalizeDataset(dataset);
+
+      const { StudyInstanceUID, SeriesInstanceUID, SOPInstanceUID, SeriesDescription } = dataset;
+
+      const params = new URLSearchParams(window.location.search);
+      const { bucketName, bucketPrefix } = this.buckets[1] || this.buckets[0];
+      let segBucket = params.get('seg-bucket') || bucketName;
+      const segPrefix = params.get('seg-prefix') || bucketPrefix;
+      const filteredDescription = SeriesDescription.replace(/[/ ]/g, '');
+
+      let fileName = `${segPrefix}/studies/${StudyInstanceUID}/series/${SeriesInstanceUID}/instances/${SOPInstanceUID}/${encodeURIComponent(
+        filteredDescription
+      )}.dcm`;
+
+      const segDisplaySet = displaySetService.getDisplaySetsBy(
+        ds =>
+          ds.SeriesInstanceUID === SeriesInstanceUID &&
+          ds.instance.SOPInstanceUID === SOPInstanceUID
+      )[0];
+      if (segDisplaySet) {
+        const url = segDisplaySet.instance.url;
+        segBucket = url.split('https://storage.googleapis.com/')[1].split('/')[0];
+        fileName = url.split(`https://storage.googleapis.com/${segBucket}/`)[1];
+      }
+
+      const segUploadUri = `https://storage.googleapis.com/upload/storage/v1/b/${segBucket}/o?uploadType=media&name=${fileName}&contentEncoding=gzip`;
+      const blob = datasetToBlob(dataset);
+      const compressedFile = pako.gzip(await blob.arrayBuffer());
+
+      await fetch(segUploadUri, {
+        method: 'POST',
+        headers: {
+          ...this.headers,
+          'Content-Type': 'application/dicom',
+        },
+        body: compressedFile,
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.error) {
+            throw new Error(`${data.error.code}: ${data.error.message}`);
+          }
+
+          const segUri = `cod:https://storage.googleapis.com/${segBucket}/${data.name}`;
+          // We are storing the imageId so that when multiframe is made to displayset we can get url to DicomSeg file.
+          dataset.url = segUri;
+          const segSeries = mapSegSeriesFromDataSet(dataset, denaturalized, blob.size);
+          const compressedFile = pako.gzip(JSON.stringify(segSeries));
+
+          return fetch(
+            `https://storage.googleapis.com/upload/storage/v1/b/${segBucket}/o?uploadType=media&name=${segPrefix}/studies/${StudyInstanceUID}/series/${SeriesInstanceUID}/metadata.json&contentEncoding=gzip`,
+            {
+              method: 'POST',
+              headers: {
+                ...this.headers,
+                'Content-Type': 'application/json',
+              },
+              body: compressedFile,
+            }
+          )
+            .then(response => response.json())
+            .then(data => {
+              if (data.error) {
+                throw new Error(`${data.error.code}: ${data.error.message}`);
+              }
+            })
+            .catch(error => {
+              throw new Error(error.message || 'Failed to store DicomSeg metadata');
+            });
+        })
+        .catch(error => {
+          throw new Error(error.message || 'Failed to store DicomSeg file');
+        });
+    }
   }
 
   /**
