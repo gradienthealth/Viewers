@@ -3,6 +3,7 @@ import { SegmentationTable } from '@ohif/ui-next';
 import { useActiveViewportSegmentationRepresentations } from '../hooks/useActiveViewportSegmentationRepresentations';
 import { metaData } from '@cornerstonejs/core';
 import { useSystem } from '@ohif/core/src';
+import { useSegmentationSavingStatusStore } from '../stores';
 
 export default function PanelSegmentation({ children }: withAppTypes) {
   const { commandsManager, servicesManager } = useSystem();
@@ -159,6 +160,9 @@ export default function PanelSegmentation({ children }: withAppTypes) {
               <CustomDropdownMenuContent />
             </SegmentationTable.Collapsed.DropdownMenu>
             <SegmentationTable.Collapsed.Selector />
+            <SegmentationTable.Collapsed.SavedStatus
+              useSegmentationSavingStatusStore={useSegmentationSavingStatusStore}
+            />
             <SegmentationTable.Collapsed.Info />
           </SegmentationTable.Collapsed.Header>
           <SegmentationTable.Collapsed.Content>

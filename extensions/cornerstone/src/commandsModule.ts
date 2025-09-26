@@ -30,13 +30,18 @@ import toggleImageSliceSync from './utils/imageSliceSync/toggleImageSliceSync';
 import { getFirstAnnotationSelected } from './utils/measurementServiceMappings/utils/selection';
 import getActiveViewportEnabledElement from './utils/getActiveViewportEnabledElement';
 import toggleVOISliceSync from './utils/toggleVOISliceSync';
-import { usePositionPresentationStore, useSegmentationPresentationStore } from './stores';
+import {
+  usePositionPresentationStore,
+  useSegmentationPresentationStore,
+  useSegmentationSavingStatusStore,
+} from './stores';
 import { toolNames } from './initCornerstoneTools';
 import CornerstoneViewportDownloadForm from './utils/CornerstoneViewportDownloadForm';
 import { updateSegmentBidirectionalStats } from './utils/updateSegmentationStats';
 import { generateSegmentationCSVReport } from './utils/generateSegmentationCSVReport';
 import { getUpdatedViewportsForSegmentation } from './utils/hydrationUtils';
 import shouldPreventScroll from './utils/shouldPreventScroll';
+import { SAVED_STATUS_ICON } from './enums';
 
 const { DefaultHistoryMemo } = csUtils.HistoryMemo;
 const toggleSyncFunctions = {
@@ -1335,15 +1340,26 @@ function commandsModule({
      */
     storeSegmentationCommand: async ({ segmentationId }) => {
       const { segmentationService, viewportGridService } = servicesManager.services;
+      const { setSegmentationSavingStatus } = useSegmentationSavingStatusStore.getState();
 
-      const displaySetInstanceUIDs = await createReportAsync({
-        servicesManager,
-        getReport: () =>
-          commandsManager.runCommand('storeSegmentation', {
-            segmentationId,
-          }),
-        reportType: 'Segmentation',
-      });
+      let displaySetInstanceUIDs: string[];
+
+      try {
+        displaySetInstanceUIDs = await createReportAsync({
+          servicesManager,
+          getReport: () =>
+            commandsManager.runCommand('storeSegmentation', {
+              segmentationId,
+            }),
+          reportType: 'Segmentation',
+          throwErrors: true,
+        });
+
+        setSegmentationSavingStatus(segmentationId, SAVED_STATUS_ICON.SAVED);
+      } catch (error) {
+        console.warn(error.message);
+        setSegmentationSavingStatus(segmentationId, SAVED_STATUS_ICON.ERROR);
+      }
 
       if (displaySetInstanceUIDs) {
         segmentationService.remove(segmentationId);

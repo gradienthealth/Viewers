@@ -212,7 +212,7 @@ const commandsModule = ({
      * @returns {Object|void} Returns the naturalized report if successfully stored,
      * otherwise throws an error.
      */
-    storeSegmentation: async ({ segmentationId, dataSource }) => {
+    storeSegmentation: async ({ segmentationId, dataSource, skipLabelDialog = false }) => {
       const segmentation = segmentationService.getSegmentation(segmentationId);
 
       if (!segmentation) {
@@ -226,7 +226,7 @@ const commandsModule = ({
 
       let reportName: string, selectedDataSource: string, action: number;
 
-      if (displaySet) {
+      if (skipLabelDialog && displaySet) {
         action = PROMPT_RESPONSES.CREATE_REPORT;
       } else {
         ({
@@ -254,6 +254,8 @@ const commandsModule = ({
               ...(displaySet && {
                 SeriesInstanceUID: displaySet.SeriesInstanceUID,
                 SOPInstanceUID: displaySet.instances[0].SOPInstanceUID,
+                SeriesNumber: displaySet.SeriesNumber,
+                Manufacturer: displaySet.instances[0].Manufacturer,
               }),
             },
           });
