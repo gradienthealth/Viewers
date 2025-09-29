@@ -195,8 +195,10 @@ class CodDicomWebServerClient {
   /**
    * @param {Object} options
    * @param {string} options.studyInstanceUID
+   * @param {Object} options.queryParams
+   * @param {string} options.queryParams.SeriesInstanceUID
    */
-  async searchForSeries({ studyInstanceUID }) {
+  async searchForSeries({ studyInstanceUID, queryParams }) {
     let studyFound = this._findStudy(this._studiesMetadata, { StudyInstanceUID: studyInstanceUID });
 
     if (!studyFound) {
@@ -204,9 +206,15 @@ class CodDicomWebServerClient {
       studyFound = this._findStudy(this._studiesMetadata, { StudyInstanceUID: studyInstanceUID });
     }
 
+    const seriesFound = this._findSeries(studyFound?.series, queryParams?.SeriesInstanceUID);
+
     return new Promise(resolve => {
       if (studyFound) {
-        resolve(studyFound.series.map(aSeries => aSeries.instances[0]));
+        resolve(
+          seriesFound
+            ? [seriesFound.instances[0]]
+            : studyFound.series.map(aSeries => aSeries.instances[0])
+        );
       } else {
         resolve([]);
       }
