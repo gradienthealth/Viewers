@@ -1,9 +1,6 @@
 name: Deploy viewer to production github pages at /atlas
 
 on:
-  push:
-    branches: [production]
-
   pull_request:
     types: [closed]
 
