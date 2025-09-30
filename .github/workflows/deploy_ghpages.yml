@@ -1,10 +1,9 @@
 name: Deploy viewer to github pages
 
 on:
-  push:
-    branches: ['gradienthealth/studies-downloader-route']
-  #pull_request:
-  #branches: [ "main" ]
+  pull_request:
+    types: [closed]
+    branches: [gradienthealth/studies-downloader-route]
 
 jobs:
   build-and-deploy:
