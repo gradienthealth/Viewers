@@ -1,0 +1,100 @@
+name: Deploy viewer to production github pages at /atlas
+
+on:
+  pull_request:
+    types: [closed]
+    branches: ['production']
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20.9.x]
+
+    steps:
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Checkout cornerstone3D
+        uses: actions/checkout@v3
+        with:
+          repository: gradienthealth/cornerstone3D-beta
+          ref: production
+          path: ./cornerstone3D
+
+      - name: Build cornerstone3D
+        run: |
+          cd ./cornerstone3D
+          yarn install
+          yarn build:all
+
+      - name: Checkout GradientExtensionsAndModes
+        uses: actions/checkout@v3
+        with:
+          repository: gradienthealth/GradientExtensionsAndModes
+          ref: production
+          path: ./GradientExtensionsAndModes
+
+      - name: Checkout Viewers
+        uses: actions/checkout@v3
+        with:
+          repository: gradienthealth/Viewers
+          path: ./Viewers
+
+      - name: Link
+        run: |
+          cd ./cornerstone3D/packages/adapters/dist
+          yarn link
+          cd ../../ai/dist
+          yarn link
+          cd ../../core/dist
+          yarn link
+          cd ../../dicomImageLoader/dist
+          yarn link
+          cd ../../labelmap-interpolation/dist
+          yarn link
+          #cd ../../nifti-volume-loader/dist
+          #yarn link
+          cd ../../polymorphic-segmentation/dist
+          yarn link
+          cd ../../tools/dist
+          yarn link
+          cd ../../../../Viewers
+          yarn link @cornerstonejs/adapters
+          yarn link @cornerstonejs/ai
+          yarn link @cornerstonejs/core
+          yarn link @cornerstonejs/dicom-image-loader
+          #yarn link @cornerstonejs/nifti-volume-loader
+          yarn link @cornerstonejs/labelmap-interpolation
+          yarn link @cornerstonejs/polymorphic-segmentation
+          yarn link @cornerstonejs/tools
+          yarn install
+          yarn run cli link-extension ../GradientExtensionsAndModes/extensions/ohif-gradienthealth-extension
+          yarn run cli link-mode ../GradientExtensionsAndModes/modes/breast-density-mode
+          yarn run build:gradient:production
+
+      - name: Checkout gh page
+        uses: actions/checkout@v3
+        with:
+          repository: gradienthealth/atlas
+          path: ./atlas
+          token: ${{ secrets.GH_DEPLOY_TOKEN }}
+
+      - name: Copy
+        run: |
+          mv ./atlas/.git /tmp/
+          rm -r ./atlas
+          cp -r ./Viewers/platform/app/dist/ ./atlas
+          mv /tmp/.git ./atlas
+          cd ./atlas
+          cp index.html 404.html
+          git config --global user.name "Adithyan-Dinesh-Trenser"
+          git config --global user.email "adithyan.dinesh@trenser.com"
+          git remote set-url origin https://Adithyan-Dinesh-Trenser:${{ secrets.GH_DEPLOY_TOKEN }}@github.com/gradienthealth/atlas
+          git add .
+          git commit -a -m "publishing viewer"
+          git push -u origin
