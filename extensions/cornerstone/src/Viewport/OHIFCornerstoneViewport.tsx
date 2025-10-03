@@ -78,7 +78,9 @@ const OHIFCornerstoneViewport = React.memo(
       ds => ds.isDynamicVolume && ds.isReconstructable
     )
       ? 'volume'
-      : viewportOptions.viewportType;
+      : !dataSource.isReconstructable
+        ? 'stack'
+        : viewportOptions.viewportType;
 
     const [scrollbarHeight, setScrollbarHeight] = useState('100px');
     const [enabledVPElement, setEnabledVPElement] = useState(null);
