@@ -51,6 +51,9 @@ window.config = {
     },
   ],
   // filterQueryParam: false,
+  investigationalUseDialog: {
+    option: 'never',
+  },
   dataSources: [
     /*{
       friendlyName: 'dcmjs DICOMWeb Server',
