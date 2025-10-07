@@ -416,10 +416,12 @@ function createDicomWebApi(dicomWebConfig: DicomWebConfig, servicesManager) {
     store: {
       dicom: async (dataset, request, dicomDict) => {
         wadoDicomWebClient.headers = getAuthorizationHeader();
+        const displaySetService = servicesManager.services.displaySetService;
         if (dataset instanceof ArrayBuffer) {
           const options = {
             datasets: [dataset],
             request,
+            displaySetService,
           };
           await wadoDicomWebClient.storeInstances(options);
         } else {
@@ -445,8 +447,9 @@ function createDicomWebApi(dicomWebConfig: DicomWebConfig, servicesManager) {
           const part10Buffer = effectiveDicomDict.write();
 
           const options = {
-            datasets: [part10Buffer],
+            datasets: [dataset.Modality === 'SEG' ? dataset : part10Buffer],
             request,
+            displaySetService,
           };
 
           await wadoDicomWebClient.storeInstances(options);
@@ -504,8 +507,15 @@ function createDicomWebApi(dicomWebConfig: DicomWebConfig, servicesManager) {
         });
 
         instance.imageId = imageId;
-        instance.wadoRoot = dicomWebConfig.wadoRoot;
-        instance.wadoUri = dicomWebConfig.wadoUri;
+        if (instance.Modality === 'SEG') {
+          instance.url = imageId.replace(
+            /\/frames\/.*/,
+            `/${instance.SeriesDescription.replace(/[/ ]/g, '')}.dcm`
+          );
+        } else {
+          instance.wadoRoot = dicomWebConfig.wadoRoot;
+          instance.wadoUri = dicomWebConfig.wadoUri;
+        }
 
         metadataProvider.addImageIdToUIDs(imageId, {
           StudyInstanceUID,
@@ -602,9 +612,6 @@ function createDicomWebApi(dicomWebConfig: DicomWebConfig, servicesManager) {
 
         // Adding instanceMetadata to OHIF MetadataProvider
         naturalizedInstances.forEach(instance => {
-          instance.wadoRoot = dicomWebConfig.wadoRoot;
-          instance.wadoUri = dicomWebConfig.wadoUri;
-
           const { StudyInstanceUID, SeriesInstanceUID, SOPInstanceUID } = instance;
           const numberOfFrames = instance.NumberOfFrames || 1;
           // Process all frames consistently, whether single or multiframe
@@ -630,6 +637,16 @@ function createDicomWebApi(dicomWebConfig: DicomWebConfig, servicesManager) {
             instance,
           });
           instance.imageId = imageId;
+
+          if (instance.Modality === 'SEG') {
+            instance.url = imageId.replace(
+              /\/frames\/.*/,
+              `/${instance.SeriesDescription.replace(/[/ ]/g, '')}.dcm`
+            );
+          } else {
+            instance.wadoRoot = dicomWebConfig.wadoRoot;
+            instance.wadoUri = dicomWebConfig.wadoUri;
+          }
         });
 
         DicomMetadataStore.addInstances(naturalizedInstances, madeInClient);

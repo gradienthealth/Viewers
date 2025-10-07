@@ -180,7 +180,7 @@ async function _loadSegments({
     '@ohif/extension-cornerstone.utilityModule.common'
   );
 
-  const { segmentationService, uiNotificationService } = servicesManager.services;
+  const { segmentationService, uiNotificationService, CacheAPIService } = servicesManager.services;
 
   const { dicomLoaderService } = utilityModule.exports;
   const arrayBuffer = await dicomLoaderService.findDicomDataPromise(segDisplaySet, null, headers);
@@ -192,6 +192,17 @@ async function _loadSegments({
   if (!referencedDisplaySet) {
     throw new Error('referencedDisplaySet is missing for SEG');
   }
+
+  // Store the fetched segmentation in cache
+  const { unsubscribe } = segmentationService.subscribe(
+    segmentationService.EVENTS.SEGMENTATION_LOADING_COMPLETE,
+    ({ segDisplaySet: loadedSegDisplaySet }) => {
+      if (loadedSegDisplaySet.displaySetInstanceUID === segDisplaySet.displaySetInstanceUID) {
+        CacheAPIService.updateCachedFile(new Blob([arrayBuffer]), segDisplaySet);
+        unsubscribe();
+      }
+    }
+  );
 
   let { imageIds } = referencedDisplaySet;
 

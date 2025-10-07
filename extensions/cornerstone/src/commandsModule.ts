@@ -42,6 +42,7 @@ import {
   usePositionPresentationStore,
   useSegmentationPresentationStore,
   useSelectedSegmentationsForViewportStore,
+  useSegmentationSavingStatusStore,
 } from './stores';
 import { toolNames } from './initCornerstoneTools';
 import CornerstoneViewportDownloadForm from './utils/CornerstoneViewportDownloadForm';
@@ -56,6 +57,7 @@ import { createSegmentationForViewport } from './utils/createSegmentationForView
 import { utilities as segmentationUtilities } from '@cornerstonejs/tools/segmentation';
 import i18n from '@ohif/i18n';
 import shouldPreventScroll from './utils/shouldPreventScroll';
+import { SAVED_STATUS_ICON } from './enums';
 
 const { add, intersect, subtract, copy } = cstUtils.contourSegmentation;
 
@@ -1686,12 +1688,26 @@ function commandsModule({
     storeSegmentationCommand: async args => {
       const { segmentationId } = args;
       const { segmentationService, viewportGridService } = servicesManager.services;
+      const { setSegmentationSavingStatus } = useSegmentationSavingStatusStore.getState();
 
-      const displaySetInstanceUIDs = await createReportAsync({
-        servicesManager,
-        getReport: () => commandsManager.runCommand('storeSegmentation', args),
-        reportType: 'Segmentation',
-      });
+      let displaySetInstanceUIDs: string[];
+
+      try {
+        displaySetInstanceUIDs = await createReportAsync({
+          servicesManager,
+          getReport: () =>
+            commandsManager.runCommand('storeSegmentation', {
+              segmentationId,
+            }),
+          reportType: 'Segmentation',
+          throwErrors: true,
+        });
+
+        setSegmentationSavingStatus(segmentationId, SAVED_STATUS_ICON.SAVED);
+      } catch (error) {
+        console.warn(error.message);
+        setSegmentationSavingStatus(segmentationId, SAVED_STATUS_ICON.ERROR);
+      }
 
       if (displaySetInstanceUIDs) {
         segmentationService.remove(segmentationId);

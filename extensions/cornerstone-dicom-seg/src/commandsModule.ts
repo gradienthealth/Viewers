@@ -209,7 +209,12 @@ const commandsModule = ({
      * @returns {Object|void} Returns the naturalized report if successfully stored,
      * otherwise throws an error.
      */
-    storeSegmentation: async ({ segmentationId, dataSource, modality = 'SEG' }) => {
+    storeSegmentation: async ({
+      segmentationId,
+      dataSource,
+      modality = 'SEG',
+      skipLabelDialog = false,
+    }) => {
       const segmentation = segmentationService.getSegmentation(segmentationId);
 
       if (!segmentation) {
@@ -217,21 +222,33 @@ const commandsModule = ({
       }
 
       const { label, predecessorImageId } = segmentation;
+      // If DisplaySet of the segmentation exists, then over write it.
+      const displaySet = displaySetService.getDisplaySetByUID(segmentationId);
       const defaultDataSource = dataSource ?? extensionManager.getActiveDataSource()[0];
 
-      const {
-        value: reportName,
-        dataSourceName: selectedDataSource,
-        series,
-        priorSeriesNumber,
-        action,
-      } = await createReportDialogPrompt({
-        servicesManager,
-        extensionManager,
-        predecessorImageId,
-        title: 'Store Segmentation',
-        modality,
-      });
+      let reportName: string,
+        selectedDataSource: string,
+        action: number,
+        series: any,
+        priorSeriesNumber: any;
+
+      if (skipLabelDialog && displaySet) {
+        action = PROMPT_RESPONSES.CREATE_REPORT;
+      } else {
+        ({
+          value: reportName,
+          dataSourceName: selectedDataSource,
+          series,
+          priorSeriesNumber,
+          action,
+        } = await createReportDialogPrompt({
+          servicesManager,
+          extensionManager,
+          predecessorImageId,
+          title: 'Store Segmentation',
+          modality,
+        }));
+      }
 
       if (action === PROMPT_RESPONSES.CREATE_REPORT) {
         try {
@@ -245,6 +262,13 @@ const commandsModule = ({
               SeriesDescription: series ? undefined : reportName || label || 'Contour Series',
               SeriesNumber: series ? undefined : 1 + priorSeriesNumber,
               predecessorImageId: series,
+              // Use Series and SOP instancesUIDs if displaySet of the segmentation already exists.
+              ...(displaySet && {
+                SeriesInstanceUID: displaySet.SeriesInstanceUID,
+                SOPInstanceUID: displaySet.instances[0].SOPInstanceUID,
+                SeriesNumber: displaySet.SeriesNumber,
+                Manufacturer: displaySet.instances[0].Manufacturer,
+              }),
             },
           };
           const generatedDataAsync =
@@ -266,9 +290,10 @@ const commandsModule = ({
           await selectedDataSourceConfig.store.dicom(naturalizedReport);
 
           // add the information for where we stored it to the instance as well
-          naturalizedReport.wadoRoot = selectedDataSourceConfig.getConfig().wadoRoot;
+          // naturalizedReport.wadoRoot = selectedDataSourceConfig.getConfig().wadoRoot;
 
-          DicomMetadataStore.addInstances([naturalizedReport], true);
+          // The instance is added in the createReportAsync after here
+          // DicomMetadataStore.addInstances([naturalizedReport], true);
 
           return naturalizedReport;
         } catch (error) {

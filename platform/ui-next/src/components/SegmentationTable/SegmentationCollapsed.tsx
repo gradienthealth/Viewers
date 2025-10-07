@@ -123,6 +123,25 @@ const SegmentationCollapsedInfo = () => {
   );
 };
 
+// Saved status component - for displaying the saved status
+const SegmentationCollapsedSavedStatus = ({ useSegmentationSavingStatusStore }) => {
+  const { activeSegmentationId } = useSegmentationTableContext('SegmentationCollapsedSavedStatus');
+  const segmentationSavingStatusMap = useSegmentationSavingStatusStore(
+    state => state.segmentationSavingStatusMap
+  );
+  const { icon, className } = segmentationSavingStatusMap[activeSegmentationId] || {
+    icon: 'StatusSuccess',
+    className: '!stroke-2 text-customgreen-100',
+  };
+
+  return (
+    <Icons.ByName
+      name={icon}
+      className={`h-8 w-8 ${className}`}
+    />
+  );
+};
+
 // Content component - for the main collapsed view content
 const SegmentationCollapsedContent = ({ children }: { children: React.ReactNode }) => {
   return <div className="collapsed-content">{children}</div>;
@@ -175,6 +194,7 @@ const SegmentationCollapsed = Object.assign(SegmentationCollapsedRoot, {
   DropdownMenu: SegmentationCollapsedDropdownMenu,
   Selector: SegmentationCollapsedSelector,
   Info: SegmentationCollapsedInfo,
+  SavedStatus: SegmentationCollapsedSavedStatus,
   Content: SegmentationCollapsedContent,
 });
 
