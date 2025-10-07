@@ -1,8 +1,6 @@
 import { DicomMetadataStore } from '@ohif/core';
 import dcmjs from 'dcmjs';
 
-import { wadouri } from '@cornerstonejs/dicom-image-loader';
-
 const { datasetToBlob } = dcmjs.data;
 
 /**
@@ -16,7 +14,8 @@ async function createReportAsync({
   showLoadingModal = true,
   throwErrors = false,
 }: withAppTypes) {
-  const { displaySetService, uiNotificationService, uiDialogService } = servicesManager.services;
+  const { displaySetService, uiNotificationService, uiDialogService, CacheAPIService } =
+    servicesManager.services;
 
   try {
     const naturalizedReport = await getReport();
@@ -52,11 +51,7 @@ async function createReportAsync({
       });
 
     if (shouldOverWrite) {
-      const fileUri = wadouri.fileManager.add(datasetToBlob(naturalizedReport));
-      displaySet.instance.imageId = fileUri;
-      displaySet.instance.getImageId = () => fileUri;
-      displaySet.images[0].imageId = fileUri;
-      displaySet.images[0].getImageId = () => fileUri;
+      CacheAPIService.updateCachedFile(datasetToBlob(naturalizedReport), displaySet);
       return;
     }
 
