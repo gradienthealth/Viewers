@@ -3,3 +3,4 @@ export { usePositionPresentationStore } from './usePositionPresentationStore';
 export { useSegmentationPresentationStore } from './useSegmentationPresentationStore';
 export { useSynchronizersStore } from './useSynchronizersStore';
 export { useCachedSlicesPerDisplaysetStore } from './useCachedSlicesPerSeriesStore';
+export { useSegmentationSavingStatusStore } from './useSegmentationSavingStatusStore';
