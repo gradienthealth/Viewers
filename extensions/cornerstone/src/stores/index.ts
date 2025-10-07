@@ -4,3 +4,4 @@ export { useSegmentationPresentationStore } from './useSegmentationPresentationS
 export { useSynchronizersStore } from './useSynchronizersStore';
 export { useSelectedSegmentationsForViewportStore } from './useSelectedSegmentationsForViewportStore';
 export { useCachedSlicesPerDisplaysetStore } from './useCachedSlicesPerSeriesStore';
+export { useSegmentationSavingStatusStore } from './useSegmentationSavingStatusStore';

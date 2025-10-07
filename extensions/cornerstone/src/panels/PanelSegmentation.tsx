@@ -12,7 +12,10 @@ import { useActiveToolOptions, useSystem } from '@ohif/core/src';
 import { SegmentationRepresentations } from '@cornerstonejs/tools/enums';
 import { Toolbar, useUIStateStore } from '@ohif/extension-default';
 import SegmentationUtilityButton from '../components/SegmentationUtilityButton';
-import { useSelectedSegmentationsForViewportStore } from '../stores';
+import {
+  useSelectedSegmentationsForViewportStore,
+  useSegmentationSavingStatusStore,
+} from '../stores';
 import {
   hasExportableLabelMapData,
   hasExportableContourData,
@@ -287,6 +290,9 @@ export default function PanelSegmentation({
               <CustomDropdownMenuContent />
             </SegmentationTable.Collapsed.DropdownMenu>
             <SegmentationTable.Collapsed.Selector />
+            <SegmentationTable.Collapsed.SavedStatus
+              useSegmentationSavingStatusStore={useSegmentationSavingStatusStore}
+            />
             <SegmentationTable.Collapsed.Info />
           </SegmentationTable.Collapsed.Header>
           <SegmentationTable.Collapsed.Content>

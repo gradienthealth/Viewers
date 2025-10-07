@@ -8,7 +8,7 @@ import {
 } from '@cornerstonejs/core';
 import { Enums as cs3DToolsEnums } from '@cornerstonejs/tools';
 import { Types } from '@ohif/core';
-import Enums from './enums';
+import Enums, { SAVED_STATUS_ICON } from './enums';
 
 import init from './init';
 import getCustomizationModule from './getCustomizationModule';
@@ -46,6 +46,7 @@ import {
   useSynchronizersStore,
   //useSelectedSegmentationsForViewportStore,
   useCachedSlicesPerDisplaysetStore,
+  useSegmentationSavingStatusStore,
 } from './stores';
 import { useToggleOneUpViewportGridStore } from '@ohif/extension-default';
 import { useActiveViewportSegmentationRepresentations } from './hooks/useActiveViewportSegmentationRepresentations';
@@ -165,6 +166,7 @@ const cornerstoneExtension: Types.Extensions.Extension = {
     //   .getState()
     //   .clearSelectedSegmentationsForViewportStore();
     useCachedSlicesPerDisplaysetStore.getState().clearCachedSlicesPerDisplaysetStore();
+    useSegmentationSavingStatusStore.getState().clearSegmentationSavingStatusMap();
     segmentationService.removeAllSegmentations();
   },
 
@@ -224,6 +226,8 @@ const cornerstoneExtension: Types.Extensions.Extension = {
           getEnabledElement,
           dicomLoaderService,
           useCachedSlicesPerDisplaysetStore,
+          useSegmentationSavingStatusStore,
+          constants: { SAVED_STATUS_ICON },
         },
       },
       {
