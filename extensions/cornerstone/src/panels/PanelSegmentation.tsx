@@ -181,6 +181,9 @@ export default function PanelSegmentation({ children }: withAppTypes) {
               <CustomDropdownMenuContent />
             </SegmentationTable.Expanded.DropdownMenu>
             <SegmentationTable.Expanded.Label />
+            <SegmentationTable.Expanded.SavedStatus
+              useSegmentationSavingStatusStore={useSegmentationSavingStatusStore}
+            />
             <SegmentationTable.Expanded.Info />
           </SegmentationTable.Expanded.Header>
 

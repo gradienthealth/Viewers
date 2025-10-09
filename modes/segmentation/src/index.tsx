@@ -103,6 +103,12 @@ function modeFactory({ modeConfiguration }) {
         'Shapes',
       ]);
       toolbarService.createButtonSection('brushToolsSection', ['Brush', 'Eraser', 'Threshold']);
+
+      customizationService.setCustomizations({
+        'panelSegmentation.tableMode': {
+          $set: 'expanded',
+        },
+      });
     },
     onModeExit: ({ servicesManager }: withAppTypes) => {
       const {

@@ -79,6 +79,25 @@ const SegmentationExpandedInfo = () => {
   );
 };
 
+// Saved status component - for displaying the saved status
+const SegmentationCollapsedSavedStatus = ({ useSegmentationSavingStatusStore }) => {
+  const { segmentation } = useSegmentationExpanded('SegmentationCollapsedSavedStatus');
+  const segmentationSavingStatusMap = useSegmentationSavingStatusStore(
+    state => state.segmentationSavingStatusMap
+  );
+  const { icon, className } = segmentationSavingStatusMap[segmentation.segmentationId] || {
+    icon: 'StatusSuccess',
+    className: '!stroke-2 text-customgreen-100',
+  };
+
+  return (
+    <Icons.ByName
+      name={icon}
+      className={`${className}`}
+    />
+  );
+};
+
 // Content component
 const SegmentationExpandedContent = ({ children }: { children: React.ReactNode }) => {
   const { isActive } = useSegmentationExpanded('SegmentationExpandedContent');
@@ -142,6 +161,7 @@ const SegmentationExpanded = Object.assign(SegmentationExpandedRoot, {
   DropdownMenu: SegmentationExpandedDropdownMenu,
   Label: SegmentationExpandedLabel,
   Info: SegmentationExpandedInfo,
+  SavedStatus: SegmentationCollapsedSavedStatus,
   Content: SegmentationExpandedContent,
 });
 
