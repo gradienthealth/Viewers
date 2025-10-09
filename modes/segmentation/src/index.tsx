@@ -123,6 +123,11 @@ function modeFactory({ modeConfiguration }) {
 
       CacheAPIService.init();
       GoogleSheetsService.init();
+
+      const { addSegmentationBrushSizesHandler } = extensionManager.getModuleEntry(
+        '@gradienthealth/ohif-gradienthealth-extension.utilityModule.common'
+      ).exports;
+      addSegmentationBrushSizesHandler();
     },
     onModeExit: ({ servicesManager }: withAppTypes) => {
       const {
