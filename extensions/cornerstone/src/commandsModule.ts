@@ -7,6 +7,7 @@ import {
   Types as CoreTypes,
   BaseVolumeViewport,
   getRenderingEngines,
+  cache,
 } from '@cornerstonejs/core';
 import {
   ToolGroupManager,
@@ -2456,6 +2457,32 @@ function commandsModule({
       const renderingEngine = cornerstoneViewportService.getRenderingEngine();
       renderingEngine.render();
     },
+    reCalibrateWindowLevel: () => {
+      const { activeViewportId } = viewportGridService.getState();
+      const viewport = cornerstoneViewportService.getCornerstoneViewport(activeViewportId);
+      const { BasicStatsCalculator } = cstUtils.math.BasicStatsCalculator;
+
+      let voxelManager;
+      if (viewport instanceof StackViewport) {
+        const imageId = viewport.getCurrentImageId();
+        ({ voxelManager } = cache.getImage(imageId));
+      } else if (viewport instanceof BaseVolumeViewport) {
+        const volumeId = viewport.getVolumeId();
+        ({ voxelManager } = cache.getVolume(volumeId));
+      }
+
+      if (!voxelManager) {
+        return;
+      }
+
+      voxelManager.forEach(BasicStatsCalculator.statsCallback);
+      const { mean, stdDev } = BasicStatsCalculator.getStatistics();
+      actions.setViewportWindowLevel({
+        viewportId: activeViewportId,
+        window: 2 * stdDev.value,
+        level: mean.value,
+      });
+    },
   };
 
   const definitions = {
@@ -2776,6 +2803,9 @@ function commandsModule({
     decimateContours: actions.decimateContours,
     convertContourHoles: actions.convertContourHoles,
     setInterpolationToolConfiguration: actions.setInterpolationToolConfiguration,
+    reCalibrateWindowLevel: {
+      commandFn: actions.reCalibrateWindowLevel,
+    },
   };
 
   return {
