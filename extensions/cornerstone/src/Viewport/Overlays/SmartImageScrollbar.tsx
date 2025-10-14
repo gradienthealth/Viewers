@@ -53,7 +53,7 @@ function SmartImageScrollbar({
 
     const viewport = cornerstoneViewportService.getCornerstoneViewport(viewportId);
 
-    if (!viewport) {
+    if (!viewport || !viewport.getActorUIDs().length) {
       return;
     }
 
@@ -155,7 +155,7 @@ function SmartImageScrollbar({
 
   return (
     <>
-      {numOfSlices && (
+      {cachedImages.length && (
         <span
           className="border-primary-light bg-secondary-active absolute right-[3px] top-[4px] w-3 overflow-hidden rounded-lg border"
           style={{ height: `${scrollbarHeightValue}px` }}
