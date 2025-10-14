@@ -241,6 +241,12 @@ const bindings = [
     keys: ['a'],
     isEditable: true,
   },
+  {
+    commandName: 'reCalibrateWindowLevel',
+    label: 'Recalibrate Window Level',
+    keys: ['shift+space'],
+    isEditable: true,
+  },
 ];
 
 export default bindings;
