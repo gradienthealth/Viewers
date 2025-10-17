@@ -56,6 +56,8 @@ const ScrollArea = React.forwardRef<
   return (
     <ScrollAreaPrimitive.Root
       ref={ref}
+      // TODO: Remove this commit on rebase as it is present in the upstream.
+      // Also verify the thumbnail drop down is working fine.
       className={cn('relative h-full overflow-hidden', className, '[&>div>div]:!block')}
       type={props.type}
       {...props}
