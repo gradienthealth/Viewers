@@ -44,7 +44,7 @@ const getMenuItemsDefault = ({
     </DropdownMenuItem>
   );
 
-  const MenuItemComponent = menuContent ?? DefaultMenuItem;
+  const MenuItemComponent = menuContent?.content || DefaultMenuItem;
 
   return (
     <DropdownMenuContent
