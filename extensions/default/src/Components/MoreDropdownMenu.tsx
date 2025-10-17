@@ -41,7 +41,7 @@ const getMenuItemsDefault = ({ commandsManager, items, ...props }: withAppTypes)
     </DropdownMenuItem>
   );
 
-  const MenuItemComponent = menuContent ?? DefaultMenuItem;
+  const MenuItemComponent = menuContent?.content || DefaultMenuItem;
 
   return (
     <DropdownMenuContent

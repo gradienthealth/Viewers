@@ -131,11 +131,7 @@ export default class CustomizationService extends PubSubService {
       }
     });
 
-    // Only add references for the configuration once.
-    if (!this.configuration?._hasBeenAdded) {
-      this.addReferences(this.configuration);
-      Object.defineProperty(this.configuration, '_hasBeenAdded', { value: true, writable: false });
-    }
+    this.addReferences(this.configuration);
   }
 
   public onModeEnter(): void {
