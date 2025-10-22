@@ -47,7 +47,7 @@ const DisplaySetMessageListTooltip = ({ messages, id }): React.ReactNode => {
                     }}
                     key={index}
                   >
-                    {index + 1}. {t(message.id)}
+                    {index + 1}. {t(message.id || message.text)}
                   </li>
                 ))}
               </ol>

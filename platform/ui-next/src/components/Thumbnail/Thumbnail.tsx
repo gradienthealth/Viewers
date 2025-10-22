@@ -239,11 +239,13 @@ const Thumbnail = ({
               </TooltipContent>
             </Tooltip>
           )}
-          <ThumbnailMenuItems
-            displaySetInstanceUID={displaySetInstanceUID}
-            canReject={canReject}
-            onReject={onReject}
-          />
+          {displaySetInstanceUID && (
+            <ThumbnailMenuItems
+              displaySetInstanceUID={displaySetInstanceUID}
+              canReject={canReject}
+              onReject={onReject}
+            />
+          )}
         </div>
       </div>
     );
