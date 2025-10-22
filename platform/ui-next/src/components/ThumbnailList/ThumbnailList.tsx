@@ -77,7 +77,10 @@ const ThumbnailList = ({
                   thumbnailType={componentType}
                   viewPreset="list"
                   onClick={onThumbnailClick.bind(null, displaySetInstanceUID)}
-                  onDoubleClick={onThumbnailDoubleClick.bind(null, displaySetInstanceUID)}
+                  onDoubleClick={onThumbnailDoubleClick.bind(null, displaySetInstanceUID, {
+                    StudyInstanceUID: rest.StudyInstanceUID,
+                    SeriesInstanceUID: rest.SeriesInstanceUID,
+                  })}
                   onClickUntrack={onClickUntrack.bind(null, displaySetInstanceUID)}
                   ThumbnailMenuItems={ThumbnailMenuItems}
                 />

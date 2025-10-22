@@ -28,6 +28,7 @@ class CodDicomWebServerClient {
     this._codServer = internal.getWadoRsWebServer();
     this.deidStudyInstanceUIDMap = new Map(); // Map of study instance UIDs to deid study instance UIDs
     this._studiesMetadata = [];
+    this._errorSeries = [];
 
     internal.setCodHeaders({
       'X-Goog-User-Project': query?.get('userProject') || DEFAULT_USER_PROJECT,
@@ -60,6 +61,20 @@ class CodDicomWebServerClient {
               study.series = study.series.filter(aSeries => {
                 if (aSeries.instances.length) {
                   return true;
+                }
+
+                if (
+                  !this._errorSeries.find(
+                    ({ studyInstanceUID, seriesInstanceUID }) =>
+                      studyInstanceUID === study.deidStudyInstanceUID &&
+                      seriesInstanceUID === aSeries.deidSeriesInstanceUID
+                  )
+                ) {
+                  this._errorSeries.push({
+                    studyInstanceUID: study.deidStudyInstanceUID,
+                    seriesInstanceUID: aSeries.deidSeriesInstanceUID,
+                    error: 'No instances found in the metadata.json',
+                  });
                 }
 
                 console.warn('No instance found in series ' + aSeries.deidSeriesInstanceUID);
@@ -108,6 +123,10 @@ class CodDicomWebServerClient {
     );
 
     return this._getProperty(studyWithDeidStudyUID, Properties.StudyUID);
+  }
+
+  getOmittedSeries() {
+    return this._errorSeries;
   }
 
   /**
@@ -415,7 +434,22 @@ class CodDicomWebServerClient {
               BucketPath: { Value: [`${bucket}/${bucketPrefix}`] },
             })),
           }))
-          .catch(() => null);
+          .catch(() => {
+            if (
+              !this._errorSeries.find(
+                ({ studyInstanceUID, seriesInstanceUID }) =>
+                  studyInstanceUID === deidStudyInstanceuid &&
+                  seriesInstanceUID === deidSeriesInstanceUID
+              )
+            ) {
+              this._errorSeries.push({
+                studyInstanceUID: deidStudyInstanceuid,
+                seriesInstanceUID: deidSeriesInstanceUID,
+                error: 'Error fetching metadata.json',
+              });
+            }
+            return null;
+          });
       });
       return Promise.all(series).then(result => ({
         deidStudyInstanceUID: deidStudyInstanceuid,
