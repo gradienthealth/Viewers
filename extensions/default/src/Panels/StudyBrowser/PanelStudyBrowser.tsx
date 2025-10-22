@@ -35,7 +35,8 @@ function PanelStudyBrowser({
   onDoubleClickThumbnailHandlerCallBack,
 }) {
   const { servicesManager, commandsManager, extensionManager } = useSystem();
-  const { displaySetService, customizationService, GoogleSheetsService } = servicesManager.services;
+  const { displaySetService, customizationService, GoogleSheetsService, uiNotificationService } =
+    servicesManager.services;
   const navigate = useNavigate();
   const studyMode = customizationService.getCustomization('studyBrowser.studyMode') || 'all';
 
@@ -83,7 +84,28 @@ function PanelStudyBrowser({
   const mapDisplaySetsWithState = customMapDisplaySets || _mapDisplaySets;
 
   const onDoubleClickThumbnailHandler = useCallback(
-    async displaySetInstanceUID => {
+    async (displaySetInstanceUID, uids = {}) => {
+      if (!displaySetInstanceUID) {
+        const dataSource = extensionManager.getActiveDataSource()[0];
+        const dicomWebClient = dataSource.retrieve.getWadoDicomWebClient?.();
+        const omittedSeries = dicomWebClient.getOmittedSeries?.() || [];
+        const omitted = omittedSeries.find(
+          ({ studyInstanceUID, seriesInstanceUID }) =>
+            uids.StudyInstanceUID === studyInstanceUID &&
+            uids.SeriesInstanceUID === seriesInstanceUID
+        );
+
+        if (omitted) {
+          uiNotificationService.show({
+            title: 'Load Displayset',
+            message: omitted.error,
+            type: 'error',
+            duration: 3000,
+          });
+        }
+        return;
+      }
+
       const customHandler = customizationService.getCustomization(
         'studyBrowser.thumbnailDoubleClickCallback'
       ) as CallbackCustomization;

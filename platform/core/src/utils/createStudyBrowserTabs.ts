@@ -20,8 +20,11 @@ export function createStudyBrowserTabs(
   displaySets,
   recentTimeframeMS = 31536000000
 ) {
-  const { servicesManager } = useSystem();
+  const { servicesManager, extensionManager } = useSystem();
   const { displaySetService } = servicesManager.services;
+  const dataSource = extensionManager.getActiveDataSource()[0];
+  const dicomWebClient = dataSource.retrieve.getWadoDicomWebClient?.();
+  const omittedSeries = dicomWebClient.getOmittedSeries?.() || [];
 
   const shouldSortBySeriesUID = process.env.TEST_ENV === 'true';
   const primaryStudies = [];
@@ -44,6 +47,18 @@ export function createStudyBrowserTabs(
     } else {
       sortedDisplaySets = displaySetsForStudy;
     }
+
+    omittedSeries.forEach(aOmittedSeries => {
+      if (aOmittedSeries.studyInstanceUID === study.studyInstanceUid) {
+        sortedDisplaySets.push({
+          StudyInstanceUID: study.studyInstanceUid,
+          SeriesInstanceUID: aOmittedSeries.seriesInstanceUID,
+          componentType: 'thumbnailNoImage',
+          description: aOmittedSeries.seriesInstanceUID,
+          messages: { size: () => 1, messages: [{ text: aOmittedSeries.error }] },
+        });
+      }
+    });
 
     const tabStudy = Object.assign({}, study, {
       displaySets: sortedDisplaySets,
