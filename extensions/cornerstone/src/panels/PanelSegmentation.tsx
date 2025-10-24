@@ -119,6 +119,9 @@ export default function PanelSegmentation({
     onSegmentClick: (segmentationId, segmentIndex) => {
       commandsManager.run('setActiveSegmentAndCenter', { segmentationId, segmentIndex });
     },
+    onSegmentFocusClick: (segmentationId, segmentIndex) => {
+      commandsManager.run('setActiveSegmentAndFocus', { segmentationId, segmentIndex });
+    },
     onSegmentEdit: (segmentationId, segmentIndex) => {
       commandsManager.run('editSegmentLabel', { segmentationId, segmentIndex });
     },
@@ -302,6 +305,9 @@ export default function PanelSegmentation({
               <CustomDropdownMenuContent />
             </SegmentationTable.Expanded.DropdownMenu>
             <SegmentationTable.Expanded.Label />
+            <SegmentationTable.Expanded.SavedStatus
+              useSegmentationSavingStatusStore={useSegmentationSavingStatusStore}
+            />
             <SegmentationTable.Expanded.Info />
           </SegmentationTable.Expanded.Header>
 
