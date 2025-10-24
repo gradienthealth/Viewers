@@ -48,6 +48,7 @@ import { cn } from '../../lib/utils';
  * @property {string[]} details.secondary - Secondary details (currently unused)
  * @property {boolean} [isSelected] - Whether the row is currently selected
  * @property {() => void} [onSelect] - Callback when the row is clicked/selected
+ * @property {() => void} [onSelectFocus] - Performs the onSelect and zoom/ pan to the concerned area
  * @property {boolean} isVisible - Controls the row's visibility state
  * @property {() => void} onToggleVisibility - Callback to toggle visibility
  * @property {boolean} isLocked - Controls the row's locked state
@@ -64,6 +65,7 @@ interface DataRowProps {
   //
   isSelected?: boolean;
   onSelect?: (e) => void;
+  onSelectFocus?: (e) => void;
   //
   isVisible: boolean;
   onToggleVisibility: (e) => void;
@@ -87,6 +89,7 @@ export const DataRow: React.FC<DataRowProps> = ({
   colorHex,
   details,
   onSelect,
+  onSelectFocus,
   isLocked,
   onToggleVisibility,
   onToggleLocked,
@@ -259,6 +262,31 @@ export const DataRow: React.FC<DataRowProps> = ({
 
         {/* Actions and Visibility Toggle */}
         <div className="relative ml-2 flex items-center space-x-1">
+          {/* Focus on the selected item */}
+          {onSelectFocus && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className={`h-6 w-6 transition-opacity ${
+                    isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                  }`}
+                  aria-label="select-focus"
+                  onClick={onSelectFocus}
+                >
+                  <Icons.Search className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent
+                side="top"
+                align="center"
+              >
+                {'Select and Focus'}
+              </TooltipContent>
+            </Tooltip>
+          )}
+
           {/* Visibility Toggle Icon */}
           <Button
             size="icon"
