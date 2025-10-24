@@ -1635,6 +1635,17 @@ function commandsModule({
     },
 
     /**
+     * Sets the active segment and jumps to its center
+     * @param props.segmentationId - The ID of the segmentation
+     * @param props.segmentIndex - The index of the segment to activate
+     */
+    setActiveSegmentAndFocusCommand: ({ segmentationId, segmentIndex }) => {
+      const { CropDisplayAreaService } = servicesManager.services;
+      actions.setActiveSegmentAndCenterCommand({ segmentationId, segmentIndex });
+      CropDisplayAreaService.focusToSegment(segmentationId, segmentIndex);
+    },
+
+    /**
      * Toggles the visibility of a segment
      * @param props.segmentationId - The ID of the segmentation
      * @param props.segmentIndex - The index of the segment
@@ -2692,6 +2703,9 @@ function commandsModule({
     },
     setActiveSegmentAndCenter: {
       commandFn: actions.setActiveSegmentAndCenterCommand,
+    },
+    setActiveSegmentAndFocus: {
+      commandFn: actions.setActiveSegmentAndFocusCommand,
     },
     toggleSegmentVisibility: {
       commandFn: actions.toggleSegmentVisibilityCommand,

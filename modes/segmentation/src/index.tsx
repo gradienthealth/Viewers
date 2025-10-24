@@ -5,6 +5,10 @@ import setUpAutoTabSwitchHandler from './utils/setUpAutoTabSwitchHandler';
 import { ohif, cornerstone, extensionDependencies, dicomRT, segmentation } from '@ohif/mode-basic';
 export * from './toolbarButtons';
 
+const gradienthealth = {
+  form: '@gradienthealth/ohif-gradienthealth-extension.panelModule.form',
+};
+
 function modeFactory({ modeConfiguration }) {
   const _unsubscriptions = [];
   return {
@@ -31,6 +35,9 @@ function modeFactory({ modeConfiguration }) {
         segmentationService,
         viewportGridService,
         panelService,
+        customizationService,
+        CacheAPIService,
+        GoogleSheetsService,
       } = servicesManager.services;
 
       measurementService.clearMeasurements();
@@ -132,6 +139,20 @@ function modeFactory({ modeConfiguration }) {
 
       toolbarService.updateSection('BrushTools', ['Brush', 'Eraser', 'Threshold']);
 
+      customizationService.setCustomizations({
+        'panelSegmentation.tableMode': {
+          $set: 'expanded',
+        },
+      });
+
+      CacheAPIService.init();
+      GoogleSheetsService.init();
+
+      const { addSegmentationBrushSizesHandler } = extensionManager.getModuleEntry(
+        '@gradienthealth/ohif-gradienthealth-extension.utilityModule.common'
+      ).exports;
+      addSegmentationBrushSizesHandler();
+
       const { unsubscribeAutoTabSwitchEvents } = setUpAutoTabSwitchHandler({
         segmentationService,
         viewportGridService,
@@ -148,6 +169,8 @@ function modeFactory({ modeConfiguration }) {
         cornerstoneViewportService,
         uiDialogService,
         uiModalService,
+        CacheAPIService,
+        GoogleSheetsService,
       } = servicesManager.services;
 
       _unsubscriptions.forEach(unsubscribe => unsubscribe());
@@ -159,6 +182,8 @@ function modeFactory({ modeConfiguration }) {
       syncGroupService.destroy();
       segmentationService.destroy();
       cornerstoneViewportService.destroy();
+      CacheAPIService.destroy();
+      GoogleSheetsService.destroy();
     },
     /** */
     validationTags: {
@@ -207,6 +232,7 @@ function modeFactory({ modeConfiguration }) {
               rightPanels: [
                 cornerstone.labelMapSegmentationPanel,
                 cornerstone.contourSegmentationPanel,
+                gradienthealth.form,
               ],
               rightPanelResizable: true,
               // leftPanelClosed: true,

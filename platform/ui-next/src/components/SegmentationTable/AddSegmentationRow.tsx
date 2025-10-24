@@ -30,6 +30,11 @@ export const AddSegmentationRow: React.FC<{ children?: React.ReactNode }> = ({
     return null;
   }
 
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('disableAddSegmentation') === 'true') {
+    return null;
+  }
+
   return (
     <div
       data-cy="addSegmentation"

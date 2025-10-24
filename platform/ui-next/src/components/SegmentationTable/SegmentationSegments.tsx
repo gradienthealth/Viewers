@@ -13,6 +13,7 @@ export const SegmentationSegments = ({ children = null }: { children?: React.Rea
     onToggleSegmentVisibility,
     onToggleSegmentLock,
     onSegmentClick,
+    onSegmentFocusClick,
     onSegmentEdit,
     onSegmentDelete,
     onSegmentCopy,
@@ -163,6 +164,7 @@ export const SegmentationSegments = ({ children = null }: { children?: React.Rea
                   onToggleSegmentLock(segmentation.segmentationId, segmentIndex)
                 }
                 onSelect={() => onSegmentClick(segmentation.segmentationId, segmentIndex)}
+                onSelectFocus={() => onSegmentFocusClick(segmentation.segmentationId, segmentIndex)}
                 onRename={() => onSegmentEdit(segmentation.segmentationId, segmentIndex)}
                 onDelete={() => onSegmentDelete(segmentation.segmentationId, segmentIndex)}
                 onCopy={
