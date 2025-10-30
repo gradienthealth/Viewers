@@ -230,7 +230,10 @@ class CodDicomWebServerClient {
       studyFound = this._findStudy(this._studiesMetadata, { StudyInstanceUID: studyInstanceUID });
     }
 
-    const seriesFound = this._findSeries(studyFound?.series, queryParams?.SeriesInstanceUID);
+    // In COD format, the DeidSeriesInstanceUID is used to identify series instead of SeriesInstanceUID.
+    const seriesFound = studyFound?.series.find(
+      ({ deidSeriesInstanceUID }) => deidSeriesInstanceUID === queryParams?.SeriesInstanceUID
+    );
 
     return new Promise(resolve => {
       if (studyFound) {

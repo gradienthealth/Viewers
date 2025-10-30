@@ -42,6 +42,8 @@ export function createStudyBrowserTabs(
   const dataSource = extensionManager.getActiveDataSource()[0];
   const dicomWebClient = dataSource.retrieve.getWadoDicomWebClient?.();
   const omittedSeries = dicomWebClient.getOmittedSeries?.() || [];
+  const queryParams = new URLSearchParams(window.location.search);
+  const seriesUIdsToFilter = queryParams.getAll('SeriesInstanceUIDs');
 
   const shouldSortBySeriesUID = process.env.TEST_ENV === 'true';
   const primaryStudies = [];
@@ -65,7 +67,11 @@ export function createStudyBrowserTabs(
     // return displaySetA.SeriesInstanceUID.localeCompare(displaySetB.SeriesInstanceUID);
 
     omittedSeries.forEach(aOmittedSeries => {
-      if (aOmittedSeries.studyInstanceUID === study.studyInstanceUid) {
+      if (
+        aOmittedSeries.studyInstanceUID === study.studyInstanceUid &&
+        (!seriesUIdsToFilter.length ||
+          seriesUIdsToFilter.includes(aOmittedSeries.seriesInstanceUID))
+      ) {
         sortedDisplaySets.push({
           StudyInstanceUID: study.studyInstanceUid,
           SeriesInstanceUID: aOmittedSeries.seriesInstanceUID,
