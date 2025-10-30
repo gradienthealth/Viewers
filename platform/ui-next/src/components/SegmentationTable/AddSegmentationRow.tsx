@@ -21,6 +21,11 @@ export const AddSegmentationRow: React.FC<{ children?: React.ReactNode }> = ({
     return null;
   }
 
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('disableAddSegmentation') === 'true') {
+    return null;
+  }
+
   return (
     <div
       className={`group ${disabled ? 'pointer-events-none cursor-not-allowed opacity-70' : ''}`}

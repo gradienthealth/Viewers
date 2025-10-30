@@ -3,6 +3,7 @@ import { SegmentationTable } from '@ohif/ui-next';
 import { useActiveViewportSegmentationRepresentations } from '../hooks/useActiveViewportSegmentationRepresentations';
 import { metaData } from '@cornerstonejs/core';
 import { useSystem } from '@ohif/core/src';
+import { useSegmentationSavingStatusStore } from '../stores';
 
 export default function PanelSegmentation({ children }: withAppTypes) {
   const { commandsManager, servicesManager } = useSystem();
@@ -40,6 +41,9 @@ export default function PanelSegmentation({ children }: withAppTypes) {
     },
     onSegmentClick: (segmentationId, segmentIndex) => {
       commandsManager.run('setActiveSegmentAndCenter', { segmentationId, segmentIndex });
+    },
+    onSegmentFocusClick: (segmentationId, segmentIndex) => {
+      commandsManager.run('setActiveSegmentAndFocus', { segmentationId, segmentIndex });
     },
     onSegmentEdit: (segmentationId, segmentIndex) => {
       commandsManager.run('editSegmentLabel', { segmentationId, segmentIndex });
@@ -113,18 +117,15 @@ export default function PanelSegmentation({ children }: withAppTypes) {
     if (!instance) {
       return { segmentationId, isExportable: false };
     }
-
+    /*
     const SOPInstanceUID = instance.SOPInstanceUID || instance.SopInstanceUID;
     const SeriesInstanceUID = instance.SeriesInstanceUID;
     const displaySet = displaySetService.getDisplaySetForSOPInstanceUID(
       SOPInstanceUID,
       SeriesInstanceUID
     );
-
-    return {
-      segmentationId,
-      isExportable: displaySet?.isReconstructable,
-    };
+    */
+    return { segmentationId, isExportable: true };
   });
 
   // Common props for SegmentationTable
@@ -162,6 +163,9 @@ export default function PanelSegmentation({ children }: withAppTypes) {
               <CustomDropdownMenuContent />
             </SegmentationTable.Collapsed.DropdownMenu>
             <SegmentationTable.Collapsed.Selector />
+            <SegmentationTable.Collapsed.SavedStatus
+              useSegmentationSavingStatusStore={useSegmentationSavingStatusStore}
+            />
             <SegmentationTable.Collapsed.Info />
           </SegmentationTable.Collapsed.Header>
           <SegmentationTable.Collapsed.Content>
@@ -180,6 +184,9 @@ export default function PanelSegmentation({ children }: withAppTypes) {
               <CustomDropdownMenuContent />
             </SegmentationTable.Expanded.DropdownMenu>
             <SegmentationTable.Expanded.Label />
+            <SegmentationTable.Expanded.SavedStatus
+              useSegmentationSavingStatusStore={useSegmentationSavingStatusStore}
+            />
             <SegmentationTable.Expanded.Info />
           </SegmentationTable.Expanded.Header>
 

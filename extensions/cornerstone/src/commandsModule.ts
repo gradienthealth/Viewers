@@ -31,13 +31,18 @@ import toggleImageSliceSync from './utils/imageSliceSync/toggleImageSliceSync';
 import { getFirstAnnotationSelected } from './utils/measurementServiceMappings/utils/selection';
 import getActiveViewportEnabledElement from './utils/getActiveViewportEnabledElement';
 import toggleVOISliceSync from './utils/toggleVOISliceSync';
-import { usePositionPresentationStore, useSegmentationPresentationStore } from './stores';
+import {
+  usePositionPresentationStore,
+  useSegmentationPresentationStore,
+  useSegmentationSavingStatusStore,
+} from './stores';
 import { toolNames } from './initCornerstoneTools';
 import CornerstoneViewportDownloadForm from './utils/CornerstoneViewportDownloadForm';
 import { updateSegmentBidirectionalStats } from './utils/updateSegmentationStats';
 import { generateSegmentationCSVReport } from './utils/generateSegmentationCSVReport';
 import { getUpdatedViewportsForSegmentation } from './utils/hydrationUtils';
 import shouldPreventScroll from './utils/shouldPreventScroll';
+import { SAVED_STATUS_ICON } from './enums';
 
 const { DefaultHistoryMemo } = csUtils.HistoryMemo;
 const toggleSyncFunctions = {
@@ -1283,6 +1288,17 @@ function commandsModule({
     },
 
     /**
+     * Sets the active segment and jumps to its center
+     * @param props.segmentationId - The ID of the segmentation
+     * @param props.segmentIndex - The index of the segment to activate
+     */
+    setActiveSegmentAndFocusCommand: ({ segmentationId, segmentIndex }) => {
+      const { CropDisplayAreaService } = servicesManager.services;
+      actions.setActiveSegmentAndCenterCommand({ segmentationId, segmentIndex });
+      CropDisplayAreaService.focusToSegment(segmentationId, segmentIndex);
+    },
+
+    /**
      * Toggles the visibility of a segment
      * @param props.segmentationId - The ID of the segmentation
      * @param props.segmentIndex - The index of the segment
@@ -1336,15 +1352,26 @@ function commandsModule({
      */
     storeSegmentationCommand: async ({ segmentationId }) => {
       const { segmentationService, viewportGridService } = servicesManager.services;
+      const { setSegmentationSavingStatus } = useSegmentationSavingStatusStore.getState();
 
-      const displaySetInstanceUIDs = await createReportAsync({
-        servicesManager,
-        getReport: () =>
-          commandsManager.runCommand('storeSegmentation', {
-            segmentationId,
-          }),
-        reportType: 'Segmentation',
-      });
+      let displaySetInstanceUIDs: string[];
+
+      try {
+        displaySetInstanceUIDs = await createReportAsync({
+          servicesManager,
+          getReport: () =>
+            commandsManager.runCommand('storeSegmentation', {
+              segmentationId,
+            }),
+          reportType: 'Segmentation',
+          throwErrors: true,
+        });
+
+        setSegmentationSavingStatus(segmentationId, SAVED_STATUS_ICON.SAVED);
+      } catch (error) {
+        console.warn(error.message);
+        setSegmentationSavingStatus(segmentationId, SAVED_STATUS_ICON.ERROR);
+      }
 
       if (displaySetInstanceUIDs) {
         segmentationService.remove(segmentationId);
@@ -1975,6 +2002,9 @@ function commandsModule({
     },
     setActiveSegmentAndCenter: {
       commandFn: actions.setActiveSegmentAndCenterCommand,
+    },
+    setActiveSegmentAndFocus: {
+      commandFn: actions.setActiveSegmentAndFocusCommand,
     },
     toggleSegmentVisibility: {
       commandFn: actions.toggleSegmentVisibilityCommand,

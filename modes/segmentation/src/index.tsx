@@ -24,6 +24,11 @@ const dicomRT = {
   viewport: '@ohif/extension-cornerstone-dicom-rt.viewportModule.dicom-rt',
   sopClassHandler: '@ohif/extension-cornerstone-dicom-rt.sopClassHandlerModule.dicom-rt',
 };
+
+const gradienthealth = {
+  form: '@gradienthealth/ohif-gradienthealth-extension.panelModule.form',
+};
+
 /**
  * Just two dependencies to be able to render a viewport with panels in order
  * to make sure that the mode is working.
@@ -53,8 +58,14 @@ function modeFactory({ modeConfiguration }) {
      * Services and other resources.
      */
     onModeEnter: ({ servicesManager, extensionManager, commandsManager }: withAppTypes) => {
-      const { measurementService, toolbarService, toolGroupService, customizationService } =
-        servicesManager.services;
+      const {
+        measurementService,
+        toolbarService,
+        toolGroupService,
+        customizationService,
+        CacheAPIService,
+        GoogleSheetsService,
+      } = servicesManager.services;
 
       measurementService.clearMeasurements();
 
@@ -103,6 +114,20 @@ function modeFactory({ modeConfiguration }) {
         'Shapes',
       ]);
       toolbarService.createButtonSection('brushToolsSection', ['Brush', 'Eraser', 'Threshold']);
+
+      customizationService.setCustomizations({
+        'panelSegmentation.tableMode': {
+          $set: 'expanded',
+        },
+      });
+
+      CacheAPIService.init();
+      GoogleSheetsService.init();
+
+      const { addSegmentationBrushSizesHandler } = extensionManager.getModuleEntry(
+        '@gradienthealth/ohif-gradienthealth-extension.utilityModule.common'
+      ).exports;
+      addSegmentationBrushSizesHandler();
     },
     onModeExit: ({ servicesManager }: withAppTypes) => {
       const {
@@ -112,6 +137,8 @@ function modeFactory({ modeConfiguration }) {
         cornerstoneViewportService,
         uiDialogService,
         uiModalService,
+        CacheAPIService,
+        GoogleSheetsService,
       } = servicesManager.services;
 
       uiDialogService.hideAll();
@@ -120,6 +147,8 @@ function modeFactory({ modeConfiguration }) {
       syncGroupService.destroy();
       segmentationService.destroy();
       cornerstoneViewportService.destroy();
+      CacheAPIService.destroy();
+      GoogleSheetsService.destroy();
     },
     /** */
     validationTags: {
@@ -165,7 +194,7 @@ function modeFactory({ modeConfiguration }) {
             props: {
               leftPanels: [ohif.leftPanel],
               leftPanelResizable: true,
-              rightPanels: [cornerstone.panelTool, cornerstone.measurements],
+              rightPanels: [cornerstone.panelTool, cornerstone.measurements, gradienthealth.form],
               rightPanelResizable: true,
               // leftPanelClosed: true,
               viewports: [
