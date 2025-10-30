@@ -12,5 +12,9 @@ export default function isSeriesFilterUsed(instances, filters) {
   if (!instances.length) {
     return false;
   }
+  // In COD format, the DeidSeriesInstanceUID is used to identify series instead of SeriesInstanceUID.
+  if (seriesInstanceUIDs.includes(instances[0].DeidSeriesInstanceUID)) {
+    return true;
+  }
   return seriesInstanceUIDs.includes(instances[0].SeriesInstanceUID);
 }
