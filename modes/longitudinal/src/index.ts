@@ -144,6 +144,7 @@ function modeFactory({ modeConfiguration }) {
         'AdvancedMagnify',
         'UltrasoundDirectionalTool',
         'WindowLevelRegion',
+        'OPFSTool',
       ]);
 
       customizationService.setCustomizations({
