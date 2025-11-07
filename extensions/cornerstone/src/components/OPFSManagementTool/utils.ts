@@ -36,6 +36,23 @@ function createCloudPaths(
   return { gsPath, storagePath };
 }
 
+function createViewerLink(studyUID: string, bucketParts: string[]): string {
+  const { pathname, origin } = window.location;
+  let routerBasename = window.config.routerBasename;
+
+  routerBasename = routerBasename === '/' ? '' : routerBasename;
+  const mode = pathname
+    .slice(pathname.indexOf(routerBasename) + routerBasename.length)
+    .split('/')[1];
+
+  const studyURLParams = new URLSearchParams();
+  studyURLParams.set('StudyInstanceUIDs', studyUID);
+  studyURLParams.set('bucket', bucketParts[0]);
+  studyURLParams.set('bucket-prefix', bucketParts.slice(1).join('/'));
+
+  return `${origin}${routerBasename}/${mode}/cod?${studyURLParams.toString()}`;
+}
+
 async function getOPFSRootHandle(): Promise<FileSystemDirectoryHandle> {
   try {
     const rootHandle = await navigator.storage.getDirectory();
@@ -155,12 +172,7 @@ function structureData(fileDetails: FileDetails[]): Study[] {
       studiesMap[studyUID]['study-modalities'].push(seriesModality);
     }
     if (!studiesMap[studyUID]['viewer-link'] && seriesModality !== 'SEG') {
-      const studyURLParams = new URLSearchParams();
-      studyURLParams.set('StudyInstanceUIDs', studyUID);
-      studyURLParams.set('bucket', bucketParts[0]);
-      studyURLParams.set('bucket-prefix', bucketParts.slice(1).join('/'));
-      studiesMap[studyUID]['viewer-link'] =
-        `${window.location.origin}/viewer/cod?${studyURLParams.toString()}`;
+      studiesMap[studyUID]['viewer-link'] = createViewerLink(studyUID, bucketParts);
     }
     if (!studiesMap[studyUID]['opfs-paths'].includes(studyFolderPath)) {
       studiesMap[studyUID]['opfs-paths'].push(studyFolderPath);
@@ -195,11 +207,6 @@ function structureData(fileDetails: FileDetails[]): Study[] {
         studiesMap[studyFound['study-uid']]['study-last-modified'] = lastModified;
       }
     } else {
-      const studyURLParams = new URLSearchParams();
-      studyURLParams.set('StudyInstanceUIDs', studyUID);
-      studyURLParams.set('bucket', bucketParts[0]);
-      studyURLParams.set('bucket-prefix', bucketParts.slice(1).join('/'));
-
       studiesMap[studyUID] = {
         id: studyUID,
         'study-uid': studyUID,
@@ -208,7 +215,7 @@ function structureData(fileDetails: FileDetails[]): Study[] {
         'study-size': size,
         'study-last-modified': lastModified,
         series: [series],
-        'viewer-link': `${window.location.origin}/viewer/cod?${studyURLParams.toString()}`,
+        'viewer-link': createViewerLink(studyUID, bucketParts),
         'opfs-paths': [studyFolderPath],
       };
     }
