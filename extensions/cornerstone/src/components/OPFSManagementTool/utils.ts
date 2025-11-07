@@ -110,7 +110,7 @@ function structureData(fileDetails: FileDetails[]): Study[] {
     let seriesMostRecentModified = 0;
 
     fileDetails.forEach(file => {
-      if (file.path.startsWith(seriesFolderPath + '/')) {
+      if (file.path.startsWith(`/${seriesFolderPath}/`)) {
         totalSeriesSize += file.size;
         if (file.lastModified > seriesMostRecentModified) {
           seriesMostRecentModified = file.lastModified;
