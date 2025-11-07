@@ -247,6 +247,12 @@ const bindings = [
     keys: ['shift+space'],
     isEditable: true,
   },
+  {
+    commandName: 'showOPFSManagementTool',
+    label: 'Show OPFS Management Tool',
+    keys: ['shift+o'],
+    isEditable: true,
+  },
 ];
 
 export default bindings;

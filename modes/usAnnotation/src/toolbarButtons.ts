@@ -702,6 +702,16 @@ const toolbarButtons: Button[] = [
   //     evaluate: 'evaluate.action',
   //   },
   // },
+  {
+    id: 'OPFSTool',
+    uiType: 'ohif.toolButton',
+    props: {
+      icon: 'FolderOpen',
+      label: 'OPFS Management Tool',
+      tooltip: 'OPFS Management Tool',
+      commands: 'showOPFSManagementTool',
+    },
+  },
 ];
 
 export default toolbarButtons;

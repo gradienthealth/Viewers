@@ -234,6 +234,7 @@ import Undo from './Sources/Undo';
 import TabContours from './Sources/TabContours';
 import IllustrationNotFound from './Sources/IllustrationNotFound';
 import GradientHealthLogo from './Sources/GradientHealthLogo';
+import FolderOpen from './Sources/FolderOpen';
 //
 //
 type IconProps = React.HTMLAttributes<SVGElement>;
@@ -805,6 +806,7 @@ export const Icons = {
   JumpToSlice,
   IllustrationNotFound,
   GradientHealthLogo,
+  FolderOpen,
 
   /** Adds an icon to the set of icons */
   addIcon: (name: string, icon) => {

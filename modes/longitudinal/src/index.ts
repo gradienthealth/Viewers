@@ -89,6 +89,7 @@ export function onModeEnter({ servicesManager, extensionManager, commandsManager
     'AdvancedMagnify',
     'UltrasoundDirectionalTool',
     'WindowLevelRegion',
+    'OPFSTool',
   ]);
 
   customizationService.setCustomizations({
