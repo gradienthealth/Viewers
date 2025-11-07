@@ -201,6 +201,7 @@ import ChevronLeft from './Sources/ChevronLeft';
 import StatusAlert from './Sources/StatusAlert';
 import Undo from './Sources/Undo';
 import GradientHealthLogo from './Sources/GradientHealthLogo';
+import FolderOpen from './Sources/FolderOpen';
 //
 //
 type IconProps = React.HTMLAttributes<SVGElement>;
@@ -730,6 +731,7 @@ export const Icons = {
   Redo,
   JumpToSlice,
   GradientHealthLogo,
+  FolderOpen,
 
   /** Adds an icon to the set of icons */
   addIcon: (name: string, icon) => {
