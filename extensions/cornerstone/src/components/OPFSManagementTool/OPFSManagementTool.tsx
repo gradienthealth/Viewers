@@ -262,7 +262,7 @@ export default function OPFSManagementTool() {
           placeholder="Filter table..."
           value={globalFilter ?? ''}
           onChange={event => setGlobalFilter(event.target.value)}
-          className="max-w-sm"
+          className="mr-2 max-w-sm"
         />
         <Button
           variant="outline"
