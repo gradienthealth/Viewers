@@ -43,6 +43,7 @@ import { generateSegmentationCSVReport } from './utils/generateSegmentationCSVRe
 import { getUpdatedViewportsForSegmentation } from './utils/hydrationUtils';
 import shouldPreventScroll from './utils/shouldPreventScroll';
 import { SAVED_STATUS_ICON } from './enums';
+import OPFSManagementTool from './components/OPFSManagementTool';
 
 const { DefaultHistoryMemo } = csUtils.HistoryMemo;
 const toggleSyncFunctions = {
@@ -109,6 +110,7 @@ function commandsModule({
     syncGroupService,
     segmentationService,
     displaySetService,
+    uiModalService,
   } = servicesManager.services as AppTypes.Services;
 
   function _getActiveViewportEnabledElement() {
@@ -1806,6 +1808,14 @@ function commandsModule({
         level: mean.value,
       });
     },
+    showOPFSManagementTool: () => {
+      uiModalService.show({
+        content: OPFSManagementTool,
+        contentProps: {},
+        title: 'OPFSManagementTool',
+        containerClassName: 'max-w-[90vw] w-max',
+      });
+    },
   };
 
   const definitions = {
@@ -2092,6 +2102,7 @@ function commandsModule({
     reCalibrateWindowLevel: {
       commandFn: actions.reCalibrateWindowLevel,
     },
+    showOPFSManagementTool: actions.showOPFSManagementTool,
   };
 
   return {

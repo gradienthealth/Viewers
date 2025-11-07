@@ -96,6 +96,7 @@ function modeFactory({ modeConfiguration }) {
         'Cine',
         'Magnify',
         'TagBrowser',
+        'OPFSTool',
       ]);
 
       toolbarService.createButtonSection('segmentationToolbox', [
