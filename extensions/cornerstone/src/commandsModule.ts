@@ -59,6 +59,7 @@ import { utilities as segmentationUtilities } from '@cornerstonejs/tools/segment
 import i18n from '@ohif/i18n';
 import shouldPreventScroll from './utils/shouldPreventScroll';
 import { SAVED_STATUS_ICON } from './enums';
+import OPFSManagementTool from './components/OPFSManagementTool';
 
 const { add, intersect, subtract, copy } = cstUtils.contourSegmentation;
 
@@ -137,6 +138,7 @@ function commandsModule({
     syncGroupService,
     segmentationService,
     displaySetService,
+    uiModalService,
   } = servicesManager.services as AppTypes.Services;
 
   function _getActiveViewportEnabledElement() {
@@ -2494,6 +2496,14 @@ function commandsModule({
         level: mean.value,
       });
     },
+    showOPFSManagementTool: () => {
+      uiModalService.show({
+        content: OPFSManagementTool,
+        contentProps: {},
+        title: 'OPFSManagementTool',
+        containerClassName: 'max-w-[90vw] w-max',
+      });
+    },
   };
 
   const definitions = {
@@ -2820,6 +2830,7 @@ function commandsModule({
     reCalibrateWindowLevel: {
       commandFn: actions.reCalibrateWindowLevel,
     },
+    showOPFSManagementTool: actions.showOPFSManagementTool,
   };
 
   return {
