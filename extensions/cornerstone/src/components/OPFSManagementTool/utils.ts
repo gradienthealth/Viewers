@@ -1,5 +1,6 @@
 import { Row } from '@tanstack/react-table';
 
+import { CURRENT_OPFS_VERSION, OPFS_VERSION_STORAGE_KEY } from './constants';
 import { FileDetails, Study } from './types';
 
 function parsePath(path: string): {
@@ -222,6 +223,25 @@ function structureData(fileDetails: FileDetails[]): Study[] {
   });
 
   return Object.values(studiesMap);
+}
+
+export async function clearPreviousOPFSVersionData(): Promise<void> {
+  try {
+    const storedVersion = localStorage.getItem(OPFS_VERSION_STORAGE_KEY);
+    if (!storedVersion?.trim() || parseInt(storedVersion, 10) < CURRENT_OPFS_VERSION) {
+      const rootHandle = await getOPFSRootHandle();
+      // The previous OPFS path version was storing and retrieving the files in the root directory.
+      for await (const entry of rootHandle.values()) {
+        if (entry.kind === 'file' || entry.name === 'partial') {
+          await rootHandle.removeEntry(entry.name, { recursive: true });
+        }
+      }
+    }
+
+    localStorage.setItem(OPFS_VERSION_STORAGE_KEY, String(CURRENT_OPFS_VERSION));
+  } catch (error) {
+    console.warn('Error in clearing previous OPFS version data:', error);
+  }
 }
 
 export async function getOPFSData(): Promise<Study[]> {
