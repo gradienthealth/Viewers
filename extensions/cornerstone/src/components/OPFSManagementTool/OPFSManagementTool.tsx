@@ -25,7 +25,12 @@ import { Icons } from '@ohif/ui-next';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@ohif/ui-next';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ohif/ui-next';
 import { Study } from './types';
-import { deleteFoldersFromOPFS, getOPFSData, hybridGlobalFilter } from './utils';
+import {
+  clearPreviousOPFSVersionData,
+  deleteFoldersFromOPFS,
+  getOPFSData,
+  hybridGlobalFilter,
+} from './utils';
 
 const columnHelper = createColumnHelper<Study>();
 
@@ -232,7 +237,12 @@ export default function OPFSManagementTool() {
   });
 
   useEffect(() => {
-    refreshOPFSData();
+    const initialize = async () => {
+      await clearPreviousOPFSVersionData();
+      await refreshOPFSData();
+    };
+
+    initialize();
   }, []);
 
   const refreshOPFSData = async () => {
