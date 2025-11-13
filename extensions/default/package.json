@@ -49,6 +49,6 @@
     "@cornerstonejs/calculate-suv": "^1.1.0",
     "lodash.get": "^4.4.2",
     "lodash.uniqby": "^4.7.0",
-    "cod-dicomweb-server": "^1.3.10"
+    "cod-dicomweb-server": "^1.3.11"
   }
 }
