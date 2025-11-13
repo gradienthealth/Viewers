@@ -24,7 +24,7 @@ export function createStudyBrowserTabs(
   const { displaySetService } = servicesManager.services;
   const dataSource = extensionManager.getActiveDataSource()[0];
   const dicomWebClient = dataSource.retrieve.getWadoDicomWebClient?.();
-  const omittedSeries = dicomWebClient.getOmittedSeries?.() || [];
+  const omittedSeries = dicomWebClient?.getOmittedSeries?.() || [];
   const queryParams = new URLSearchParams(window.location.search);
   const seriesUIdsToFilter = queryParams.getAll('SeriesInstanceUIDs');
 
