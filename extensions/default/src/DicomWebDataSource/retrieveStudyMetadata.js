@@ -38,7 +38,7 @@ export function retrieveStudyMetadata(
     throw new Error(`${moduleName}: Required 'StudyInstanceUID' parameter not provided.`);
   }
 
-  const promiseId = `${dicomWebConfig.name}:${StudyInstanceUID}`;
+  const promiseId = `${dicomWebConfig.name}:${StudyInstanceUID}:${filters?.seriesInstanceUID?.toString() || 'NO-SERIES-FILTER'}`;
 
   // Already waiting on result? Return cached promise
   if (StudyMetaDataPromises.has(promiseId)) {

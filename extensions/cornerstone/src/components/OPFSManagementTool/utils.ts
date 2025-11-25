@@ -120,9 +120,9 @@ function structureData(fileDetails: FileDetails[]): Study[] {
     }
 
     const firstInstance = Object.values(metadataFile.data.cod.instances)[0];
-    const studyDescription = firstInstance.metadata['00081030']?.Value[0];
-    const seriesDescription = firstInstance.metadata['0008103E']?.Value[0];
-    const seriesModality = firstInstance.metadata['00080060']?.Value[0];
+    const studyDescription = firstInstance.metadata['00081030']?.Value?.[0];
+    const seriesDescription = firstInstance.metadata['0008103E']?.Value?.[0];
+    const seriesModality = firstInstance.metadata['00080060']?.Value?.[0];
 
     let totalSeriesSize = 0;
     let seriesMostRecentModified = 0;
