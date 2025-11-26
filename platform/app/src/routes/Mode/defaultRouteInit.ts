@@ -52,6 +52,8 @@ export async function defaultRouteInit(
     function ({ StudyInstanceUID, SeriesInstanceUID, madeInClient = false }) {
       const seriesMetadata = DicomMetadataStore.getSeries(StudyInstanceUID, SeriesInstanceUID);
 
+      /* The 'series filter failed' notification is out of context in
+      some sheet-integrated scenarios, so disabling it temporarily.
       // checks if the series filter was used, if it exists
       const seriesInstanceUIDs = filters?.seriesInstanceUID;
       if (
@@ -68,6 +70,7 @@ export async function defaultRouteInit(
           duration: 7000,
         });
       }
+      */
 
       displaySetService.makeDisplaySets(seriesMetadata.instances, { madeInClient });
     }
