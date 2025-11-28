@@ -161,7 +161,8 @@ export const longitudinalInstance = {
   props: {
     ...basicLayout.props,
     leftPanels: [tracked.thumbnailList],
-    rightPanels: [cornerstone.segmentation, tracked.measurements, gradienthealth.form],
+    rightPanels: [gradienthealth.form, cornerstone.segmentation, tracked.measurements],
+    rightPanelClosed: false,
     viewports: [
       {
         namespace: tracked.viewport,
