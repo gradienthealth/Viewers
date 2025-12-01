@@ -140,6 +140,12 @@ function modeFactory({ modeConfiguration }) {
 
       toolbarService.updateSection('BrushTools', ['Brush', 'Eraser', 'Threshold']);
 
+      // Making the 'cornerstone.panelTool' the default/first right panel will automaically
+      // handle the evaluate functions for segmentation panel tools through the toolbox components.
+      // But since we changed the order, we need to call this here to handle the evaluate functions.
+      const sectionToolProps = toolbarService.getButtonPropsInButtonSection('segmentationToolbox');
+      sectionToolProps.forEach(props => toolbarService.handleEvaluateNested(props));
+
       customizationService.setCustomizations({
         'panelSegmentation.tableMode': {
           $set: 'expanded',
@@ -231,9 +237,9 @@ function modeFactory({ modeConfiguration }) {
               leftPanels: [ohif.thumbnailList],
               leftPanelResizable: true,
               rightPanels: [
+                gradienthealth.form,
                 cornerstone.labelMapSegmentationPanel,
                 cornerstone.contourSegmentationPanel,
-                gradienthealth.form,
               ],
               rightPanelResizable: true,
               // leftPanelClosed: true,
