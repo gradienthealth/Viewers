@@ -28,9 +28,12 @@ import { Study } from './types';
 import {
   clearPreviousOPFSVersionData,
   deleteFoldersFromOPFS,
+  formatSize,
   getOPFSData,
   hybridGlobalFilter,
+  purgeOldFilesFromOPFS,
 } from './utils';
+import { OPFS_PURGE_METADATA } from './constants';
 
 const columnHelper = createColumnHelper<Study>();
 
@@ -66,23 +69,21 @@ const columns: ColumnDef<Study>[] = [
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          StudyInstanceUID
-          <ArrowUpDown className="h-4 w-4" />
+          StudyInstanceUID <ArrowUpDown className="h-4 w-4" />
         </Button>
       );
     },
     cell: ({ row }) => <div>{row.getValue('study-uid')}</div>,
   },
-  {
-    accessorKey: 'study-description',
+  columnHelper.accessor('study-description', {
+    accessorFn: row => row['study-description'] || '',
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          StudyDescription
-          <ArrowUpDown className="h-4 w-4" />
+          StudyDescription <ArrowUpDown className="h-4 w-4" />
         </Button>
       );
     },
@@ -97,7 +98,7 @@ const columns: ColumnDef<Study>[] = [
         </Tooltip>
       );
     },
-  },
+  }),
   columnHelper.accessor('study-modalities', {
     accessorFn: row => row['study-modalities'].sort().join(', '),
     header: ({ column }) => {
@@ -106,8 +107,7 @@ const columns: ColumnDef<Study>[] = [
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Modalities
-          <ArrowUpDown className="h-4 w-4" />
+          Modalities <ArrowUpDown className="h-4 w-4" />
         </Button>
       );
     },
@@ -126,18 +126,7 @@ const columns: ColumnDef<Study>[] = [
   columnHelper.accessor('study-size', {
     accessorFn: row => {
       const size: number = row['study-size'];
-      const oneGB = 1024 * 1024 * 1024,
-        oneMB = 1024 * 1024,
-        oneKB = 1024;
-
-      if (size >= oneGB) {
-        return `${(size / oneGB).toFixed(2)} GB`;
-      } else if (size >= oneMB) {
-        return `${(size / oneMB).toFixed(2)} MB`;
-      } else if (size >= oneKB) {
-        return `${(size / oneKB).toFixed(2)} KB`;
-      }
-      return `${size} bytes`;
+      return formatSize(size);
     },
     sortingFn: (rowA, rowB, columnId) => {
       const sizeA = rowA.original[columnId];
@@ -157,27 +146,30 @@ const columns: ColumnDef<Study>[] = [
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Size
-          <ArrowUpDown className="h-4 w-4" />
+          Size <ArrowUpDown className="h-4 w-4" />
         </Button>
       );
     },
     cell: ({ row }) => <div>{row.getValue('study-size')}</div>,
   }),
   columnHelper.accessor('study-last-modified', {
-    accessorFn: row => new Date(row['study-last-modified']).toGMTString(),
+    accessorFn: row => new Date(row['study-last-modified']),
+    sortingFn: 'datetime',
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Last Modified
-          <ArrowUpDown className="h-4 w-4" />
+          Last Modified <ArrowUpDown className="h-4 w-4" />
         </Button>
       );
     },
-    cell: ({ row }) => <div>{row.getValue('study-last-modified')}</div>,
+    cell: ({ row }) => {
+      const value: Date = row.getValue('study-last-modified');
+      const formattedDate = value.toDateString() + ', ' + value.toLocaleTimeString();
+      return <div>{formattedDate}</div>;
+    },
   }),
   {
     id: 'actions',
@@ -247,6 +239,7 @@ export default function OPFSManagementTool() {
 
   const refreshOPFSData = async () => {
     const fetchedData = await getOPFSData();
+    table.toggleAllPageRowsSelected(false);
     setData(fetchedData);
   };
 
@@ -263,6 +256,19 @@ export default function OPFSManagementTool() {
       console.warn('Error deleting selected rows');
       refreshOPFSData();
     }
+  };
+
+  const purgeOldFiles = async (time: number) => {
+    await purgeOldFilesFromOPFS(time);
+    refreshOPFSData();
+  };
+
+  const calculateTotalSize = (list: Study[]) => {
+    const totalSize = list.reduce((total, study) => {
+      return total + study['study-size'];
+    }, 0);
+
+    return formatSize(totalSize);
   };
 
   return (
@@ -300,6 +306,28 @@ export default function OPFSManagementTool() {
         >
           Debug Copy
         </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              className="ml-2"
+            >
+              Purge <ChevronDown />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Files older than</DropdownMenuLabel>
+            {OPFS_PURGE_METADATA.map(option => (
+              <DropdownMenuItem
+                key={option.label}
+                className="capitalize"
+                onClick={() => purgeOldFiles(option.time)}
+              >
+                {option.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -378,6 +406,12 @@ export default function OPFSManagementTool() {
         <div className="text-muted-foreground flex-1 text-sm">
           {table.getFilteredSelectedRowModel().rows.length} of{' '}
           {table.getFilteredRowModel().rows.length} row(s) selected.
+          {table.getFilteredSelectedRowModel().rows.length
+            ? `  ${calculateTotalSize(data.filter((study, index) => rowSelection[index]))}.`
+            : ''}
+        </div>
+        <div className="text-muted-foreground flex-1 text-sm">
+          Total size: {calculateTotalSize(data)}
         </div>
         <div className="space-x-2">
           <Button
