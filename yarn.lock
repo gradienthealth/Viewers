@@ -7806,10 +7806,10 @@ co@^4.6.0:
   resolved "https://registry.yarnpkg.com/co/-/co-4.6.0.tgz#6ea6bdf3d853ae54ccb8e47bfa0bf3f9031fb184"
   integrity sha512-QVb0dM5HvG+uaxitm8wONl7jltx8dqhfU33DcqtOZcLSVIKSDDLDi7+0LbAKiyI8hD9u42m2YxXSkMGWThaecQ==
 
-cod-dicomweb-server@^1.3.12:
-  version "1.3.12"
-  resolved "https://registry.yarnpkg.com/cod-dicomweb-server/-/cod-dicomweb-server-1.3.12.tgz#3e84e6e0b8e9b3e649524fb11f7d47ecb1ae86f9"
-  integrity sha512-X56eSXhlpMkL+Wki24cx1KtC06xD+Qf47jWNJ6F6AvMsyjVg57PhQ8nSu1vmAVAHOfKRfGZMV6BGfWwAeMWsQQ==
+cod-dicomweb-server@^1.3.13:
+  version "1.3.13"
+  resolved "https://registry.yarnpkg.com/cod-dicomweb-server/-/cod-dicomweb-server-1.3.13.tgz#da716dcd89c8c7eca14fa9047fe29a39b7c5a261"
+  integrity sha512-eqPtvVkx6ZOykGfJKMzG3sTbULhOjSgjBpZSCW+BrUItU4WoK7eO11MdVMQUiTwd7YlCW2jSingD6/2dvkIl1A==
   dependencies:
     comlink "^4.4.2"
     dicom-parser "^1.8.21"
