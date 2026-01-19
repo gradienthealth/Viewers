@@ -3,6 +3,7 @@ import i18n from '@ohif/i18n';
 import { metaData, eventTarget } from '@cornerstonejs/core';
 import { CONSTANTS, segmentation as cstSegmentation } from '@cornerstonejs/tools';
 import { adaptersSEG, Enums } from '@cornerstonejs/adapters';
+import { internal } from '@cornerstonejs/dicom-image-loader';
 
 import { SOPClassHandlerId } from './id';
 import { dicomlabToRGB } from './utils/dicomlabToRGB';
@@ -113,8 +114,10 @@ function _getDisplaySetsFromSeries(
     displaySet.isReconstructable = referencedDisplaySet.isReconstructable;
   }
 
+  const codHeaders = internal.getCodHeaders();
+
   displaySet.load = async ({ headers }) =>
-    await _load(displaySet, servicesManager, extensionManager, headers);
+    await _load(displaySet, servicesManager, extensionManager, { ...headers, ...codHeaders });
 
   return [displaySet];
 }
