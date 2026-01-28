@@ -36,7 +36,7 @@ export function createStudyBrowserTabs(
     const displaySetsForStudy = displaySets.filter(
       ds =>
         ds.StudyInstanceUID === study.studyInstanceUid &&
-        (!seriesUIdsToFilter.length || seriesUIdsToFilter.includes(ds.SeriesInstanceUID))
+        (!seriesUIdsToFilter.length || seriesUIdsToFilter.includes(ds.DeidSeriesInstanceUID))
     );
 
     // sort them by seriesInstanceUID
