@@ -120,9 +120,9 @@ function structureData(fileDetails: FileDetails[]): Study[] {
     }
 
     const firstInstance = Object.values(metadataFile.data.cod.instances)[0];
-    const studyDescription = firstInstance.metadata['00081030']?.Value[0];
-    const seriesDescription = firstInstance.metadata['0008103E']?.Value[0];
-    const seriesModality = firstInstance.metadata['00080060']?.Value[0];
+    const studyDescription = firstInstance.metadata['00081030']?.Value?.[0];
+    const seriesDescription = firstInstance.metadata['0008103E']?.Value?.[0];
+    const seriesModality = firstInstance.metadata['00080060']?.Value?.[0];
 
     let totalSeriesSize = 0;
     let seriesMostRecentModified = 0;
@@ -274,6 +274,63 @@ export async function deleteFoldersFromOPFS(folderPaths: string[]) {
   }
 }
 
+export async function purgeOldFilesFromOPFS(maxAgeMs?: number): Promise<void> {
+  // If the maxAgeMs value is null, clear the OPFS.
+  // If the user selected to purge 'All' OPFS data, the maxAgeMs will be null.
+  if (!maxAgeMs) {
+    try {
+      const rootHandle = await getOPFSRootHandle();
+      // @ts-ignore
+      await rootHandle.remove({ recursive: true });
+    } catch (error) {
+      console.warn(`Error purging files: ${error.message}`);
+    }
+    return;
+  }
+
+  const cutoffTime = Date.now() - maxAgeMs;
+
+  async function traverseAndClean(dirHandle: FileSystemDirectoryHandle): Promise<void> {
+    const entries: (FileSystemFileHandle | FileSystemDirectoryHandle)[] = [];
+    // @ts-ignore
+    for await (const subDirHandle of dirHandle.values()) {
+      entries.push(subDirHandle);
+    }
+
+    await Promise.all(
+      entries.map(async subDirHandle => {
+        if (!maxAgeMs) {
+          await dirHandle.removeEntry(subDirHandle.name, { recursive: true });
+        }
+
+        if (subDirHandle.kind === 'file') {
+          const fileHandle = subDirHandle as FileSystemFileHandle;
+          const file = await fileHandle.getFile();
+
+          if (file.lastModified < cutoffTime) {
+            await dirHandle.removeEntry(file.name);
+          }
+        } else if (subDirHandle.kind === 'directory') {
+          await traverseAndClean(subDirHandle);
+
+          // @ts-ignore
+          if ((await subDirHandle.values().next()).done) {
+            // Subdirectory is empty: DELETE it from the parent
+            await dirHandle.removeEntry(subDirHandle.name);
+          }
+        }
+      })
+    );
+  }
+
+  try {
+    const rootHandle = await getOPFSRootHandle();
+    await traverseAndClean(rootHandle);
+  } catch (error) {
+    console.warn(`Error clearing partial files: ${error.message}`);
+  }
+}
+
 export function hybridGlobalFilter(
   row: Row<Study>,
   columnId: string,
@@ -296,4 +353,19 @@ export function hybridGlobalFilter(
 
   // This runs if the input wasn't a valid regex pattern OR if the try-catch failed.
   return cellValueString.includes(filterValueString.toLowerCase());
+}
+
+export function formatSize(size = 0): string {
+  const oneGB = 1024 * 1024 * 1024,
+    oneMB = 1024 * 1024,
+    oneKB = 1024;
+
+  if (size >= oneGB) {
+    return `${(size / oneGB).toFixed(2)} GB`;
+  } else if (size >= oneMB) {
+    return `${(size / oneMB).toFixed(2)} MB`;
+  } else if (size >= oneKB) {
+    return `${(size / oneKB).toFixed(2)} KB`;
+  }
+  return `${size} bytes`;
 }

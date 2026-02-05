@@ -628,11 +628,11 @@ const commandsModule = ({
       setTimeout(() => actions.scrollActiveThumbnailIntoView(), 0);
     },
 
-    downloadSeriesFile: ({ displaySetInstanceUID }) => {
+    downloadSeriesFile: async ({ displaySetInstanceUID }) => {
       const displaySet = displaySetService.getDisplaySetByUID(displaySetInstanceUID);
       const codServer = internal.getWadoRsWebServer();
       const deidSeriesInstanceUID = displaySet.instance.DeidSeriesInstanceUID;
-      const seriesDownloaded = codServer.downloadSeriesFile(deidSeriesInstanceUID);
+      const seriesDownloaded = await codServer.downloadSeriesFile(deidSeriesInstanceUID);
 
       uiNotificationService.show({
         title: 'Download Series file',
