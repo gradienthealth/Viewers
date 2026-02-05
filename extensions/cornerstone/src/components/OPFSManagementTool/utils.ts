@@ -275,6 +275,8 @@ export async function deleteFoldersFromOPFS(folderPaths: string[]) {
 }
 
 export async function purgeOldFilesFromOPFS(maxAgeMs?: number): Promise<void> {
+  // If the maxAgeMs value is null, clear the OPFS.
+  // If the user selected to purge 'All' OPFS data, the maxAgeMs will be null.
   if (!maxAgeMs) {
     try {
       const rootHandle = await getOPFSRootHandle();
