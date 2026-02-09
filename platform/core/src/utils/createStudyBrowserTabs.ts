@@ -84,6 +84,33 @@ export function createStudyBrowserTabs(
       }
     });
 
+    // If there are series uids to filter and there are no displaysets after the filtering,
+    // that means the series uids to filter is invalid.
+    // In this case, the Viewer will display all the series in the study in the viewport.
+    // So we will also display all the series in the study in the study browser panel( left panel ).
+    if (
+      seriesUIdsToFilter.length &&
+      !sortedDisplaySets.length &&
+      (displaySets.some(ds => ds.StudyInstanceUID === study.studyInstanceUid) ||
+        omittedSeries.some(os => os.studyInstanceUID === study.studyInstanceUid))
+    ) {
+      sortedDisplaySets.push(
+        ...displaySets.filter(ds => ds.StudyInstanceUID === study.studyInstanceUid)
+      );
+
+      omittedSeries.forEach(aOmittedSeries => {
+        if (aOmittedSeries.studyInstanceUID === study.studyInstanceUid) {
+          sortedDisplaySets.push({
+            StudyInstanceUID: study.studyInstanceUid,
+            SeriesInstanceUID: aOmittedSeries.seriesInstanceUID,
+            componentType: 'thumbnailNoImage',
+            description: aOmittedSeries.seriesInstanceUID,
+            messages: { size: () => 1, messages: [{ text: aOmittedSeries.error }] },
+          });
+        }
+      });
+    }
+
     const tabStudy = Object.assign({}, study, {
       displaySets: sortedDisplaySets,
     });
