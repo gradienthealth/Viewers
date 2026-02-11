@@ -11,6 +11,13 @@ const gradienthealth = {
 
 function modeFactory({ modeConfiguration }) {
   const _unsubscriptions = [];
+
+  const rightPanels = [cornerstone.labelMapSegmentationPanel, cornerstone.contourSegmentationPanel];
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('sheetId') && params.get('sheetName')) {
+    rightPanels.unshift(gradienthealth.form);
+  }
+
   return {
     /**
      * Mode ID, which should be unique among modes used by the viewer. This ID
@@ -236,11 +243,7 @@ function modeFactory({ modeConfiguration }) {
             props: {
               leftPanels: [ohif.thumbnailList],
               leftPanelResizable: true,
-              rightPanels: [
-                gradienthealth.form,
-                cornerstone.labelMapSegmentationPanel,
-                cornerstone.contourSegmentationPanel,
-              ],
+              rightPanels: rightPanels,
               rightPanelResizable: true,
               // leftPanelClosed: true,
               viewports: [

@@ -649,7 +649,21 @@ const commandsModule = ({
       const activeViewportSpecificData = viewports.get(activeViewportId);
       const { displaySetInstanceUIDs } = activeViewportSpecificData;
 
-      const displaySets = displaySetService.activeDisplaySets;
+      const params = new URLSearchParams(window.location.search);
+      const deidStudyUIDs = params.getAll('StudyInstanceUIDs');
+      const deidSeriesUIDs = params.getAll('SeriesInstanceUIDs');
+
+      const studyDisplaySets = displaySetService.getDisplaySetsBy(ds =>
+        deidStudyUIDs.includes(ds.instance.DeidStudyInstanceUID)
+      );
+      const displaySets = studyDisplaySets.filter(
+        ds => !deidSeriesUIDs.length || deidSeriesUIDs.includes(ds.instance.DeidSeriesInstanceUID)
+      );
+
+      // If the series filtered displaysets are empty, then use study filtered displaysets.
+      if (!displaySets.length) {
+        displaySets.push(...studyDisplaySets);
+      }
       const { UIModalService } = servicesManager.services;
 
       const defaultDisplaySetInstanceUID = displaySetInstanceUID || displaySetInstanceUIDs[0];
