@@ -12,6 +12,8 @@ import {
   extensionDependencies as basicDependencies,
   mode as basicMode,
   modeInstance as basicModeInstance,
+  onModeEnter as basicOnModeEnter,
+  onModeExit as basicOnModeExit,
 } from '@ohif/mode-basic';
 
 export const tracked = {
@@ -30,17 +32,24 @@ export const extensionDependencies = {
   '@ohif/extension-measurement-tracking': '^3.0.0',
 };
 
-export function onModeEnter({ servicesManager, extensionManager, commandsManager }: withAppTypes) {
-  const {
-    measurementService,
-    toolbarService,
-    toolGroupService,
-    customizationService,
-    CacheAPIService,
-    GoogleSheetsService,
-  } = servicesManager.services;
+export function onModeEnter({
+  servicesManager,
+  extensionManager,
+  commandsManager,
+  panelService,
+  segmentationService,
+}: withAppTypes) {
+  const { CacheAPIService, GoogleSheetsService } = servicesManager.services;
 
-  measurementService.clearMeasurements();
+  basicOnModeEnter.bind(this)({
+    servicesManager,
+    extensionManager,
+    commandsManager,
+    panelService,
+    segmentationService,
+  });
+
+  /*measurementService.clearMeasurements();
 
   // Init Default and SR ToolGroups
   initToolGroups(extensionManager, toolGroupService, commandsManager);
@@ -98,9 +107,6 @@ export function onModeEnter({ servicesManager, extensionManager, commandsManager
     },
   });
 
-  CacheAPIService.init();
-  GoogleSheetsService.init();
-
   // // ActivatePanel event trigger for when a segmentation or measurement is added.
   // // Do not force activation so as to respect the state the user may have left the UI in.
   // _activatePanelTriggersSubscriptions = [
@@ -128,21 +134,14 @@ export function onModeEnter({ servicesManager, extensionManager, commandsManager
   //     true
   //   ),
   //   true,
-  // ];
+  // ];*/
+  CacheAPIService.init();
+  GoogleSheetsService.init();
 }
 export function onModeExit({ servicesManager }: withAppTypes) {
-  const {
-    toolGroupService,
-    syncGroupService,
-    segmentationService,
-    cornerstoneViewportService,
-    uiDialogService,
-    uiModalService,
-    CacheAPIService,
-    GoogleSheetsService,
-  } = servicesManager.services;
+  const { CacheAPIService, GoogleSheetsService } = servicesManager.services;
 
-  _activatePanelTriggersSubscriptions.forEach(sub => sub.unsubscribe());
+  /*_activatePanelTriggersSubscriptions.forEach(sub => sub.unsubscribe());
   _activatePanelTriggersSubscriptions = [];
 
   uiDialogService.hideAll();
@@ -150,7 +149,8 @@ export function onModeExit({ servicesManager }: withAppTypes) {
   toolGroupService.destroy();
   syncGroupService.destroy();
   segmentationService.destroy();
-  cornerstoneViewportService.destroy();
+  cornerstoneViewportService.destroy();*/
+  basicOnModeExit.bind(this)();
   CacheAPIService.destroy();
   GoogleSheetsService.destroy();
 }
@@ -192,7 +192,7 @@ export const modeInstance = {
   displayName: i18n.t('Modes:Basic Viewer'),
   /**
    * Lifecycle hooks
-   */
+  //  */
   onModeEnter,
   onModeExit,
   routes: [longitudinalRoute],

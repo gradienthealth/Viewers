@@ -37,9 +37,8 @@ function createCloudPaths(
   return { gsPath, storagePath };
 }
 
-function createViewerLink(studyUID: string, bucketParts: string[]): string {
+function createViewerLink(routerBasename: string, studyUID: string, bucketParts: string[]): string {
   const { pathname, origin } = window.location;
-  let routerBasename = window.config.routerBasename;
 
   routerBasename = routerBasename === '/' ? '' : routerBasename;
   const mode = pathname
@@ -104,7 +103,7 @@ async function getFileDetailsRecursive(
   return files;
 }
 
-function structureData(fileDetails: FileDetails[]): Study[] {
+function structureData(routerBasename: string, fileDetails: FileDetails[]): Study[] {
   const studiesMap: Record<string, Study> = {};
   const matchedFiles: FileDetails[] = [];
 
@@ -173,7 +172,7 @@ function structureData(fileDetails: FileDetails[]): Study[] {
       studiesMap[studyUID]['study-modalities'].push(seriesModality);
     }
     if (!studiesMap[studyUID]['viewer-link'] && seriesModality !== 'SEG') {
-      studiesMap[studyUID]['viewer-link'] = createViewerLink(studyUID, bucketParts);
+      studiesMap[studyUID]['viewer-link'] = createViewerLink(routerBasename, studyUID, bucketParts);
     }
     if (!studiesMap[studyUID]['opfs-paths'].includes(studyFolderPath)) {
       studiesMap[studyUID]['opfs-paths'].push(studyFolderPath);
@@ -216,7 +215,7 @@ function structureData(fileDetails: FileDetails[]): Study[] {
         'study-size': size,
         'study-last-modified': lastModified,
         series: [series],
-        'viewer-link': createViewerLink(studyUID, bucketParts),
+        'viewer-link': createViewerLink(routerBasename, studyUID, bucketParts),
         'opfs-paths': [studyFolderPath],
       };
     }
@@ -244,11 +243,11 @@ export async function clearPreviousOPFSVersionData(): Promise<void> {
   }
 }
 
-export async function getOPFSData(): Promise<Study[]> {
+export async function getOPFSData(routerBasename: string): Promise<Study[]> {
   try {
     const rootHandle = await getOPFSRootHandle();
     const allFiles = await getFileDetailsRecursive(rootHandle);
-    return structureData(allFiles);
+    return structureData(routerBasename, allFiles);
   } catch (error) {
     console.error('Error in fetching and structuring OPFS data:', error);
     return [];

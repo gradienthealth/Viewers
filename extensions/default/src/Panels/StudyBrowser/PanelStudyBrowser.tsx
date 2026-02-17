@@ -138,6 +138,7 @@ function PanelStudyBrowser({
         setStudyInstanceUIDs(studyUIDs);
         setExpandedStudyInstanceUIDs(studyUIDs);
         setStudyDisplayList([]);
+        fetchedStudiesRef.current.clear();
       }
     );
     return () => {

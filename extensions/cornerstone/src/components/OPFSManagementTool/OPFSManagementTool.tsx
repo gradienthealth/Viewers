@@ -34,6 +34,7 @@ import {
   purgeOldFilesFromOPFS,
 } from './utils';
 import { OPFS_PURGE_METADATA } from './constants';
+import { useAppConfig } from '@state';
 
 const columnHelper = createColumnHelper<Study>();
 
@@ -227,6 +228,7 @@ export default function OPFSManagementTool() {
       rowSelection,
     },
   });
+  const [appConfig] = useAppConfig();
 
   useEffect(() => {
     const initialize = async () => {
@@ -238,7 +240,7 @@ export default function OPFSManagementTool() {
   }, []);
 
   const refreshOPFSData = async () => {
-    const fetchedData = await getOPFSData();
+    const fetchedData = await getOPFSData(appConfig.routerBasename);
     table.toggleAllPageRowsSelected(false);
     setData(fetchedData);
   };

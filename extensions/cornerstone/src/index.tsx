@@ -44,7 +44,7 @@ import {
   usePositionPresentationStore,
   useSegmentationPresentationStore,
   useSynchronizersStore,
-  //useSelectedSegmentationsForViewportStore,
+  useSelectedSegmentationsForViewportStore,
   useCachedSlicesPerDisplaysetStore,
   useSegmentationSavingStatusStore,
 } from './stores';

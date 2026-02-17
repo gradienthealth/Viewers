@@ -273,6 +273,7 @@ export const toolbarSections = {
     'UltrasoundDirectionalTool',
     'WindowLevelRegion',
     'SegmentLabelTool',
+    'OPFSTool',
   ],
 };
 

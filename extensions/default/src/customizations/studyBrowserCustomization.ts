@@ -21,6 +21,7 @@ export default {
       id: 'downloadSeries',
       label: 'Download Series',
       iconName: 'Download',
+      commands: 'downloadSeriesFile',
       onClick: ({ commandsManager, displaySetInstanceUID }: withAppTypes) => {
         commandsManager.runCommand('downloadSeriesFile', {
           displaySetInstanceUID,
