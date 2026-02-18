@@ -24,9 +24,10 @@ function SmartImageScrollbar({
   const { cineService, cornerstoneViewportService } = servicesManager.services;
   const numOfSlices = imageSliceData.numberOfSlices;
   const scrollbarHeightValue = +scrollbarHeight.split('px')[0] + 2;
+  const isStackViewport = viewportData?.viewportType === Enums.ViewportType.STACK;
 
   const onImageScrollbarChange = (imageIndex, viewportId) => {
-    if (!isKeyPressed && !cachedImages.includes(imageIndex)) {
+    if (!isKeyPressed && !cachedImages.includes(imageIndex) && isStackViewport) {
       return;
     }
 
@@ -95,10 +96,6 @@ function SmartImageScrollbar({
   }, [viewportData, element]);
 
   useEffect(() => {
-    if (viewportData?.viewportType !== Enums.ViewportType.STACK) {
-      return;
-    }
-
     updateCachedSlices();
 
     eventTarget.addEventListener(Enums.Events.IMAGE_CACHE_IMAGE_ADDED, updateCachedSlices);
@@ -155,7 +152,7 @@ function SmartImageScrollbar({
 
   return (
     <>
-      {cachedImages.length && (
+      {cachedImages.length && isStackViewport && (
         <span
           className="border-primary-light bg-secondary-active absolute right-[3px] top-[4px] w-3 overflow-hidden rounded-lg border"
           style={{ height: `${scrollbarHeightValue}px` }}

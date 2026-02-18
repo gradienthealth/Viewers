@@ -38,7 +38,8 @@ export function createStudyBrowserTabs(
   recentTimeframeMS = 31536000000
 ) {
   const { servicesManager, extensionManager } = useSystem();
-  const { displaySetService, customizationService } = servicesManager.services;
+  const { displaySetService, customizationService, uiNotificationService, GoogleSheetsService } =
+    servicesManager.services;
   const dataSource = extensionManager.getActiveDataSource()[0];
   const dicomWebClient = dataSource.retrieve.getWadoDicomWebClient?.();
   const omittedSeries = dicomWebClient?.getOmittedSeries?.() || [];
@@ -94,6 +95,20 @@ export function createStudyBrowserTabs(
       (displaySets.some(ds => ds.StudyInstanceUID === study.studyInstanceUid) ||
         omittedSeries.some(os => os.studyInstanceUID === study.studyInstanceUid))
     ) {
+      const hasHandledInvalidSeriesFiltering =
+        GoogleSheetsService.getHasHandledInvalidSeriesFiltering();
+
+      if (!hasHandledInvalidSeriesFiltering) {
+        uiNotificationService.show({
+          title: 'Series filter',
+          message: `Each of the series in filter: ${seriesUIdsToFilter.toString()} are not part of the current study. The entire study is being displayed`,
+          type: 'error',
+          duration: 7000,
+        });
+
+        GoogleSheetsService.setHasHandledInvalidSeriesFiltering(true);
+      }
+
       sortedDisplaySets.push(
         ...displaySets.filter(ds => ds.StudyInstanceUID === study.studyInstanceUid)
       );

@@ -260,7 +260,7 @@ export const toolbarSections = {
     'ImageSliceSync',
     'ReferenceLines',
     'ImageOverlayViewer',
-    'StackScroll',
+    'SmartStackScroll',
     'invert',
     'Probe',
     'Cine',
