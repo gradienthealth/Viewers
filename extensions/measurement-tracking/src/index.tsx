@@ -1,4 +1,4 @@
-import getContextModule from './getContextModule';
+import getContextModule, { useTrackedMeasurements } from './getContextModule';
 import getPanelModule from './getPanelModule';
 import getViewportModule from './getViewportModule';
 import { id } from './id.js';
@@ -51,6 +51,16 @@ const measurementTrackingExtension = {
     });
   },
   getCustomizationModule,
+  getUtilityModule() {
+    return [
+      {
+        name: 'measurement-tracking',
+        exports: {
+          useTrackedMeasurements,
+        },
+      },
+    ];
+  },
 };
 
 export default measurementTrackingExtension;

@@ -171,6 +171,7 @@ function createTools({ utilityModule, commandsManager }) {
           },
         },
       },
+      { toolName: toolNames.PHIBoundingBox },
     ],
     disabled: [{ toolName: toolNames.ReferenceLines }, { toolName: toolNames.AdvancedMagnify }],
   };

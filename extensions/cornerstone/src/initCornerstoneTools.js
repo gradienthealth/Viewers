@@ -52,6 +52,7 @@ import * as polySeg from '@cornerstonejs/polymorphic-segmentation';
 import CalibrationLineTool from './tools/CalibrationLineTool';
 import ImageOverlayViewerTool from './tools/ImageOverlayViewerTool';
 import SmartStackScrollTool from './tools/SmartStackScrollTool';
+import PHIBoundingBoxTool from './tools/PHIBoundingBoxTool';
 
 export default function initCornerstoneTools(configuration = {}) {
   CrosshairsTool.isAnnotation = false;
@@ -119,6 +120,7 @@ export default function initCornerstoneTools(configuration = {}) {
   addTool(SplineContourSegmentationTool);
   addTool(LabelMapEditWithContourTool);
   addTool(SmartStackScrollTool);
+  addTool(PHIBoundingBoxTool);
   // Modify annotation tools to use dashed lines on SR
   const annotationStyle = {
     textBoxFontSize: '15px',
@@ -183,6 +185,7 @@ const toolNames = {
   SplineContourSegmentation: SplineContourSegmentationTool.toolName,
   LabelMapEditWithContourTool: LabelMapEditWithContourTool.toolName,
   SmartStackScroll: SmartStackScrollTool.toolName,
+  PHIBoundingBox: PHIBoundingBoxTool.toolName,
 };
 
 export { toolNames };
