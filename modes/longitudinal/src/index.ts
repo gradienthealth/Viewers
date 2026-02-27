@@ -155,13 +155,19 @@ export function onModeExit({ servicesManager }: withAppTypes) {
   GoogleSheetsService.destroy();
 }
 
+const rightPanels = [cornerstone.segmentation, tracked.measurements];
+const params = new URLSearchParams(window.location.search);
+if (params.get('sheetId') && params.get('sheetName')) {
+  rightPanels.unshift(gradienthealth.form);
+}
+
 export const longitudinalInstance = {
   ...basicLayout,
   id: ohif.layout,
   props: {
     ...basicLayout.props,
     leftPanels: [tracked.thumbnailList],
-    rightPanels: [gradienthealth.form, cornerstone.segmentation, tracked.measurements],
+    rightPanels: rightPanels,
     rightPanelClosed: false,
     viewports: [
       {

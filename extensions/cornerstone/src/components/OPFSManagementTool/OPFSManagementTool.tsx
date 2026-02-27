@@ -191,7 +191,10 @@ const columns: ColumnDef<Study>[] = [
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem
               className="cursor-pointer"
-              onClick={() => window.open(row.original['viewer-link'], '_blank')}
+              onClick={evt => {
+                evt.stopPropagation();
+                window.open(row.original['viewer-link'], '_blank');
+              }}
             >
               Launch Viewer
             </DropdownMenuItem>

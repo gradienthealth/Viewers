@@ -384,8 +384,12 @@ export default class HangingProtocolService extends PubSubService {
    * for example, a prior view hanging protocol will NOT show the active study
    * specifically, but will show another study instead.
    */
-  public setActiveStudyUID(activeStudyUID: string) {
-    if (!activeStudyUID || activeStudyUID === this.activeStudy?.StudyInstanceUID) {
+  public setActiveStudyUID(activeStudyUID: string, activeStudy: StudyMetadata = null) {
+    if (
+      !activeStudyUID ||
+      (activeStudyUID === this.activeStudy?.StudyInstanceUID &&
+        (!activeStudy || activeStudy === this.activeStudy))
+    ) {
       return;
     }
     this.activeStudy = this.studies.find(it => it.StudyInstanceUID === activeStudyUID);
@@ -423,7 +427,8 @@ export default class HangingProtocolService extends PubSubService {
     this.studies = [...(studies || this.studies)];
     this.displaySets = displaySets;
     this.setActiveStudyUID(
-      activeStudy?.StudyInstanceUID || (activeStudy || this.studies[0])?.StudyInstanceUID
+      activeStudy?.StudyInstanceUID || (activeStudy || this.studies[0])?.StudyInstanceUID,
+      activeStudy
     );
 
     this.protocolEngine = new ProtocolEngine(
