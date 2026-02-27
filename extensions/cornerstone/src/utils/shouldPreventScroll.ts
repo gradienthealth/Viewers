@@ -1,3 +1,5 @@
+import { Enums } from '@cornerstonejs/core';
+
 import { useCachedSlicesPerDisplaysetStore } from '../stores';
 
 export default function shouldPreventScroll(
@@ -8,13 +10,13 @@ export default function shouldPreventScroll(
   const { cachedState } = useCachedSlicesPerDisplaysetStore.getState();
   const { viewportGridService } = servicesManager.services;
   const { activeViewportId, viewports } = viewportGridService.getState();
-  const cachedSlices = cachedState[
-    viewports.get(activeViewportId).displaySetInstanceUIDs[0]
-  ] as number[];
+  const activeViewport = viewports.get(activeViewportId);
+  const cachedSlices = cachedState[activeViewport.displaySetInstanceUIDs[0]] as number[];
+  const isStackViewport = activeViewport.viewportOptions.viewportType === Enums.ViewportType.STACK;
 
   if (!cachedSlices) {
     return false;
   }
 
-  return !keyPressed && !cachedSlices.includes(imageIdIndex);
+  return isStackViewport && !keyPressed && !cachedSlices.includes(imageIdIndex);
 }

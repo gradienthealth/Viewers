@@ -25,12 +25,7 @@ function createTools({ utilityModule, commandsManager }) {
       },
       {
         toolName: toolNames.StackScroll,
-        bindings: [
-          { mouseButton: Enums.MouseBindings.Wheel },
-          { numTouchPoints: 3 },
-          { mouseButton: Enums.MouseBindings.Wheel, modifierKey: Enums.KeyboardBindings.Ctrl },
-        ],
-        configuration: { shouldPreventScroll },
+        bindings: [{ mouseButton: Enums.MouseBindings.Wheel }, { numTouchPoints: 3 }],
       },
     ],
     passive: [
@@ -135,14 +130,7 @@ function createTools({ utilityModule, commandsManager }) {
       { toolName: toolNames.CircleScissors },
       { toolName: toolNames.RectangleScissors },
       { toolName: toolNames.SphereScissors },
-      {
-        toolName: toolNames.SmartStackScroll,
-        bindings: [
-          { mouseButton: Enums.MouseBindings.Primary },
-          { mouseButton: Enums.MouseBindings.Primary, modifierKey: Enums.KeyboardBindings.Ctrl },
-        ],
-        configuration: { shouldPreventScroll },
-      },
+      { toolName: toolNames.StackScroll },
       { toolName: toolNames.Magnify },
       { toolName: toolNames.WindowLevelRegion },
 
@@ -196,7 +184,35 @@ function initDefaultToolGroup(extensionManager, toolGroupService, commandsManage
   const utilityModule = extensionManager.getModuleEntry(
     '@ohif/extension-cornerstone.utilityModule.tools'
   );
+  const { toolNames, Enums, shouldPreventScroll } = utilityModule.exports;
   const tools = createTools({ commandsManager, utilityModule });
+
+  // Replace the StackScrollTool with SmartStackScrollTool
+  const activeIndex = tools.active.find(t => t.toolName === toolNames.StackScroll);
+  if (activeIndex > -1) {
+    tools.active.splice(activeIndex, 1, {
+      toolName: toolNames.SmartStackScroll,
+      bindings: [
+        { mouseButton: Enums.MouseBindings.Wheel },
+        { numTouchPoints: 3 },
+        { mouseButton: Enums.MouseBindings.Wheel, modifierKey: Enums.KeyboardBindings.Ctrl },
+      ],
+      configuration: { shouldPreventScroll },
+    });
+  }
+
+  const passiveIndex = tools.passive.find(t => t.toolName === toolNames.StackScroll);
+  if (passiveIndex > -1) {
+    tools.passive.splice(passiveIndex, 1, {
+      toolName: toolNames.SmartStackScroll,
+      bindings: [
+        { mouseButton: Enums.MouseBindings.Primary },
+        { mouseButton: Enums.MouseBindings.Primary, modifierKey: Enums.KeyboardBindings.Ctrl },
+      ],
+      configuration: { shouldPreventScroll },
+    });
+  }
+
   toolGroupService.createToolGroupAndAddTools(toolGroupId, tools);
 }
 
