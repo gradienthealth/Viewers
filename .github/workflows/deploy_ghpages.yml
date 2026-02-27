@@ -3,7 +3,7 @@ name: Deploy viewer to github pages
 on:
   pull_request:
     types: [closed]
-    branches: [gradienthealth/nightly]
+    branches: [nightly]
 
 jobs:
   build-and-deploy:
@@ -23,7 +23,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: gradienthealth/cornerstone3D-beta
-          ref: gradienthealth/nightly
+          ref: nightly
           path: ./cornerstone3D
 
       - name: Build cornerstone3D
@@ -36,7 +36,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: gradienthealth/GradientExtensionsAndModes
-          ref: gradienthealth/nightly
+          ref: nightly
           path: ./GradientExtensionsAndModes
 
       - name: Checkout Viewers
