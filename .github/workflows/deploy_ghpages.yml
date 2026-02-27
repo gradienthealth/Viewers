@@ -3,7 +3,7 @@ name: Deploy viewer to github pages
 on:
   pull_request:
     types: [closed]
-    branches: [gradienthealth/studies-downloader-route]
+    branches: [gradienthealth/nightly]
 
 jobs:
   build-and-deploy:
@@ -23,7 +23,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: gradienthealth/cornerstone3D-beta
-          ref: gradienthealth/rebase-viewer-to-v3.10.1
+          ref: gradienthealth/nightly
           path: ./cornerstone3D
 
       - name: Build cornerstone3D
@@ -36,17 +36,8 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: gradienthealth/GradientExtensionsAndModes
-          ref: gradienthealth/rebase-viewer-to-v3.10.1
+          ref: gradienthealth/nightly
           path: ./GradientExtensionsAndModes
-
-      #- name: Build GradientExtensionsAndModes
-      #  run: |
-      #   cd ./GradientExtensionsAndModes/extensions/ohif-gradienthealth-extension
-      #   yarn install
-      #   yarn build:package
-      #   cd ./modes/cohort
-      #   yarn install
-      #   yarn build:package
 
       - name: Checkout Viewers
         uses: actions/checkout@v3
@@ -83,7 +74,6 @@ jobs:
           yarn link @cornerstonejs/tools
           yarn install
           yarn run cli link-extension ../GradientExtensionsAndModes/extensions/ohif-gradienthealth-extension
-          yarn run cli link-mode ../GradientExtensionsAndModes/modes/breast-density-mode
           yarn run build:gradient
 
       - name: Checkout gh page

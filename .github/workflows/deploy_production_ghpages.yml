@@ -74,7 +74,6 @@ jobs:
           yarn link @cornerstonejs/tools
           yarn install
           yarn run cli link-extension ../GradientExtensionsAndModes/extensions/ohif-gradienthealth-extension
-          yarn run cli link-mode ../GradientExtensionsAndModes/modes/breast-density-mode
           yarn run build:gradient:production
 
       - name: Checkout gh page
