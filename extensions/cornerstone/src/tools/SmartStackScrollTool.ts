@@ -2,6 +2,8 @@ import { getEnabledElement, getEnabledElementByIds } from '@cornerstonejs/core';
 import { StackScrollTool, Types } from '@cornerstonejs/tools';
 
 class SmartStackScrollTool extends StackScrollTool {
+  static toolName = 'SmartStackScroll';
+
   parentDragCallback: (evt: Types.EventTypes.InteractionEventType) => void;
   parentMouseWheelCallback: (evt: Types.EventTypes.MouseWheelEventType) => void;
 
@@ -45,5 +47,4 @@ class SmartStackScrollTool extends StackScrollTool {
   }
 }
 
-SmartStackScrollTool.toolName = 'SmartStackScroll';
 export default SmartStackScrollTool;

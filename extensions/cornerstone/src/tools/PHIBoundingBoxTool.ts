@@ -1,6 +1,8 @@
 import { RectangleROITool } from '@cornerstonejs/tools';
 
 class PHIBoundingBoxTool extends RectangleROITool {
+  static toolName = 'PHIBoundingBox';
+
   constructor(
     toolProps = {},
     defaultToolProps = {
@@ -11,5 +13,4 @@ class PHIBoundingBoxTool extends RectangleROITool {
   }
 }
 
-PHIBoundingBoxTool.toolName = 'PHIBoundingBox';
 export default PHIBoundingBoxTool;
