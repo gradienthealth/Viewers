@@ -225,6 +225,7 @@ const commandsModule = ({
       // If DisplaySet of the segmentation exists, then over write it.
       const displaySet = displaySetService.getDisplaySetByUID(segmentationId);
       const defaultDataSource = dataSource ?? extensionManager.getActiveDataSource()[0];
+      const shouldOverWrite = !!displaySet?.StudyInstanceUID && !!displaySet.SeriesInstanceUID;
 
       let reportName: string,
         selectedDataSource: string,
@@ -263,11 +264,11 @@ const commandsModule = ({
               SeriesNumber: series ? undefined : 1 + priorSeriesNumber,
               predecessorImageId: series,
               // Use Series and SOP instancesUIDs if displaySet of the segmentation already exists.
-              ...(displaySet && {
+              ...(shouldOverWrite && {
                 SeriesInstanceUID: displaySet.SeriesInstanceUID,
-                SOPInstanceUID: displaySet.instances[0].SOPInstanceUID,
+                SOPInstanceUID: displaySet.instances?.[0].SOPInstanceUID,
                 SeriesNumber: displaySet.SeriesNumber,
-                Manufacturer: displaySet.instances[0].Manufacturer,
+                Manufacturer: displaySet.instances?.[0].Manufacturer,
               }),
             },
           };
