@@ -166,6 +166,22 @@ const measurementServiceMappingsFactory = (
         },
       ],
     },
+    PHIBoundingBox: {
+      toAnnotation: RectangleROI.toAnnotation,
+      toMeasurement: csToolsAnnotation =>
+        RectangleROI.toMeasurement(
+          csToolsAnnotation,
+          displaySetService,
+          cornerstoneViewportService,
+          _getValueTypeFromToolType,
+          customizationService
+        ),
+      matchingCriteria: [
+        {
+          valueType: MeasurementService.VALUE_TYPES.POLYLINE,
+        },
+      ],
+    },
     PlanarFreehandROI: {
       toAnnotation: PlanarFreehandROI.toAnnotation,
       toMeasurement: csToolsAnnotation =>

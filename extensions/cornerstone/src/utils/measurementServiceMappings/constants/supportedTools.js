@@ -8,6 +8,7 @@ const supportedTools = [
   'CobbAngle',
   'Probe',
   'RectangleROI',
+  'PHIBoundingBox',
   'PlanarFreehandROI',
   'SplineROI',
   'LivewireContour',

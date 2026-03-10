@@ -275,6 +275,8 @@ export const toolbarSections = {
     'SegmentLabelTool',
     'OPFSTool',
   ],
+
+  PHIBoundingBox: ['PHIBoundingBox'],
 };
 
 export const basicLayout = {
