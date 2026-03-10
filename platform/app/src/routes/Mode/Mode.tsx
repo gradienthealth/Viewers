@@ -156,6 +156,16 @@ export default function ModeRoute({
         // layoutProps contains all props but leftPanels and rightPanels
         layoutData.props = layoutProps;
 
+        // Allow URL params to override panel closed state
+        const urlLeftPanelClosed = lowerCaseSearchParams.get('leftpanelclosed');
+        const urlRightPanelClosed = lowerCaseSearchParams.get('rightpanelclosed');
+        if (urlLeftPanelClosed !== null) {
+          layoutData.props.leftPanelClosed = urlLeftPanelClosed === 'true';
+        }
+        if (urlRightPanelClosed !== null) {
+          layoutData.props.rightPanelClosed = urlRightPanelClosed === 'true';
+        }
+
         layoutTemplateData.current = layoutData;
         setRefresh(!refresh);
       }
