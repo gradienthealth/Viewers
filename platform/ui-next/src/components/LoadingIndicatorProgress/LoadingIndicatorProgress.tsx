@@ -17,7 +17,12 @@ function LoadingIndicatorProgress({ className, textBlock, progress }) {
         className
       )}
     >
-      <Icons.GradientHealthLogo className="h-12 w-12 text-white" />
+      <Icons.GradientHealthLogo
+        viewBox="2470 0 733 191"
+        width="191"
+        height="40"
+        stroke="white"
+      />
       <div className="w-48">
         <ProgressLoadingBar progress={progress} />
       </div>
