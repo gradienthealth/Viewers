@@ -654,10 +654,10 @@ const commandsModule = ({
       const deidSeriesUIDs = params.getAll('SeriesInstanceUIDs');
 
       const studyDisplaySets = displaySetService.getDisplaySetsBy(ds =>
-        deidStudyUIDs.includes(ds.instance.DeidStudyInstanceUID)
+        deidStudyUIDs.includes(ds.instance?.DeidStudyInstanceUID)
       );
       const displaySets = studyDisplaySets.filter(
-        ds => !deidSeriesUIDs.length || deidSeriesUIDs.includes(ds.instance.DeidSeriesInstanceUID)
+        ds => !deidSeriesUIDs.length || deidSeriesUIDs.includes(ds.instance?.DeidSeriesInstanceUID)
       );
 
       // If the series filtered displaysets are empty, then use study filtered displaysets.

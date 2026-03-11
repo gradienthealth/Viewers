@@ -25,7 +25,8 @@ async function createReportAsync({
       .getDisplaySetsForSeries(SeriesInstanceUID)
       ?.find(ds => ds.instances.some(instance => instance.SOPInstanceUID === SOPInstanceUID));
 
-    const shouldOverWrite = displaySet && displaySet.Modality === 'SEG';
+    const shouldOverWrite =
+      displaySet?.StudyInstanceUID && displaySet.SeriesInstanceUID && displaySet.Modality === 'SEG';
 
     if (!naturalizedReport) {
       return;
