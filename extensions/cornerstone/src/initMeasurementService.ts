@@ -33,6 +33,7 @@ const initMeasurementService = (
     Angle,
     CobbAngle,
     RectangleROI,
+    PHIBoundingBox,
     PlanarFreehandROI,
     SplineROI,
     LivewireContour,
@@ -126,6 +127,14 @@ const initMeasurementService = (
     RectangleROI.matchingCriteria,
     RectangleROI.toAnnotation,
     RectangleROI.toMeasurement
+  );
+
+  measurementService.addMapping(
+    csTools3DVer1MeasurementSource,
+    'PHIBoundingBox',
+    PHIBoundingBox.matchingCriteria,
+    PHIBoundingBox.toAnnotation,
+    PHIBoundingBox.toMeasurement
   );
 
   measurementService.addMapping(

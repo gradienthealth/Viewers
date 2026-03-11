@@ -1207,6 +1207,17 @@ export const toolbarButtons: Button[] = [
       commands: 'showOPFSManagementTool',
     },
   },
+  {
+    id: 'PHIBoundingBox',
+    uiType: 'ohif.toolButton',
+    props: {
+      icon: 'tool-rectangle',
+      label: i18n.t('Buttons:PHIBoundingBox'),
+      tooltip: i18n.t('Buttons:PHI BoundingBox'),
+      commands: setToolActiveToolbar,
+      evaluate: 'evaluate.cornerstoneTool',
+    },
+  },
 ];
 
 export default toolbarButtons;
