@@ -42,6 +42,10 @@ export type UseViewportDisplaySetsOptions = {
    * Whether to include potential background display sets
    */
   includePotentialBackground?: boolean;
+  /**
+   * A filter function to filter the displaysets at the start
+   */
+  displaySetFilterFn?: (displayset: AppTypes.DisplaySet) => boolean;
 };
 
 /**
@@ -111,14 +115,20 @@ export function useViewportDisplaySets(
     includePotentialOverlay = true,
     includePotentialForeground = true,
     includePotentialBackground = true,
+    displaySetFilterFn = null,
   } = options || {};
 
   // Get all available display sets (only if needed)
   const needsAllDisplaySets = includePotentialBackground;
-  const allDisplaySets = useMemo(
-    () => (needsAllDisplaySets ? displaySetService.getActiveDisplaySets() : []),
-    [displaySetService, needsAllDisplaySets]
-  );
+  const allDisplaySets = useMemo(() => {
+    if (!needsAllDisplaySets) {
+      return [];
+    }
+
+    const activeDisplaySets = displaySetService.getActiveDisplaySets();
+
+    return displaySetFilterFn ? activeDisplaySets.filter(displaySetFilterFn) : activeDisplaySets;
+  }, [displaySetService, needsAllDisplaySets, displaySetFilterFn]);
 
   // Get all available segmentations (only if needed)
   const needsSegmentations = includeOverlay;

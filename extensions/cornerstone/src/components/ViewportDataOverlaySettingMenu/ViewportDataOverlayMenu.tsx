@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next';
 import { useViewportDisplaySets } from '../../hooks/useViewportDisplaySets';
 import SelectItemWithModality from '../SelectItemWithModality';
 import { useViewportRendering } from '../../hooks';
+import { customDisplaySetFilterFn } from './utils';
 
 function ViewportDataOverlayMenu({ viewportId }: withAppTypes<{ viewportId: string }>) {
   const { commandsManager, servicesManager } = useSystem();
@@ -36,7 +37,7 @@ function ViewportDataOverlayMenu({ viewportId }: withAppTypes<{ viewportId: stri
     potentialBackgroundDisplaySets,
     overlayDisplaySets,
     foregroundDisplaySets,
-  } = useViewportDisplaySets(viewportId);
+  } = useViewportDisplaySets(viewportId, { displaySetFilterFn: customDisplaySetFilterFn });
 
   const [optimisticOverlayDisplaySets, setOptimisticOverlayDisplaySets] =
     useState(overlayDisplaySets);

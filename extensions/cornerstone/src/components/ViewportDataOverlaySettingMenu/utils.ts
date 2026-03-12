@@ -162,3 +162,17 @@ export function getAvailableSegmentations(segmentationService) {
     frameOfReferenceUID: segmentation.frameOfReferenceUID,
   }));
 }
+
+/**
+ * Filters the displaysets based on the Study and Series UIDs in the URL params
+ */
+export function customDisplaySetFilterFn(displaySet: AppTypes.DisplaySet) {
+  const params = new URLSearchParams(window.location.search);
+  const deidStudyUIDs = params.getAll('StudyInstanceUIDs');
+  const deidSeriesUIDs = params.getAll('SeriesInstanceUIDs');
+
+  const studyMatched = deidStudyUIDs.includes(displaySet.instance?.DeidStudyInstanceUID);
+  const seriesMatched = deidSeriesUIDs.includes(displaySet.instance?.DeidSeriesInstanceUID);
+
+  return studyMatched && (!deidSeriesUIDs.length || seriesMatched);
+}
