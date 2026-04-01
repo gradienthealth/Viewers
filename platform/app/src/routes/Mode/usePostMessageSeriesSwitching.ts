@@ -9,9 +9,13 @@ interface LoadSeriesMessage {
 }
 
 /** Response posted back to the parent frame after a series switch attempt. */
-type SeriesLoadResponse =
-  | { type: 'seriesLoaded'; seriesUID: string }
-  | { type: 'seriesLoadError'; seriesUID: string; error: SeriesLoadErrorCode; detail?: string };
+interface SeriesLoadResponse {
+  type: 'seriesLoadResponse';
+  success: boolean;
+  seriesUID: string;
+  error?: SeriesLoadErrorCode;
+  detail?: string;
+}
 
 type SeriesLoadErrorCode = 'METADATA_FETCH_FAILED' | 'SERIES_NOT_FOUND' | 'VIEWPORT_UPDATE_FAILED';
 
@@ -78,7 +82,8 @@ export function usePostMessageSeriesSwitching({
           });
         } catch (err) {
           reply({
-            type: 'seriesLoadError',
+            type: 'seriesLoadResponse',
+            success: false,
             seriesUID,
             error: 'METADATA_FETCH_FAILED',
             detail: err instanceof Error ? err.message : String(err),
@@ -90,7 +95,7 @@ export function usePostMessageSeriesSwitching({
       }
 
       if (!displaySets?.length) {
-        reply({ type: 'seriesLoadError', seriesUID, error: 'SERIES_NOT_FOUND' });
+        reply({ type: 'seriesLoadResponse', success: false, seriesUID, error: 'SERIES_NOT_FOUND' });
         return;
       }
 
@@ -116,7 +121,8 @@ export function usePostMessageSeriesSwitching({
         ]);
       } catch (err) {
         reply({
-          type: 'seriesLoadError',
+          type: 'seriesLoadResponse',
+          success: false,
           seriesUID,
           error: 'VIEWPORT_UPDATE_FAILED',
           detail: err instanceof Error ? err.message : String(err),
@@ -124,7 +130,7 @@ export function usePostMessageSeriesSwitching({
         return;
       }
 
-      reply({ type: 'seriesLoaded', seriesUID });
+      reply({ type: 'seriesLoadResponse', success: true, seriesUID });
     }
 
     window.addEventListener('message', handleMessage);
