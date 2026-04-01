@@ -13,6 +13,25 @@ import { updateAuthServiceAndCleanUrl } from './updateAuthServiceAndCleanUrl';
 
 const { getSplitParam } = utils;
 
+/** Message sent by a parent frame to switch the displayed series without a full SPA reload. */
+interface LoadSeriesMessage {
+  type: 'loadSeries';
+  studyUID: string;
+  seriesUID: string;
+  institution: string;
+}
+
+function isLoadSeriesMessage(data: unknown): data is LoadSeriesMessage {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    (data as LoadSeriesMessage).type === 'loadSeries' &&
+    typeof (data as LoadSeriesMessage).studyUID === 'string' &&
+    typeof (data as LoadSeriesMessage).seriesUID === 'string' &&
+    typeof (data as LoadSeriesMessage).institution === 'string'
+  );
+}
+
 export default function ModeRoute({
   mode,
   dataSourceName,
@@ -141,15 +160,11 @@ export default function ModeRoute({
     const { viewportGridService, cineService } = servicesManager.services;
 
     async function handleMessage(event: MessageEvent) {
-      const { data } = event;
-      if (data?.type !== 'loadSeries') {
+      if (!isLoadSeriesMessage(event.data)) {
         return;
       }
 
-      const { studyUID, seriesUID, institution } = data;
-      if (!studyUID || !seriesUID || !institution) {
-        return;
-      }
+      const { studyUID, seriesUID, institution } = event.data;
 
       // Check if we already have display sets for this series (cache hit).
       let displaySets = displaySetService.getDisplaySetsForSeries(seriesUID);
