@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useLocation } from 'react-router';
 import PropTypes from 'prop-types';
-import { DicomMetadataStore, utils } from '@ohif/core';
+import { utils } from '@ohif/core';
 import { ImageViewerProvider, DragAndDropProvider } from '@ohif/ui-next';
 import { useSearchParams } from '../../hooks';
 import { useAppConfig } from '@state';
@@ -10,27 +10,9 @@ import Compose from './Compose';
 import loadModules from '../../pluginImports';
 import { defaultRouteInit } from './defaultRouteInit';
 import { updateAuthServiceAndCleanUrl } from './updateAuthServiceAndCleanUrl';
+import { usePostMessageSeriesSwitching } from './usePostMessageSeriesSwitching';
 
 const { getSplitParam } = utils;
-
-/** Message sent by a parent frame to switch the displayed series without a full SPA reload. */
-interface LoadSeriesMessage {
-  type: 'loadSeries';
-  studyUID: string;
-  seriesUID: string;
-  institution: string;
-}
-
-function isLoadSeriesMessage(data: unknown): data is LoadSeriesMessage {
-  return (
-    typeof data === 'object' &&
-    data !== null &&
-    (data as LoadSeriesMessage).type === 'loadSeries' &&
-    typeof (data as LoadSeriesMessage).studyUID === 'string' &&
-    typeof (data as LoadSeriesMessage).seriesUID === 'string' &&
-    typeof (data as LoadSeriesMessage).institution === 'string'
-  );
-}
 
 export default function ModeRoute({
   mode,
@@ -149,71 +131,12 @@ export default function ModeRoute({
     };
   }, [location, ExtensionDependenciesLoaded]);
 
-  // postMessage bridge: allows a parent frame to switch the displayed series
-  // without a full SPA reload. Expects messages of the form:
-  //   { type: 'loadSeries', studyUID, seriesUID, institution }
-  useEffect(() => {
-    if (!ExtensionDependenciesLoaded) {
-      return;
-    }
-
-    const { viewportGridService, cineService } = servicesManager.services;
-
-    async function handleMessage(event: MessageEvent) {
-      if (!isLoadSeriesMessage(event.data)) {
-        return;
-      }
-
-      const { studyUID, seriesUID, institution } = event.data;
-
-      // Check if we already have display sets for this series (cache hit).
-      let displaySets = displaySetService.getDisplaySetsForSeries(seriesUID);
-
-      if (!displaySets?.length) {
-        // Fetch metadata for the study from the correct GCS bucket.
-        const bucketName = `${institution}-pacs-deid`;
-        const bucketPrefix = 'v1.0/dicomweb';
-        await dataSource.retrieve.series.metadata({
-          StudyInstanceUID: studyUID,
-          returnPromises: false,
-          bucketDetails: {
-            buckets: [bucketName],
-            bucketPrefix,
-          },
-        });
-
-        displaySets = displaySetService.getDisplaySetsForSeries(seriesUID);
-      }
-
-      if (!displaySets?.length) {
-        console.warn(`[postMessage] No display sets found for series ${seriesUID}`);
-        return;
-      }
-
-      const { activeViewportId } = viewportGridService.getState();
-
-      // Stop cine before swapping to avoid inconsistent state.
-      const cineState = cineService.getState();
-      const currentCine = cineState.cines?.[activeViewportId];
-      if (currentCine?.isPlaying) {
-        cineService.setCine({
-          id: activeViewportId,
-          frameRate: currentCine.frameRate ?? cineState.default?.frameRate ?? 24,
-          isPlaying: false,
-        });
-      }
-
-      viewportGridService.setDisplaySetsForViewports([
-        {
-          viewportId: activeViewportId,
-          displaySetInstanceUIDs: [displaySets[0].displaySetInstanceUID],
-        },
-      ]);
-    }
-
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, [ExtensionDependenciesLoaded, servicesManager, displaySetService, dataSource]);
+  usePostMessageSeriesSwitching({
+    enabled: ExtensionDependenciesLoaded,
+    servicesManager,
+    displaySetService,
+    dataSource,
+  });
 
   useEffect(() => {
     if (!ExtensionDependenciesLoaded || !studyInstanceUIDs?.length) {
