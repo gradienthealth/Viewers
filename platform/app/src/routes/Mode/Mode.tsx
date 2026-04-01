@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useLocation } from 'react-router';
 import PropTypes from 'prop-types';
-import { utils } from '@ohif/core';
+import { DicomMetadataStore, utils } from '@ohif/core';
 import { ImageViewerProvider, DragAndDropProvider } from '@ohif/ui-next';
 import { useSearchParams } from '../../hooks';
 import { useAppConfig } from '@state';
@@ -129,6 +129,76 @@ export default function ModeRoute({
       layoutTemplateData.current = null;
     };
   }, [location, ExtensionDependenciesLoaded]);
+
+  // postMessage bridge: allows a parent frame to switch the displayed series
+  // without a full SPA reload. Expects messages of the form:
+  //   { type: 'loadSeries', studyUID, seriesUID, institution }
+  useEffect(() => {
+    if (!ExtensionDependenciesLoaded) {
+      return;
+    }
+
+    const { viewportGridService, cineService } = servicesManager.services;
+
+    async function handleMessage(event: MessageEvent) {
+      const { data } = event;
+      if (data?.type !== 'loadSeries') {
+        return;
+      }
+
+      const { studyUID, seriesUID, institution } = data;
+      if (!studyUID || !seriesUID || !institution) {
+        return;
+      }
+
+      // Check if we already have display sets for this series (cache hit).
+      let displaySets = displaySetService.getDisplaySetsForSeries(seriesUID);
+
+      if (!displaySets?.length) {
+        // Fetch metadata for the study from the correct GCS bucket.
+        const bucketName = `${institution}-pacs-deid`;
+        const bucketPrefix = 'v1.0/dicomweb';
+        await dataSource.retrieve.series.metadata({
+          StudyInstanceUID: studyUID,
+          returnPromises: false,
+          bucketDetails: {
+            buckets: [bucketName],
+            bucketPrefix,
+          },
+        });
+
+        displaySets = displaySetService.getDisplaySetsForSeries(seriesUID);
+      }
+
+      if (!displaySets?.length) {
+        console.warn(`[postMessage] No display sets found for series ${seriesUID}`);
+        return;
+      }
+
+      const { activeViewportId } = viewportGridService.getState();
+
+      // Stop cine before swapping to avoid inconsistent state.
+      const cineState = cineService.getState();
+      const currentCine = cineState.cines?.[activeViewportId];
+      if (currentCine?.isPlaying) {
+        cineService.setCine({
+          id: activeViewportId,
+          frameRate: currentCine.frameRate ?? cineState.default?.frameRate ?? 24,
+          isPlaying: false,
+        });
+      }
+
+      viewportGridService.setDisplaySetsForViewports([
+        {
+          viewportId: activeViewportId,
+          displaySetInstanceUIDs: [displaySets[0].displaySetInstanceUID],
+        },
+      ]);
+    }
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [ExtensionDependenciesLoaded, servicesManager, displaySetService, dataSource]);
 
   useEffect(() => {
     if (!ExtensionDependenciesLoaded || !studyInstanceUIDs?.length) {
