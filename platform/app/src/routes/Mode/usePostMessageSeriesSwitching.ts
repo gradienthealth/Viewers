@@ -8,6 +8,13 @@ interface LoadSeriesMessage {
   institution: string;
 }
 
+/** Response posted back to the parent frame after a series switch attempt. */
+type SeriesLoadResponse =
+  | { type: 'seriesLoaded'; seriesUID: string }
+  | { type: 'seriesLoadError'; seriesUID: string; error: SeriesLoadErrorCode; detail?: string };
+
+type SeriesLoadErrorCode = 'METADATA_FETCH_FAILED' | 'SERIES_NOT_FOUND' | 'VIEWPORT_UPDATE_FAILED';
+
 function isLoadSeriesMessage(data: unknown): data is LoadSeriesMessage {
   return (
     typeof data === 'object' &&
@@ -44,6 +51,9 @@ export function usePostMessageSeriesSwitching({
     const { viewportGridService, cineService } = servicesManager.services;
 
     async function handleMessage(event: MessageEvent) {
+      function reply(response: SeriesLoadResponse) {
+        event.source?.postMessage(response, { targetOrigin: event.origin });
+      }
       if (!isLoadSeriesMessage(event.data)) {
         return;
       }
@@ -55,44 +65,66 @@ export function usePostMessageSeriesSwitching({
 
       if (!displaySets?.length) {
         // Fetch metadata for the study from the correct GCS bucket.
-        const bucketName = `${institution}-pacs-deid`;
-        const bucketPrefix = 'v1.0/dicomweb';
-        await dataSource.retrieve.series.metadata({
-          StudyInstanceUID: studyUID,
-          returnPromises: false,
-          bucketDetails: {
-            buckets: [bucketName],
-            bucketPrefix,
-          },
-        });
+        try {
+          const bucketName = `${institution}-pacs-deid`;
+          const bucketPrefix = 'v1.0/dicomweb';
+          await dataSource.retrieve.series.metadata({
+            StudyInstanceUID: studyUID,
+            returnPromises: false,
+            bucketDetails: {
+              buckets: [bucketName],
+              bucketPrefix,
+            },
+          });
+        } catch (err) {
+          reply({
+            type: 'seriesLoadError',
+            seriesUID,
+            error: 'METADATA_FETCH_FAILED',
+            detail: err instanceof Error ? err.message : String(err),
+          });
+          return;
+        }
 
         displaySets = displaySetService.getDisplaySetsForSeries(seriesUID);
       }
 
       if (!displaySets?.length) {
-        console.warn(`[postMessage] No display sets found for series ${seriesUID}`);
+        reply({ type: 'seriesLoadError', seriesUID, error: 'SERIES_NOT_FOUND' });
         return;
       }
 
-      const { activeViewportId } = viewportGridService.getState();
+      try {
+        const { activeViewportId } = viewportGridService.getState();
 
-      // Stop cine before swapping to avoid inconsistent state.
-      const cineState = cineService.getState();
-      const currentCine = cineState.cines?.[activeViewportId];
-      if (currentCine?.isPlaying) {
-        cineService.setCine({
-          id: activeViewportId,
-          frameRate: currentCine.frameRate ?? cineState.default?.frameRate ?? 24,
-          isPlaying: false,
+        // Stop cine before swapping to avoid inconsistent state.
+        const cineState = cineService.getState();
+        const currentCine = cineState.cines?.[activeViewportId];
+        if (currentCine?.isPlaying) {
+          cineService.setCine({
+            id: activeViewportId,
+            frameRate: currentCine.frameRate ?? cineState.default?.frameRate ?? 24,
+            isPlaying: false,
+          });
+        }
+
+        viewportGridService.setDisplaySetsForViewports([
+          {
+            viewportId: activeViewportId,
+            displaySetInstanceUIDs: [displaySets[0].displaySetInstanceUID],
+          },
+        ]);
+      } catch (err) {
+        reply({
+          type: 'seriesLoadError',
+          seriesUID,
+          error: 'VIEWPORT_UPDATE_FAILED',
+          detail: err instanceof Error ? err.message : String(err),
         });
+        return;
       }
 
-      viewportGridService.setDisplaySetsForViewports([
-        {
-          viewportId: activeViewportId,
-          displaySetInstanceUIDs: [displaySets[0].displaySetInstanceUID],
-        },
-      ]);
+      reply({ type: 'seriesLoaded', seriesUID });
     }
 
     window.addEventListener('message', handleMessage);
