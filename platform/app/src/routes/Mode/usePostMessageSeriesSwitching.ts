@@ -1,4 +1,11 @@
 import { useEffect } from 'react';
+import { EVENTS, getEnabledElement } from '@cornerstonejs/core';
+
+/** Message posted to the parent frame when the viewer has rendered a series' first image. */
+interface SeriesReadyMessage {
+  type: 'seriesReady';
+  seriesUID: string;
+}
 
 /** Message sent by a parent frame to switch the displayed series without a full SPA reload. */
 interface LoadSeriesMessage {
@@ -145,4 +152,43 @@ export function usePostMessageSeriesSwitching({
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, [enabled, servicesManager, displaySetService, dataSource]);
+
+  // Post seriesReady to parent when the viewer renders its first image for any series.
+  // Fires on both initial iframe.src loads and postMessage-based series switches.
+  useEffect(() => {
+    if (!enabled || !window.parent || window.parent === window) return;
+
+    const { viewportGridService } = servicesManager.services;
+    const notifiedSeries = new Set<string>();
+
+    function handleImageRendered(evt: Event) {
+      const detail = (evt as CustomEvent).detail;
+      if (detail?.viewportStatus === 'preRender') return;
+
+      const element = detail?.element;
+      if (!element) return;
+
+      const enabledElement = getEnabledElement(element);
+      if (!enabledElement) return;
+
+      // Resolve series UID through the canonical OHIF path:
+      // viewport element → viewportId → displaySetInstanceUIDs → display set → SeriesInstanceUID
+      const viewportState = viewportGridService.getState().viewports.get(enabledElement.viewportId);
+      const displaySetUID = viewportState?.displaySetInstanceUIDs?.[0];
+      if (!displaySetUID) return;
+
+      const displaySet = displaySetService.getDisplaySetByUID(displaySetUID);
+      const seriesUID = displaySet?.SeriesInstanceUID;
+      if (!seriesUID || notifiedSeries.has(seriesUID)) return;
+
+      notifiedSeries.add(seriesUID);
+      const message: SeriesReadyMessage = { type: 'seriesReady', seriesUID };
+      window.parent.postMessage(message, '*');
+    }
+
+    // IMAGE_RENDERED fires on viewport DOM elements; capture at document level
+    // to avoid tracking individual element lifecycles.
+    document.addEventListener(EVENTS.IMAGE_RENDERED, handleImageRendered, true);
+    return () => document.removeEventListener(EVENTS.IMAGE_RENDERED, handleImageRendered, true);
+  }, [enabled, servicesManager, displaySetService]);
 }
