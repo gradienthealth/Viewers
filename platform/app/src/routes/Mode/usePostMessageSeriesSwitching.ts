@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { EVENTS, getEnabledElement } from '@cornerstonejs/core';
+import { EVENTS } from '@cornerstonejs/core';
 
 /** Message posted to the parent frame when the viewer has rendered a series' first image. */
 interface SeriesReadyMessage {
@@ -153,42 +153,43 @@ export function usePostMessageSeriesSwitching({
     return () => window.removeEventListener('message', handleMessage);
   }, [enabled, servicesManager, displaySetService, dataSource]);
 
-  // Post seriesReady to parent when the viewer renders its first image for any series.
+  // Post seriesReady to parent when the viewer renders its first image.
   // Fires on both initial iframe.src loads and postMessage-based series switches.
   useEffect(() => {
     if (!enabled || !window.parent || window.parent === window) return;
 
-    const { viewportGridService } = servicesManager.services;
+    // Track the current series UID from the iframe URL (initial load) and update
+    // it when a loadSeries postMessage arrives. This avoids a race condition where
+    // IMAGE_RENDERED fires before OHIF's viewportGridService has populated
+    // displaySetInstanceUIDs, which caused the previous approach (resolving via
+    // viewportGridService → displaySetService) to silently fail.
+    let currentSeriesUID = new URLSearchParams(window.location.search).get('SeriesInstanceUIDs');
     const notifiedSeries = new Set<string>();
 
     function handleImageRendered(evt: Event) {
       const detail = (evt as CustomEvent).detail;
       if (detail?.viewportStatus === 'preRender') return;
+      if (!currentSeriesUID || notifiedSeries.has(currentSeriesUID)) return;
 
-      const element = detail?.element;
-      if (!element) return;
-
-      const enabledElement = getEnabledElement(element);
-      if (!enabledElement) return;
-
-      // Resolve series UID through the canonical OHIF path:
-      // viewport element → viewportId → displaySetInstanceUIDs → display set → SeriesInstanceUID
-      const viewportState = viewportGridService.getState().viewports.get(enabledElement.viewportId);
-      const displaySetUID = viewportState?.displaySetInstanceUIDs?.[0];
-      if (!displaySetUID) return;
-
-      const displaySet = displaySetService.getDisplaySetByUID(displaySetUID);
-      const seriesUID = displaySet?.SeriesInstanceUID;
-      if (!seriesUID || notifiedSeries.has(seriesUID)) return;
-
-      notifiedSeries.add(seriesUID);
-      const message: SeriesReadyMessage = { type: 'seriesReady', seriesUID };
+      notifiedSeries.add(currentSeriesUID);
+      const message: SeriesReadyMessage = { type: 'seriesReady', seriesUID: currentSeriesUID };
       window.parent.postMessage(message, '*');
+    }
+
+    function handleMessage(event: MessageEvent) {
+      if (isLoadSeriesMessage(event.data)) {
+        currentSeriesUID = event.data.seriesUID;
+        notifiedSeries.clear();
+      }
     }
 
     // IMAGE_RENDERED fires on viewport DOM elements; capture at document level
     // to avoid tracking individual element lifecycles.
     document.addEventListener(EVENTS.IMAGE_RENDERED, handleImageRendered, true);
-    return () => document.removeEventListener(EVENTS.IMAGE_RENDERED, handleImageRendered, true);
-  }, [enabled, servicesManager, displaySetService]);
+    window.addEventListener('message', handleMessage);
+    return () => {
+      document.removeEventListener(EVENTS.IMAGE_RENDERED, handleImageRendered, true);
+      window.removeEventListener('message', handleMessage);
+    };
+  }, [enabled]);
 }
