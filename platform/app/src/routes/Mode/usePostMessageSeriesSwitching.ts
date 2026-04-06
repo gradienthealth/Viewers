@@ -6,6 +6,7 @@ interface LoadSeriesMessage {
   studyUID: string;
   seriesUID: string;
   institution: string;
+  clearCache?: boolean;
 }
 
 /** Response posted back to the parent frame after a series switch attempt. */
@@ -58,11 +59,19 @@ export function usePostMessageSeriesSwitching({
       function reply(response: SeriesLoadResponse) {
         event.source?.postMessage(response, { targetOrigin: event.origin });
       }
+
       if (!isLoadSeriesMessage(event.data)) {
         return;
       }
 
-      const { studyUID, seriesUID, institution } = event.data;
+      const { studyUID, seriesUID, institution, clearCache = true } = event.data;
+
+      // Default true to avoid unbounded memory growth when the viewer is embedded
+      // via iframe and switched repeatedly via postMessage — without purging,
+      // Cornerstone retains decoded pixel data from every previously loaded series.
+      if (clearCache) {
+        (window as any).cornerstone?.cache?.purgeCache();
+      }
 
       // Check if we already have display sets for this series (cache hit).
       let displaySets = displaySetService.getDisplaySetsForSeries(seriesUID);
