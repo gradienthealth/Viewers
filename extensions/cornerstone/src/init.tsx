@@ -74,6 +74,7 @@ export default async function init({
     rendering: {
       ...cornerstone.getConfiguration().rendering,
       strictZSpacingForVolumeViewport: appConfig.strictZSpacingForVolumeViewport,
+      webGlContextCount: 1,
     },
   });
 
