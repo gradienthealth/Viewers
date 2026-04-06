@@ -167,8 +167,6 @@ export function usePostMessageSeriesSwitching({
     const notifiedSeries = new Set<string>();
 
     function handleImageRendered(evt: Event) {
-      const detail = (evt as CustomEvent).detail;
-      if (detail?.viewportStatus === 'preRender') return;
       if (!currentSeriesUID || notifiedSeries.has(currentSeriesUID)) return;
 
       notifiedSeries.add(currentSeriesUID);
