@@ -10,6 +10,7 @@ import Compose from './Compose';
 import loadModules from '../../pluginImports';
 import { defaultRouteInit } from './defaultRouteInit';
 import { updateAuthServiceAndCleanUrl } from './updateAuthServiceAndCleanUrl';
+import { usePostMessageSeriesSwitching } from './usePostMessageSeriesSwitching';
 
 const { getSplitParam } = utils;
 
@@ -129,6 +130,13 @@ export default function ModeRoute({
       layoutTemplateData.current = null;
     };
   }, [location, ExtensionDependenciesLoaded]);
+
+  usePostMessageSeriesSwitching({
+    enabled: ExtensionDependenciesLoaded,
+    servicesManager,
+    displaySetService,
+    dataSource,
+  });
 
   useEffect(() => {
     if (!ExtensionDependenciesLoaded || !studyInstanceUIDs?.length) {
