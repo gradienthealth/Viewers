@@ -91,9 +91,9 @@ jobs:
           mv /tmp/.git ./gradienthealth.github.io
           cd ./gradienthealth.github.io
           cp index.html 404.html
-          git config --global user.name "Adithyan-Dinesh-Trenser"
-          git config --global user.email "adithyan.dinesh@trenser.com"
-          git remote set-url origin https://Adithyan-Dinesh-Trenser:${{ secrets.GH_DEPLOY_TOKEN }}@github.com/gradienthealth/gradienthealth.github.io
+          git config --global user.name "${{ github.actor }}"
+          git config --global user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+          git remote set-url origin https://${{ github.actor }}:${{ secrets.GH_DEPLOY_TOKEN }}@github.com/gradienthealth/gradienthealth.github.io
           git add .
-          git commit -a -m "publishing viewer"
+          git commit -a -m "Deploying PR #${{ github.event.pull_request.number }} merged by ${{ github.actor }}"
           git push -u origin
