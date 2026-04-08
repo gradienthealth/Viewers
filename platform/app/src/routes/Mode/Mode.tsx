@@ -153,14 +153,23 @@ export default function ModeRoute({
       if (isMounted.current) {
         const { leftPanels = [], rightPanels = [], ...layoutProps } = layoutData.props;
 
+        // Allow URL params to disable panels entirely (prevents pop-in when
+        // embedding the viewer in an iframe with panels not needed)
+        const leftPanelEnabled = lowerCaseSearchParams.get('leftpanelenabled') !== 'false';
+        const rightPanelEnabled = lowerCaseSearchParams.get('rightpanelenabled') !== 'false';
+
         panelService.reset();
-        panelService.addPanels(panelService.PanelPosition.Left, leftPanels);
-        panelService.addPanels(panelService.PanelPosition.Right, rightPanels);
+        if (leftPanelEnabled) {
+          panelService.addPanels(panelService.PanelPosition.Left, leftPanels);
+        }
+        if (rightPanelEnabled) {
+          panelService.addPanels(panelService.PanelPosition.Right, rightPanels);
+        }
 
         // layoutProps contains all props but leftPanels and rightPanels
         layoutData.props = layoutProps;
 
-        // Allow URL params to override panel closed state
+        // Allow URL params to override panel closed state (only relevant if panels are enabled)
         const urlLeftPanelClosed = lowerCaseSearchParams.get('leftpanelclosed');
         const urlRightPanelClosed = lowerCaseSearchParams.get('rightpanelclosed');
         if (urlLeftPanelClosed !== null) {
