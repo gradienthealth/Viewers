@@ -858,6 +858,15 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
 
     return viewport.setStack(imageIds, initialImageIndexToUse).then(() => {
       viewport.setProperties({ ...properties });
+
+      // Auto-windowing: after the viewport is set up, check if the current VOI
+      // range actually overlaps with the real pixel data. If not (e.g. due to
+      // bogus RescaleIntercept from de-identification, or missing WW/WC metadata),
+      // recompute VOI from pixel data percentiles to prevent all-white/all-black images.
+      if (!properties.voiRange) {
+        this._fixStackVoiIfNeeded(viewport);
+      }
+
       this.setPresentations(viewport.id, presentations, viewportInfo);
 
       if (overlayProcessingResults?.length) {
@@ -878,6 +887,102 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
         viewport.setCamera({ flipHorizontal: true });
       }
     });
+  }
+
+  /**
+   * Checks whether a stack viewport's current VOI range overlaps with the
+   * actual pixel data range. If not (e.g. due to bogus RescaleIntercept from
+   * de-identification, or missing WW/WC), recomputes VOI from pixel data
+   * percentiles to prevent all-white or all-black rendering.
+   *
+   * Only applies to stack viewports — volume viewports handle bad metadata
+   * correctly via cornerstone's internal VOI computation.
+   */
+  private _fixStackVoiIfNeeded(viewport: Types.IStackViewport) {
+    try {
+      // 1. Get the pixel data from the loaded image. scalarData already has
+      //    the modality LUT (rescale slope/intercept) applied by cornerstone.
+      const imageData = viewport.getImageData();
+      if (!imageData?.scalarData) {
+        return;
+      }
+      const scalarData = imageData.scalarData as
+        | Float32Array
+        | Int16Array
+        | Uint16Array
+        | Uint8Array
+        | Int8Array;
+
+      if (scalarData.length === 0) {
+        return;
+      }
+
+      // 2. Compute the 0.5th/99.5th percentiles of the pixel data to get a
+      //    robust data range that excludes outliers.
+      const percentiles = this._computePercentiles(scalarData);
+      if (!percentiles) {
+        return;
+      }
+      const { pLow, pHigh } = percentiles;
+
+      // 3. Check if the viewport's current VOI range overlaps with the actual
+      //    pixel data. If it does, the image is rendering correctly — bail out.
+      const voiRange = viewport.getProperties()?.voiRange;
+      if (voiRange && pLow < voiRange.upper && pHigh > voiRange.lower) {
+        return;
+      }
+
+      // 4. No overlap (or no VOI set) — override with percentile-based window.
+      const windowWidth = Math.max(1, pHigh - pLow);
+      const windowCenter = (pHigh + pLow) / 2;
+      const { lower, upper } = csUtils.windowLevel.toLowHighRange(windowWidth, windowCenter);
+      viewport.setProperties({ voiRange: { lower, upper } });
+
+      // 5. Warn the user so they know the metadata is suspect.
+      const { uiNotificationService } = this.servicesManager.services;
+      uiNotificationService?.show({
+        title: 'Auto-Windowing Applied',
+        message:
+          'This image has invalid VOI or rescale metadata. Window/level was computed from pixel data.',
+        type: 'warning',
+        duration: Infinity,
+      });
+    } catch (e) {
+      console.warn('Auto VOI fix failed:', e);
+    }
+  }
+
+  /**
+   * Computes the 0.5th and 99.5th percentiles from a typed pixel data array.
+   * Samples up to 100k pixels for performance on large datasets.
+   */
+  private _computePercentiles(
+    scalarData: Float32Array | Int16Array | Uint16Array | Uint8Array | Int8Array
+  ): { pLow: number; pHigh: number } | null {
+    const length = scalarData.length;
+    if (length === 0) {
+      return null;
+    }
+
+    const maxSamples = 100_000;
+    let samples: number[];
+
+    if (length <= maxSamples) {
+      samples = Array.from(scalarData);
+    } else {
+      samples = new Array(maxSamples);
+      const step = length / maxSamples;
+      for (let i = 0; i < maxSamples; i++) {
+        samples[i] = scalarData[Math.floor(i * step)];
+      }
+    }
+
+    samples.sort((a, b) => a - b);
+
+    return {
+      pLow: samples[Math.floor(samples.length * 0.005)],
+      pHigh: samples[Math.floor(samples.length * 0.995)],
+    };
   }
 
   private _getInitialImageIndexForViewport(
