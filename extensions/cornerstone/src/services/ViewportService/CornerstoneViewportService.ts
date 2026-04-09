@@ -12,6 +12,7 @@ import {
   cache,
   Enums as csEnums,
   BaseVolumeViewport,
+  metaData,
 } from '@cornerstonejs/core';
 
 import { utilities as csToolsUtils, Enums as csToolsEnums } from '@cornerstonejs/tools';
@@ -858,6 +859,21 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
 
     return viewport.setStack(imageIds, initialImageIndexToUse).then(() => {
       viewport.setProperties({ ...properties });
+
+      // If no VOI range was provided from config/URL, and the DICOM metadata also
+      // lacks WindowCenter/WindowWidth, compute VOI from pixel data percentiles.
+      // This prevents washed-out images (common with MR) where cornerstone's
+      // min/max fallback produces poor windowing due to outlier pixels.
+      if (!properties.voiRange) {
+        const currentImageId = viewport.getCurrentImageId();
+        const voiLutModule = currentImageId
+          ? metaData.get('voiLutModule', currentImageId)
+          : null;
+        if (!voiLutModule?.windowWidth?.length) {
+          this._applyPercentileAutoWindowing(viewport);
+        }
+      }
+
       this.setPresentations(viewport.id, presentations, viewportInfo);
 
       if (overlayProcessingResults?.length) {
@@ -878,6 +894,78 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
         viewport.setCamera({ flipHorizontal: true });
       }
     });
+  }
+
+  /**
+   * Computes a percentile-based VOI range from the pixel data and applies it
+   * to the viewport. Used as a fallback when DICOM WindowCenter/WindowWidth
+   * metadata is missing (common with MR images).
+   *
+   * Uses the 0.5th and 99.5th percentiles to exclude outlier pixels that would
+   * otherwise cause a washed-out display when using simple min/max.
+   */
+  private _applyPercentileAutoWindowing(
+    viewport: Types.IStackViewport | Types.IVolumeViewport,
+    volumeId?: string
+  ) {
+    try {
+      let scalarData: Float32Array | Int16Array | Uint16Array | Uint8Array | Int8Array;
+
+      if (viewport instanceof StackViewport) {
+        const imageData = viewport.getImageData();
+        if (!imageData?.scalarData) {
+          return;
+        }
+        scalarData = imageData.scalarData as
+          | Float32Array
+          | Int16Array
+          | Uint16Array
+          | Uint8Array
+          | Int8Array;
+      } else if (volumeId) {
+        const volume = cache.getVolume(volumeId);
+        if (!volume) {
+          return;
+        }
+        scalarData = volume.voxelManager?.getCompleteScalarDataArray?.();
+        if (!scalarData?.length) {
+          return;
+        }
+      } else {
+        return;
+      }
+
+      const length = scalarData.length;
+      if (length === 0) {
+        return;
+      }
+
+      // Sample up to 100k pixels for performance on large datasets
+      const maxSamples = 100_000;
+      let samples: number[];
+      if (length <= maxSamples) {
+        samples = Array.from(scalarData);
+      } else {
+        samples = new Array(maxSamples);
+        const step = length / maxSamples;
+        for (let i = 0; i < maxSamples; i++) {
+          samples[i] = scalarData[Math.floor(i * step)];
+        }
+      }
+
+      samples.sort((a, b) => a - b);
+
+      const pLow = samples[Math.floor(samples.length * 0.005)];
+      const pHigh = samples[Math.floor(samples.length * 0.995)];
+
+      const windowWidth = Math.max(1, pHigh - pLow);
+      const windowCenter = (pHigh + pLow) / 2;
+
+      const { lower, upper } = csUtils.windowLevel.toLowHighRange(windowWidth, windowCenter);
+      viewport.setProperties({ voiRange: { lower, upper } }, volumeId);
+    } catch (e) {
+      console.warn('Auto-windowing failed, falling back to default VOI:', e);
+    }
   }
 
   private _getInitialImageIndexForViewport(
@@ -1119,6 +1207,19 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
     volumesProperties.forEach(({ properties, volumeId }) => {
       timeoutViewportCallback(() => {
         viewport.setProperties(properties, volumeId);
+
+        // If no VOI from config and DICOM metadata lacks WW/WC, use percentile auto-windowing
+        if (!properties.voiRange) {
+          const volume = cache.getVolume(volumeId);
+          const sampleImageId = volume?.imageIds?.[0];
+          const voiLutModule = sampleImageId
+            ? metaData.get('voiLutModule', sampleImageId)
+            : null;
+          if (!voiLutModule?.windowWidth?.length) {
+            this._applyPercentileAutoWindowing(viewport, volumeId);
+          }
+        }
+
         viewport.render();
       });
     });
