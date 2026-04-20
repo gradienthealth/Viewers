@@ -36,7 +36,7 @@ function SmartImageScrollbar({
     const { isCineEnabled } = cineService.getState();
 
     if (isCineEnabled) {
-      // on image scrollbar change, stop the CINE if it is playing
+      // On image scrollbar change, stop the CINE if it is playing
       cineService.stopClip(element, { viewportId });
       cineService.setCine({ id: viewportId, frameRate: 24, isPlaying: false });
     }
