@@ -12,6 +12,7 @@ import {
   cache,
   Enums as csEnums,
   BaseVolumeViewport,
+  eventTarget,
 } from '@cornerstonejs/core';
 
 import { utilities as csToolsUtils, Enums as csToolsEnums } from '@cornerstonejs/tools';
@@ -953,6 +954,110 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
   }
 
   /**
+   * Volume-viewport counterpart to _fixStackVoiIfNeeded, scoped to dynamic
+   * (4D) volumes at the call site. Defers sampling until the volume finishes
+   * streaming, then overrides voiRange only if the current window has zero
+   * overlap with actual pixel data.
+   *
+   * Why this is only needed for dynamic volumes:
+   * - Cornerstone's setDefaultVolumeVOI tries metadata WW/WC first; if that
+   *   returns nothing it falls back to sampling the middle slice's pixel min/max.
+   * - For regular streaming volumes with bad metadata but missing WW/WC, the
+   *   pixel-min/max fallback self-heals — this is the series that shipped with
+   *   DQ-344's stack fix.
+   * - For dynamic volumes with WW/WC present but bogus (e.g. de-id'd with
+   *   RescaleIntercept=32768 and missing RescaleSlope), cornerstone uses the
+   *   (bad) metadata and never hits the fallback, and the GPU ends up with
+   *   signed-space pixels while voiRange sits in a mismatched unsigned space.
+   *   Result: fully black render.
+   */
+  private _fixDynamicVolumeVoiIfNeeded(viewport: Types.IVolumeViewport, volumeId: string) {
+    const volume = cache.getVolume(volumeId);
+    if (!volume?.imageIds?.length) {
+      return;
+    }
+
+    const loadedHandler = (evt: { detail?: { volumeId?: string } }) => {
+      if (evt?.detail?.volumeId !== volumeId) {
+        return;
+      }
+      eventTarget.removeEventListener(
+        csEnums.Events.IMAGE_VOLUME_LOADING_COMPLETED,
+        loadedHandler
+      );
+
+      try {
+        const [min, max] = this._sampleVolumePixelRange(volumeId);
+        if (!Number.isFinite(min) || !Number.isFinite(max) || min === max) {
+          return;
+        }
+
+        const voiRange = viewport.getProperties(volumeId)?.voiRange;
+        if (voiRange && min < voiRange.upper && max > voiRange.lower) {
+          return;
+        }
+
+        const windowWidth = Math.max(1, max - min);
+        const windowCenter = (max + min) / 2;
+        const { lower, upper } = csUtils.windowLevel.toLowHighRange(windowWidth, windowCenter);
+        viewport.setProperties({ voiRange: { lower, upper } }, volumeId);
+        viewport.render();
+
+        const { uiNotificationService } = this.servicesManager.services;
+        uiNotificationService?.show({
+          title: 'Auto-Windowing Applied',
+          message:
+            'This image has invalid VOI or rescale metadata. Window/level was computed from pixel data.',
+          type: 'warning',
+          duration: Infinity,
+        });
+      } catch (e) {
+        console.warn('Auto volume VOI fix failed:', e);
+      }
+    };
+
+    eventTarget.addEventListener(
+      csEnums.Events.IMAGE_VOLUME_LOADING_COMPLETED,
+      loadedHandler
+    );
+  }
+
+  /**
+   * Samples raw typed-array pixel values from ~8 cached images across the
+   * volume. Returns [min, max] in the same numeric space as the GPU texture
+   * — critical for voiRange-matching, since image.minPixelValue/maxPixelValue
+   * can report the unsigned interpretation while the actual typed array is
+   * Int16 (or vice versa).
+   */
+  private _sampleVolumePixelRange(volumeId: string): [number, number] {
+    const volume = cache.getVolume(volumeId);
+    const imageIds = volume?.imageIds || [];
+    const sampleCount = Math.min(imageIds.length, 8);
+    const stride = Math.max(1, Math.floor(imageIds.length / sampleCount));
+
+    let min = Infinity;
+    let max = -Infinity;
+    for (let i = 0; i < imageIds.length; i += stride) {
+      const img = cache.getImage?.(imageIds[i]);
+      const s = img?.voxelManager?.getScalarData?.();
+      if (!s?.length) {
+        continue;
+      }
+      const pixelStride = Math.max(1, Math.floor(s.length / 10_000));
+      for (let j = 0; j < s.length; j += pixelStride) {
+        const v = s[j];
+        if (v < min) {
+          min = v;
+        }
+        if (v > max) {
+          max = v;
+        }
+      }
+    }
+    return [min, max];
+  }
+
+  /**
    * Computes the 0.5th and 99.5th percentiles from a typed pixel data array.
    * Samples up to 100k pixels for performance on large datasets.
    */
@@ -1225,6 +1330,17 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
       timeoutViewportCallback(() => {
         viewport.setProperties(properties, volumeId);
         viewport.render();
+
+        // Auto-windowing for dynamic (4D) volumes with invalid VOI/rescale
+        // metadata. Regular volumes self-heal via cornerstone's own fallback;
+        // dynamic volumes don't, and hit this path instead. See
+        // _fixDynamicVolumeVoiIfNeeded for the full rationale.
+        if (viewport instanceof BaseVolumeViewport) {
+          const volume = cache.getVolume(volumeId);
+          if (volume?.isDynamicVolume?.()) {
+            this._fixDynamicVolumeVoiIfNeeded(viewport as Types.IVolumeViewport, volumeId);
+          }
+        }
       });
     });
 
