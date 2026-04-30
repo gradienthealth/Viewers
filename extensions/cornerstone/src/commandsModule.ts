@@ -49,6 +49,10 @@ import { toolNames } from './initCornerstoneTools';
 import CornerstoneViewportDownloadForm from './utils/CornerstoneViewportDownloadForm';
 import { updateSegmentBidirectionalStats } from './utils/updateSegmentationStats';
 import { generateSegmentationCSVReport } from './utils/generateSegmentationCSVReport';
+import {
+  buildRedactionPayload,
+  RedactionOutOfBoundsError,
+} from './utils/buildRedactionPayload';
 import { getUpdatedViewportsForSegmentation } from './utils/hydrationUtils';
 import { SegmentationRepresentations } from '@cornerstonejs/tools/enums';
 import { isMeasurementWithinViewport } from './utils/isMeasurementWithinViewport';
@@ -2504,6 +2508,108 @@ function commandsModule({
         containerClassName: 'max-w-[90vw] w-max',
       });
     },
+
+    submitRedactionPayload: async () => {
+      const NOTIFY_TITLE = 'Submit PHI Redaction';
+      const activeDisplaySet = displaySetService.getActiveDisplaySets()?.[0];
+      if (!activeDisplaySet) {
+        uiNotificationService.show({
+          title: NOTIFY_TITLE,
+          message: 'No active display set.',
+          type: 'error',
+        });
+        return;
+      }
+      const studyUid = activeDisplaySet.StudyInstanceUID;
+      const seriesUid = activeDisplaySet.SeriesInstanceUID;
+
+      const measurements = measurementService.getMeasurements(
+        m =>
+          m.toolName === 'PHIBoundingBox' &&
+          m.referenceStudyUID === studyUid &&
+          m.referenceSeriesUID === seriesUid
+      );
+
+      if (measurements.length === 0) {
+        uiNotificationService.show({
+          title: NOTIFY_TITLE,
+          message: 'No PHI bounding boxes drawn for the active series.',
+          type: 'warning',
+        });
+        return;
+      }
+
+      const userAuth = (servicesManager.services as AppTypes.Services).userAuthenticationService;
+      const user = userAuth?.getUser?.();
+      const reviewer: string | undefined =
+        user?.profile?.email ?? user?.email ?? user?.profile?.preferred_username ?? undefined;
+
+      let payload;
+      try {
+        payload = buildRedactionPayload({
+          studyUid,
+          seriesUid,
+          reviewer,
+          annotations: measurements.map(m => ({
+            points: m.points,
+            referencedImageId: m.referencedImageId,
+            SOPInstanceUID: m.SOPInstanceUID,
+            frameNumber: m.frameNumber ?? 1,
+          })),
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to build redaction payload.';
+        uiNotificationService.show({
+          title: NOTIFY_TITLE,
+          message:
+            err instanceof RedactionOutOfBoundsError
+              ? `${message} Adjust the offending box and try again.`
+              : message,
+          type: 'error',
+          duration: 8000,
+        });
+        return;
+      }
+
+      const url: string | undefined = (window as Window & { config?: any }).config?.redactionApi
+        ?.url;
+      if (!url) {
+        uiNotificationService.show({
+          title: NOTIFY_TITLE,
+          message: 'redactionApi.url is not set in the app config.',
+          type: 'error',
+          duration: 8000,
+        });
+        return;
+      }
+
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          const body = await res.text();
+          throw new Error(`HTTP ${res.status}: ${body || res.statusText}`);
+        }
+        const count = payload.redactions.length;
+        uiNotificationService.show({
+          title: NOTIFY_TITLE,
+          message: `Submitted ${count} redaction${count === 1 ? '' : 's'} for series.`,
+          type: 'success',
+          duration: 5000,
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'POST failed.';
+        uiNotificationService.show({
+          title: NOTIFY_TITLE,
+          message,
+          type: 'error',
+          duration: 8000,
+        });
+      }
+    },
   };
 
   const definitions = {
@@ -2831,6 +2937,7 @@ function commandsModule({
       commandFn: actions.reCalibrateWindowLevel,
     },
     showOPFSManagementTool: actions.showOPFSManagementTool,
+    submitRedactionPayload: actions.submitRedactionPayload,
   };
 
   return {

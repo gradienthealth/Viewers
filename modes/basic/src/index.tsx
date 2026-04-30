@@ -276,7 +276,7 @@ export const toolbarSections = {
     'OPFSTool',
   ],
 
-  PHIBoundingBox: ['PHIBoundingBox'],
+  PHIBoundingBox: ['PHIBoundingBox', 'SubmitRedaction'],
 };
 
 export const basicLayout = {

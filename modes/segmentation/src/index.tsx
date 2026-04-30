@@ -147,7 +147,7 @@ function modeFactory({ modeConfiguration }) {
 
       toolbarService.updateSection('BrushTools', ['Brush', 'Eraser', 'Threshold']);
 
-      toolbarService.updateSection('PHIBoundingBox', ['PHIBoundingBox']);
+      toolbarService.updateSection('PHIBoundingBox', ['PHIBoundingBox', 'SubmitRedaction']);
 
       // Making the 'cornerstone.panelTool' the default/first right panel will automaically
       // handle the evaluate functions for segmentation panel tools through the toolbox components.
