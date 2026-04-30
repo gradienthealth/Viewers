@@ -2509,7 +2509,7 @@ function commandsModule({
       });
     },
 
-    submitRedactionPayload: async () => {
+    submitRedactionPayload: () => {
       const NOTIFY_TITLE = 'Submit PHI Redaction';
       const activeDisplaySet = displaySetService.getActiveDisplaySets()?.[0];
       if (!activeDisplaySet) {
@@ -2539,17 +2539,11 @@ function commandsModule({
         return;
       }
 
-      const userAuth = (servicesManager.services as AppTypes.Services).userAuthenticationService;
-      const user = userAuth?.getUser?.();
-      const reviewer: string | undefined =
-        user?.profile?.email ?? user?.email ?? user?.profile?.preferred_username ?? undefined;
-
       let payload;
       try {
         payload = buildRedactionPayload({
           studyUid,
           seriesUid,
-          reviewer,
           annotations: measurements.map(m => ({
             points: m.points,
             referencedImageId: m.referencedImageId,
@@ -2571,44 +2565,25 @@ function commandsModule({
         return;
       }
 
-      const url: string | undefined = (window as Window & { config?: any }).config?.redactionApi
-        ?.url;
-      if (!url) {
+      if (!window.parent || window.parent === window) {
         uiNotificationService.show({
           title: NOTIFY_TITLE,
-          message: 'redactionApi.url is not set in the app config.',
+          message: 'Viewer is not embedded — no parent frame to submit to.',
           type: 'error',
           duration: 8000,
         });
         return;
       }
 
-      try {
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-        if (!res.ok) {
-          const body = await res.text();
-          throw new Error(`HTTP ${res.status}: ${body || res.statusText}`);
-        }
-        const count = payload.redactions.length;
-        uiNotificationService.show({
-          title: NOTIFY_TITLE,
-          message: `Submitted ${count} redaction${count === 1 ? '' : 's'} for series.`,
-          type: 'success',
-          duration: 5000,
-        });
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'POST failed.';
-        uiNotificationService.show({
-          title: NOTIFY_TITLE,
-          message,
-          type: 'error',
-          duration: 8000,
-        });
-      }
+      window.parent.postMessage({ type: 'phiRedactionSubmit', payload }, '*');
+
+      const count = payload.redactions.length;
+      uiNotificationService.show({
+        title: NOTIFY_TITLE,
+        message: `Submitted ${count} redaction${count === 1 ? '' : 's'} for review.`,
+        type: 'success',
+        duration: 5000,
+      });
     },
   };
 
