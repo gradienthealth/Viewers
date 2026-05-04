@@ -2511,46 +2511,71 @@ function commandsModule({
 
     submitRedactionPayload: () => {
       const NOTIFY_TITLE = 'Submit PHI Redaction';
-      const activeDisplaySet = displaySetService.getActiveDisplaySets()?.[0];
+
+      const activeViewportId = viewportGridService.getActiveViewportId();
+      const activeDisplaySet = (
+        activeViewportId
+          ? viewportGridService.getDisplaySetsUIDsForViewport(activeViewportId) ?? []
+          : []
+      )
+        .map(uid => displaySetService.getDisplaySetByUID(uid))
+        .find(ds => !!ds?.StudyInstanceUID);
+
       if (!activeDisplaySet) {
         uiNotificationService.show({
           title: NOTIFY_TITLE,
-          message: 'No active display set.',
+          message: 'No active viewport / study to submit redactions for.',
           type: 'error',
         });
         return;
       }
       const studyUid = activeDisplaySet.StudyInstanceUID;
-      const seriesUid = activeDisplaySet.SeriesInstanceUID;
 
-      const measurements = measurementService.getMeasurements(
-        m =>
-          m.toolName === 'PHIBoundingBox' &&
-          m.referenceStudyUID === studyUid &&
-          m.referenceSeriesUID === seriesUid
-      );
+      // Scope to the whole study, not a single series: in multi-viewport
+      // layouts the user may have drawn PHI on series they aren't currently
+      // focused on, and we don't want to silently drop those.
+      const allPhi = measurementService.getMeasurements(m => m.toolName === 'PHIBoundingBox');
+      const inStudy = allPhi.filter(m => m.referenceStudyUID === studyUid);
+      const skippedOtherStudies = allPhi.length - inStudy.length;
 
-      if (measurements.length === 0) {
+      if (inStudy.length === 0) {
         uiNotificationService.show({
           title: NOTIFY_TITLE,
-          message: 'No PHI bounding boxes drawn for the active series.',
+          message: 'No PHI bounding boxes drawn in the active study.',
           type: 'warning',
         });
         return;
       }
 
-      let payload;
+      const bySeries = new Map<string, typeof inStudy>();
+      for (const m of inStudy) {
+        const seriesUid = m.referenceSeriesUID;
+        let bucket = bySeries.get(seriesUid);
+        if (!bucket) {
+          bucket = [];
+          bySeries.set(seriesUid, bucket);
+        }
+        bucket.push(m);
+      }
+
+      // Build every series' payload first; if any series has an out-of-bounds
+      // box, abort the whole submit so we never post a partial set.
+      const payloads: ReturnType<typeof buildRedactionPayload>[] = [];
       try {
-        payload = buildRedactionPayload({
-          studyUid,
-          seriesUid,
-          annotations: measurements.map(m => ({
-            points: m.points,
-            referencedImageId: m.referencedImageId,
-            SOPInstanceUID: m.SOPInstanceUID,
-            frameNumber: m.frameNumber ?? 1,
-          })),
-        });
+        for (const [seriesUid, measurements] of bySeries) {
+          payloads.push(
+            buildRedactionPayload({
+              studyUid,
+              seriesUid,
+              annotations: measurements.map(m => ({
+                points: m.points,
+                referencedImageId: m.referencedImageId,
+                SOPInstanceUID: m.SOPInstanceUID,
+                frameNumber: m.frameNumber ?? 1,
+              })),
+            })
+          );
+        }
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to build redaction payload.';
         uiNotificationService.show({
@@ -2575,12 +2600,21 @@ function commandsModule({
         return;
       }
 
-      window.parent.postMessage({ type: 'phiRedactionSubmit', payload }, '*');
+      for (const payload of payloads) {
+        window.parent.postMessage({ type: 'phiRedactionSubmit', payload }, '*');
+      }
 
-      const count = payload.redactions.length;
+      const totalRedactions = payloads.reduce((sum, p) => sum + p.redactions.length, 0);
+      const seriesCount = payloads.length;
+      const skippedTail =
+        skippedOtherStudies > 0
+          ? ` (${skippedOtherStudies} PHI box${skippedOtherStudies === 1 ? '' : 'es'} on other studies were skipped.)`
+          : '';
       uiNotificationService.show({
         title: NOTIFY_TITLE,
-        message: `Submitted ${count} redaction${count === 1 ? '' : 's'} for review.`,
+        message:
+          `Submitted ${totalRedactions} redaction${totalRedactions === 1 ? '' : 's'} ` +
+          `across ${seriesCount} series.${skippedTail}`,
         type: 'success',
         duration: 5000,
       });
