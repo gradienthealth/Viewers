@@ -274,9 +274,10 @@ export const toolbarSections = {
     'WindowLevelRegion',
     'SegmentLabelTool',
     'OPFSTool',
+    'SubmitRedaction',
   ],
 
-  PHIBoundingBox: ['PHIBoundingBox', 'SubmitRedaction'],
+  PHIBoundingBox: ['PHIBoundingBox'],
 };
 
 export const basicLayout = {

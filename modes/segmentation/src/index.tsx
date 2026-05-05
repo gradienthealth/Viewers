@@ -104,6 +104,7 @@ function modeFactory({ modeConfiguration }) {
         'Magnify',
         'TagBrowser',
         'OPFSTool',
+        'SubmitRedaction',
       ]);
 
       toolbarService.updateSection(toolbarService.sections.labelMapSegmentationToolbox, [
@@ -147,7 +148,7 @@ function modeFactory({ modeConfiguration }) {
 
       toolbarService.updateSection('BrushTools', ['Brush', 'Eraser', 'Threshold']);
 
-      toolbarService.updateSection('PHIBoundingBox', ['PHIBoundingBox', 'SubmitRedaction']);
+      toolbarService.updateSection('PHIBoundingBox', ['PHIBoundingBox']);
 
       // Making the 'cornerstone.panelTool' the default/first right panel will automaically
       // handle the evaluate functions for segmentation panel tools through the toolbox components.
