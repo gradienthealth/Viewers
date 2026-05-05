@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { Enums, cache, eventTarget, utilities as csCoreUtils } from '@cornerstonejs/core';
 import { ImageScrollbar } from '@ohif/ui-next';
 import classNames from 'classnames';
 import { useCachedSlicesPerDisplaysetStore } from '../../stores';
+import { getFirstRenderedImageId } from './utils';
 
 const KEYS = { Ctrl: 17 };
 
@@ -20,8 +21,10 @@ function SmartImageScrollbar({
 }>) {
   const [cachedImages, setCachedImages] = useState([]);
   const [isKeyPressed, setIsKeyPressed] = useState(false);
+  const hasHandledFirstImage = useRef(false);
 
-  const { cineService, cornerstoneViewportService } = servicesManager.services;
+  const { cineService, cornerstoneViewportService, uiViewportDialogService } =
+    servicesManager.services;
   const numOfSlices = imageSliceData.numberOfSlices;
   const scrollbarHeightValue = +scrollbarHeight.split('px')[0] + 2;
   const isStackViewport = viewportData?.viewportType === Enums.ViewportType.STACK;
@@ -130,6 +133,84 @@ function SmartImageScrollbar({
       window.removeEventListener('keyup', onKeyUp);
     };
   }, []);
+
+  useEffect(() => {
+    const handleVolumeModified = evt => {
+      if (hasHandledFirstImage.current) {
+        return;
+      }
+
+      const { volumeId } = evt.detail;
+
+      const renderingEngine = cornerstoneViewportService.getRenderingEngine();
+      if (!renderingEngine) {
+        return;
+      }
+
+      const targetViewport = renderingEngine.getViewport(viewportId);
+      if (
+        !targetViewport ||
+        (targetViewport.type !== Enums.ViewportType.ORTHOGRAPHIC &&
+          targetViewport.type !== Enums.ViewportType.VOLUME_3D)
+      ) {
+        return;
+      }
+
+      const actors = targetViewport.getActors();
+      const belongsToViewport = actors.some(actor => actor.referencedId === volumeId);
+      if (!belongsToViewport) {
+        return;
+      }
+
+      const volume = cache.getVolume(volumeId);
+      if (!volume?.imageIds || !volume.isDynamicVolume()) {
+        return;
+      }
+
+      const numTimePoints = volume.numTimePoints || 1;
+      const slicesPerTimePoint = volume.imageIds.length / numTimePoints;
+
+      const groupImageIds = (volume as any).getCurrentDimensionGroupImageIds();
+      const firstRenderingImageId = getFirstRenderedImageId(groupImageIds);
+      const firstRenderingImageIdIndex = volume.imageIds.indexOf(firstRenderingImageId);
+
+      if (!firstRenderingImageId || !cache.isLoaded(firstRenderingImageId)) {
+        return;
+      }
+
+      hasHandledFirstImage.current = true;
+      eventTarget.removeEventListener(Enums.Events.IMAGE_VOLUME_MODIFIED, handleVolumeModified);
+
+      uiViewportDialogService.show({
+        id: 'jump-to-loaded-slice',
+        viewportId,
+        type: 'info',
+        message: `A slice in the group has been rendered. Jump to it?`,
+        actions: [
+          { id: 'no', type: 'secondary', text: 'No', value: false },
+          { id: 'yes', type: 'primary', text: 'Yes', value: true },
+        ],
+        onSubmit: (result: boolean) => {
+          uiViewportDialogService.hide();
+          if (result) {
+            csCoreUtils.jumpToSlice(targetViewport.element, {
+              imageIndex: firstRenderingImageIdIndex % slicesPerTimePoint,
+              volumeId,
+            });
+            targetViewport.render();
+          }
+        },
+        onOutsideClick: () => uiViewportDialogService.hide(),
+        onKeyPress: () => {},
+      });
+    };
+
+    eventTarget.addEventListener(Enums.Events.IMAGE_VOLUME_MODIFIED, handleVolumeModified);
+
+    return () => {
+      eventTarget.removeEventListener(Enums.Events.IMAGE_VOLUME_MODIFIED, handleVolumeModified);
+    };
+  }, [viewportId]);
 
   function updateCachedSlices() {
     if (!viewportData?.data) {
