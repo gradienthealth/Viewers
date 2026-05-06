@@ -31,7 +31,6 @@ function SmartImageScrollbar({
   const [cachedImages, setCachedImages] = useState([]);
   const [isKeyPressed, setIsKeyPressed] = useState(false);
   const handledVolumeIds = useRef<Set<string>>(new Set());
-  const volumeFirstImageCache = useRef<Map<string, number>>(new Map());
 
   const { cineService, cornerstoneViewportService, uiViewportDialogService } =
     servicesManager.services;
@@ -177,20 +176,16 @@ function SmartImageScrollbar({
         return;
       }
 
-      let firstSliceIndex = volumeFirstImageCache.current.get(volumeId);
+      const groupImageIds = (
+        volume as StreamingDynamicImageVolume
+      ).getCurrentDimensionGroupImageIds();
+      const firstSliceIndex = getFirstRenderedSliceIndex(
+        groupImageIds,
+        targetViewport as VolumeViewport,
+        volumeId
+      );
       if (firstSliceIndex === undefined) {
-        const groupImageIds = (
-          volume as StreamingDynamicImageVolume
-        ).getCurrentDimensionGroupImageIds();
-        firstSliceIndex = getFirstRenderedSliceIndex(
-          groupImageIds,
-          targetViewport as VolumeViewport,
-          volumeId
-        );
-        if (firstSliceIndex === undefined) {
-          return;
-        }
-        volumeFirstImageCache.current.set(volumeId, firstSliceIndex);
+        return;
       }
 
       handledVolumeIds.current.add(volumeId);
