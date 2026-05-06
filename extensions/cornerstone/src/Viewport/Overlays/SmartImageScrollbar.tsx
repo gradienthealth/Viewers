@@ -1,10 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
-import { Enums, cache, eventTarget, utilities as csCoreUtils } from '@cornerstonejs/core';
+import { useTranslation } from 'react-i18next';
+import {
+  Enums,
+  cache,
+  eventTarget,
+  utilities as csCoreUtils,
+  StreamingDynamicImageVolume,
+  VolumeViewport,
+} from '@cornerstonejs/core';
 import { ImageScrollbar } from '@ohif/ui-next';
 import classNames from 'classnames';
 import { useCachedSlicesPerDisplaysetStore } from '../../stores';
-import { getFirstRenderedImageId } from './utils';
+import { getFirstRenderedSliceIndex } from '../../utils/getFirstRenderedSliceIndex';
 
 const KEYS = { Ctrl: 17 };
 
@@ -19,9 +27,11 @@ function SmartImageScrollbar({
 }: withAppTypes<{
   element: HTMLElement;
 }>) {
+  const { t } = useTranslation('Common');
   const [cachedImages, setCachedImages] = useState([]);
   const [isKeyPressed, setIsKeyPressed] = useState(false);
-  const hasHandledFirstImage = useRef(false);
+  const handledVolumeIds = useRef<Set<string>>(new Set());
+  const volumeFirstImageCache = useRef<Map<string, number>>(new Map());
 
   const { cineService, cornerstoneViewportService, uiViewportDialogService } =
     servicesManager.services;
@@ -136,11 +146,11 @@ function SmartImageScrollbar({
 
   useEffect(() => {
     const handleVolumeModified = evt => {
-      if (hasHandledFirstImage.current) {
+      const { volumeId } = evt.detail;
+
+      if (handledVolumeIds.current.has(volumeId)) {
         return;
       }
-
-      const { volumeId } = evt.detail;
 
       const renderingEngine = cornerstoneViewportService.getRenderingEngine();
       if (!renderingEngine) {
@@ -167,34 +177,38 @@ function SmartImageScrollbar({
         return;
       }
 
-      const numTimePoints = volume.numTimePoints || 1;
-      const slicesPerTimePoint = volume.imageIds.length / numTimePoints;
-
-      const groupImageIds = (volume as any).getCurrentDimensionGroupImageIds();
-      const firstRenderingImageId = getFirstRenderedImageId(groupImageIds);
-      const firstRenderingImageIdIndex = volume.imageIds.indexOf(firstRenderingImageId);
-
-      if (!firstRenderingImageId || !cache.isLoaded(firstRenderingImageId)) {
-        return;
+      let firstSliceIndex = volumeFirstImageCache.current.get(volumeId);
+      if (firstSliceIndex === undefined) {
+        const groupImageIds = (
+          volume as StreamingDynamicImageVolume
+        ).getCurrentDimensionGroupImageIds();
+        firstSliceIndex = getFirstRenderedSliceIndex(
+          groupImageIds,
+          targetViewport as VolumeViewport,
+          volumeId
+        );
+        if (firstSliceIndex === undefined) {
+          return;
+        }
+        volumeFirstImageCache.current.set(volumeId, firstSliceIndex);
       }
 
-      hasHandledFirstImage.current = true;
-      eventTarget.removeEventListener(Enums.Events.IMAGE_VOLUME_MODIFIED, handleVolumeModified);
+      handledVolumeIds.current.add(volumeId);
 
       uiViewportDialogService.show({
-        id: 'jump-to-loaded-slice',
+        id: `jump-to-loaded-slice-${viewportId}`,
         viewportId,
         type: 'info',
-        message: `A slice in the group has been rendered. Jump to it?`,
+        message: t('A slice in the group has been rendered. Jump to it?'),
         actions: [
-          { id: 'no', type: 'secondary', text: 'No', value: false },
-          { id: 'yes', type: 'primary', text: 'Yes', value: true },
+          { id: 'no', type: 'secondary', text: t('No'), value: false },
+          { id: 'yes', type: 'primary', text: t('Yes'), value: true },
         ],
         onSubmit: (result: boolean) => {
           uiViewportDialogService.hide();
           if (result) {
             csCoreUtils.jumpToSlice(targetViewport.element, {
-              imageIndex: firstRenderingImageIdIndex % slicesPerTimePoint,
+              imageIndex: firstSliceIndex,
               volumeId,
             });
             targetViewport.render();
