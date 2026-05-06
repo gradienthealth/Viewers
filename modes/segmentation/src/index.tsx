@@ -104,6 +104,8 @@ function modeFactory({ modeConfiguration }) {
         'Magnify',
         'TagBrowser',
         'OPFSTool',
+        'PHIBoundingBox',
+        'SubmitRedaction',
       ]);
 
       toolbarService.updateSection(toolbarService.sections.labelMapSegmentationToolbox, [

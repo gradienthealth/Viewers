@@ -1218,6 +1218,17 @@ export const toolbarButtons: Button[] = [
       evaluate: 'evaluate.cornerstoneTool',
     },
   },
+  {
+    id: 'SubmitRedaction',
+    uiType: 'ohif.toolButton',
+    props: {
+      icon: 'Upload',
+      label: i18n.t('Buttons:Submit Redaction'),
+      tooltip: i18n.t('Buttons:Submit PHI Redaction'),
+      commands: 'submitRedactionPayload',
+      evaluate: 'evaluate.action',
+    },
+  },
 ];
 
 export default toolbarButtons;
