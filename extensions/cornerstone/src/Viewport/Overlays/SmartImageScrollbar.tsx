@@ -209,7 +209,7 @@ function SmartImageScrollbar({
             targetViewport.render();
           }
         },
-        onOutsideClick: () => uiViewportDialogService.hide(),
+        onOutsideClick: () => {},
         onKeyPress: () => {},
       });
     };

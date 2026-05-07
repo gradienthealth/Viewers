@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useCallback, useState } from 'react';
 import * as cs3DTools from '@cornerstonejs/tools';
 import { Enums, eventTarget, getEnabledElement } from '@cornerstonejs/core';
 import { MeasurementService, useViewportRef } from '@ohif/core';
-import { useViewportDialog } from '@ohif/ui-next';
+import { useCine, useViewportDialog } from '@ohif/ui-next';
 import type { Types as csTypes } from '@cornerstonejs/core';
 
 import { setEnabledElement } from '../state';
@@ -69,14 +69,11 @@ const OHIFCornerstoneViewport = React.memo(
       displaySetOptions.push({});
     }
 
+    const isDynamicVolume = displaySets.some(ds => ds.isDynamicVolume && ds.isReconstructable);
     // Since we only have support for dynamic data in volume viewports, we should
     // handle this case here and set the viewportType to volume if any of the
     // displaySets are dynamic volumes
-    viewportOptions.viewportType = displaySets.some(
-      ds => ds.isDynamicVolume && ds.isReconstructable
-    )
-      ? 'volume'
-      : viewportOptions.viewportType;
+    viewportOptions.viewportType = isDynamicVolume ? 'volume' : viewportOptions.viewportType;
 
     const [scrollbarHeight, setScrollbarHeight] = useState('100px');
     const [enabledVPElement, setEnabledVPElement] = useState(null);
@@ -96,6 +93,11 @@ const OHIFCornerstoneViewport = React.memo(
     } = servicesManager.services;
 
     const [viewportDialogState] = useViewportDialog();
+    const [{ isCineEnabled }, cineService] = useCine();
+    const cineDialogPositioning = {
+      isCineVisibleOnViewport: isCineEnabled && !cineService.isViewportCineClosed(viewportId),
+      viewportDialogTopClass: isDynamicVolume ? 'top-[110px]' : 'top-[85px]',
+    };
     // useCallback for scroll bar height calculation
     const setImageScrollBarHeight = useCallback(() => {
       const scrollbarHeight = `${elementRef.current.clientHeight - 10}px`;
@@ -339,8 +341,16 @@ const OHIFCornerstoneViewport = React.memo(
             servicesManager={servicesManager}
           />
         </div>
-        {/* top offset of 24px to account for ViewportActionCorners. */}
-        <div className="absolute top-[24px] w-full">
+        {/* top offset of 24px to account for ViewportActionCorners.
+            When cine is open for this viewport, push below the cine bar (and the
+            dynamic-volume slice slider) so the dialog isn't occluded. */}
+        <div
+          className={`absolute z-50 w-full ${
+            cineDialogPositioning.isCineVisibleOnViewport
+              ? cineDialogPositioning.viewportDialogTopClass
+              : 'top-[24px]'
+          }`}
+        >
           {viewportDialogState.viewportId === viewportId && (
             <Notification
               id="viewport-notification"
