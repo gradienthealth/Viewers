@@ -1,9 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
-import { Enums, cache, eventTarget, utilities as csCoreUtils } from '@cornerstonejs/core';
+import { useTranslation } from 'react-i18next';
+import {
+  Enums,
+  cache,
+  eventTarget,
+  utilities as csCoreUtils,
+  StreamingDynamicImageVolume,
+  VolumeViewport,
+} from '@cornerstonejs/core';
 import { ImageScrollbar } from '@ohif/ui-next';
 import classNames from 'classnames';
 import { useCachedSlicesPerDisplaysetStore } from '../../stores';
+import { getFirstRenderedSliceIndex } from '../../utils/getFirstRenderedSliceIndex';
 
 const KEYS = { Ctrl: 17 };
 
@@ -18,10 +27,13 @@ function SmartImageScrollbar({
 }: withAppTypes<{
   element: HTMLElement;
 }>) {
+  const { t } = useTranslation('Common');
   const [cachedImages, setCachedImages] = useState([]);
   const [isKeyPressed, setIsKeyPressed] = useState(false);
+  const handledVolumeIds = useRef<Set<string>>(new Set());
 
-  const { cineService, cornerstoneViewportService } = servicesManager.services;
+  const { cineService, cornerstoneViewportService, uiViewportDialogService } =
+    servicesManager.services;
   const numOfSlices = imageSliceData.numberOfSlices;
   const scrollbarHeightValue = +scrollbarHeight.split('px')[0] + 2;
   const isStackViewport = viewportData?.viewportType === Enums.ViewportType.STACK;
@@ -130,6 +142,84 @@ function SmartImageScrollbar({
       window.removeEventListener('keyup', onKeyUp);
     };
   }, []);
+
+  useEffect(() => {
+    const handleVolumeModified = evt => {
+      const { volumeId } = evt.detail;
+
+      if (handledVolumeIds.current.has(volumeId)) {
+        return;
+      }
+
+      const renderingEngine = cornerstoneViewportService.getRenderingEngine();
+      if (!renderingEngine) {
+        return;
+      }
+
+      const targetViewport = renderingEngine.getViewport(viewportId);
+      if (
+        !targetViewport ||
+        (targetViewport.type !== Enums.ViewportType.ORTHOGRAPHIC &&
+          targetViewport.type !== Enums.ViewportType.VOLUME_3D)
+      ) {
+        return;
+      }
+
+      const actors = targetViewport.getActors();
+      const belongsToViewport = actors.some(actor => actor.referencedId === volumeId);
+      if (!belongsToViewport) {
+        return;
+      }
+
+      const volume = cache.getVolume(volumeId);
+      if (!volume?.imageIds || !volume.isDynamicVolume()) {
+        return;
+      }
+
+      const groupImageIds = (
+        volume as StreamingDynamicImageVolume
+      ).getCurrentDimensionGroupImageIds();
+      const firstSliceIndex = getFirstRenderedSliceIndex(
+        groupImageIds,
+        targetViewport as VolumeViewport,
+        volumeId
+      );
+      if (firstSliceIndex === undefined) {
+        return;
+      }
+
+      handledVolumeIds.current.add(volumeId);
+
+      uiViewportDialogService.show({
+        id: `jump-to-loaded-slice-${viewportId}`,
+        viewportId,
+        type: 'info',
+        message: t('A slice in the group has been rendered. Jump to it?'),
+        actions: [
+          { id: 'no', type: 'secondary', text: t('No'), value: false },
+          { id: 'yes', type: 'primary', text: t('Yes'), value: true },
+        ],
+        onSubmit: (result: boolean) => {
+          uiViewportDialogService.hide();
+          if (result) {
+            csCoreUtils.jumpToSlice(targetViewport.element, {
+              imageIndex: firstSliceIndex,
+              volumeId,
+            });
+            targetViewport.render();
+          }
+        },
+        onOutsideClick: () => {},
+        onKeyPress: () => {},
+      });
+    };
+
+    eventTarget.addEventListener(Enums.Events.IMAGE_VOLUME_MODIFIED, handleVolumeModified);
+
+    return () => {
+      eventTarget.removeEventListener(Enums.Events.IMAGE_VOLUME_MODIFIED, handleVolumeModified);
+    };
+  }, [viewportId]);
 
   function updateCachedSlices() {
     if (!viewportData?.data) {
