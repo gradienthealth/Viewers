@@ -530,6 +530,17 @@ const toolbarButtons: Button[] = [
     },
   },
   {
+    id: 'SubmitRedaction',
+    uiType: 'ohif.toolButton',
+    props: {
+      icon: 'Upload',
+      label: i18n.t('Buttons:Submit Redaction'),
+      tooltip: i18n.t('Buttons:Submit PHI Redaction'),
+      commands: 'submitRedactionPayload',
+      evaluate: 'evaluate.action',
+    },
+  },
+  {
     id: 'CircleROI',
     uiType: 'ohif.toolButton',
     props: {
