@@ -9,7 +9,7 @@ import {
   StreamingDynamicImageVolume,
   VolumeViewport,
 } from '@cornerstonejs/core';
-import { ImageScrollbar } from '@ohif/ui-next';
+import { ImageScrollbar, useViewportDialog } from '@ohif/ui-next';
 import classNames from 'classnames';
 import { useCachedSlicesPerDisplaysetStore } from '../../stores';
 import { getFirstRenderedSliceIndex } from '../../utils/getFirstRenderedSliceIndex';
@@ -31,6 +31,11 @@ function SmartImageScrollbar({
   const [cachedImages, setCachedImages] = useState([]);
   const [isKeyPressed, setIsKeyPressed] = useState(false);
   const handledVolumeIds = useRef<Set<string>>(new Set());
+  const activeDialogVolumeIdRef = useRef<string | null>(null);
+  const [viewportDialogState] = useViewportDialog() || [];
+  const dialogStateRef = useRef(viewportDialogState);
+
+  const firstLoadedDialogId = `jump-to-loaded-slice-${viewportId}`;
 
   const { cineService, cornerstoneViewportService, uiViewportDialogService } =
     servicesManager.services;
@@ -58,6 +63,10 @@ function SmartImageScrollbar({
       debounceLoading: true,
     });
   };
+
+  useEffect(() => {
+    dialogStateRef.current = viewportDialogState;
+  }, [viewportDialogState]);
 
   useEffect(() => {
     if (!viewportData) {
@@ -147,10 +156,6 @@ function SmartImageScrollbar({
     const handleVolumeModified = evt => {
       const { volumeId } = evt.detail;
 
-      if (handledVolumeIds.current.has(volumeId)) {
-        return;
-      }
-
       const renderingEngine = cornerstoneViewportService.getRenderingEngine();
       if (!renderingEngine) {
         return;
@@ -158,6 +163,21 @@ function SmartImageScrollbar({
 
       const targetViewport = renderingEngine.getViewport(viewportId) as VolumeViewport;
       if (!targetViewport || targetViewport.type !== Enums.ViewportType.ORTHOGRAPHIC) {
+        return;
+      }
+
+      if (
+        activeDialogVolumeIdRef.current === volumeId &&
+        dialogStateRef.current?.id === firstLoadedDialogId
+      ) {
+        const currentImageId = targetViewport.getCurrentImageId();
+        if (currentImageId && cache.isLoaded(currentImageId)) {
+          activeDialogVolumeIdRef.current = null;
+          uiViewportDialogService.hide();
+        }
+      }
+
+      if (handledVolumeIds.current.has(volumeId)) {
         return;
       }
 
@@ -188,9 +208,10 @@ function SmartImageScrollbar({
       }
 
       handledVolumeIds.current.add(volumeId);
+      activeDialogVolumeIdRef.current = volumeId;
 
       uiViewportDialogService.show({
-        id: `jump-to-loaded-slice-${viewportId}`,
+        id: firstLoadedDialogId,
         viewportId,
         type: 'info',
         message: t('A slice in the group has been rendered. Jump to it?'),
@@ -199,6 +220,7 @@ function SmartImageScrollbar({
           { id: 'yes', type: 'primary', text: t('Yes'), value: true },
         ],
         onSubmit: (result: boolean) => {
+          activeDialogVolumeIdRef.current = null;
           uiViewportDialogService.hide();
           if (result) {
             csCoreUtils.jumpToSlice(targetViewport.element, {
