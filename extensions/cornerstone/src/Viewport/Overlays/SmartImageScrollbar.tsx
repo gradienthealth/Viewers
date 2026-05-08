@@ -156,12 +156,8 @@ function SmartImageScrollbar({
         return;
       }
 
-      const targetViewport = renderingEngine.getViewport(viewportId);
-      if (
-        !targetViewport ||
-        (targetViewport.type !== Enums.ViewportType.ORTHOGRAPHIC &&
-          targetViewport.type !== Enums.ViewportType.VOLUME_3D)
-      ) {
+      const targetViewport = renderingEngine.getViewport(viewportId) as VolumeViewport;
+      if (!targetViewport || targetViewport.type !== Enums.ViewportType.ORTHOGRAPHIC) {
         return;
       }
 
@@ -179,11 +175,14 @@ function SmartImageScrollbar({
       const groupImageIds = (
         volume as StreamingDynamicImageVolume
       ).getCurrentDimensionGroupImageIds();
-      const firstSliceIndex = getFirstRenderedSliceIndex(
-        groupImageIds,
-        targetViewport as VolumeViewport,
-        volumeId
-      );
+
+      const currentImageId = targetViewport.getCurrentImageId();
+      if (currentImageId && cache.isLoaded(currentImageId)) {
+        handledVolumeIds.current.add(volumeId);
+        return;
+      }
+
+      const firstSliceIndex = getFirstRenderedSliceIndex(groupImageIds, targetViewport, volumeId);
       if (firstSliceIndex === undefined) {
         return;
       }
