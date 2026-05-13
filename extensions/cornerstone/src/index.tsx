@@ -47,7 +47,9 @@ import {
   useSelectedSegmentationsForViewportStore,
   useCachedSlicesPerDisplaysetStore,
   useSegmentationSavingStatusStore,
+  useDynamicAutoScrollStore,
 } from './stores';
+import { stopAllAutoScroll } from './utils/dynamicVolumeAutoScroll';
 import { useToggleOneUpViewportGridStore } from '@ohif/extension-default';
 import { useActiveViewportSegmentationRepresentations } from './hooks/useActiveViewportSegmentationRepresentations';
 import { useMeasurements } from './hooks/useMeasurements';
@@ -156,6 +158,7 @@ const cornerstoneExtension: Types.Extensions.Extension = {
     cineService.setIsCineEnabled(false);
 
     enabledElementReset();
+    stopAllAutoScroll();
 
     useLutPresentationStore.getState().clearLutPresentationStore();
     usePositionPresentationStore.getState().clearPositionPresentationStore();
@@ -167,6 +170,7 @@ const cornerstoneExtension: Types.Extensions.Extension = {
     //   .clearSelectedSegmentationsForViewportStore();
     useCachedSlicesPerDisplaysetStore.getState().clearCachedSlicesPerDisplaysetStore();
     useSegmentationSavingStatusStore.getState().clearSegmentationSavingStatusMap();
+    useDynamicAutoScrollStore.getState().clearDynamicAutoScrollStore();
     segmentationService.removeAllSegmentations();
   },
 

@@ -13,6 +13,7 @@ import { ImageScrollbar, useViewportDialog } from '@ohif/ui-next';
 import classNames from 'classnames';
 import { useCachedSlicesPerDisplaysetStore } from '../../stores';
 import { getFirstRenderedSliceIndex } from '../../utils/getFirstRenderedSliceIndex';
+import { activateAutoScroll, stopAutoScroll } from '../../utils/dynamicVolumeAutoScroll';
 
 const KEYS = { Ctrl: 17 };
 
@@ -26,10 +27,12 @@ function SmartImageScrollbar({
   servicesManager,
 }: withAppTypes<{
   element: HTMLElement;
+  viewportId: string;
 }>) {
   const { t } = useTranslation('Common');
   const [cachedImages, setCachedImages] = useState([]);
   const [isKeyPressed, setIsKeyPressed] = useState(false);
+  const [renderProgress, setRenderProgress] = useState<number | null>(null);
   const handledVolumeIds = useRef<Set<string>>(new Set());
   const activeDialogVolumeIdRef = useRef<string | null>(null);
   const [viewportDialogState] = useViewportDialog() || [];
@@ -154,7 +157,7 @@ function SmartImageScrollbar({
 
   useEffect(() => {
     const handleVolumeModified = evt => {
-      const { volumeId } = evt.detail;
+      const { volumeId, numberOfFrames, framesProcessed } = evt.detail;
 
       const renderingEngine = cornerstoneViewportService.getRenderingEngine();
       if (!renderingEngine) {
@@ -164,6 +167,18 @@ function SmartImageScrollbar({
       const targetViewport = renderingEngine.getViewport(viewportId) as VolumeViewport;
       if (!targetViewport || targetViewport.type !== Enums.ViewportType.ORTHOGRAPHIC) {
         return;
+      }
+
+      const actors = targetViewport.getActors();
+      const belongsToViewport = actors.some(actor => actor.referencedId === volumeId);
+
+      if (!belongsToViewport) {
+        return;
+      }
+
+      if (numberOfFrames >= framesProcessed && numberOfFrames > 0) {
+        const percent = Math.floor((framesProcessed / numberOfFrames) * 100);
+        setRenderProgress(percent >= 100 ? null : percent);
       }
 
       if (
@@ -178,12 +193,6 @@ function SmartImageScrollbar({
       }
 
       if (handledVolumeIds.current.has(volumeId)) {
-        return;
-      }
-
-      const actors = targetViewport.getActors();
-      const belongsToViewport = actors.some(actor => actor.referencedId === volumeId);
-      if (!belongsToViewport) {
         return;
       }
 
@@ -242,6 +251,36 @@ function SmartImageScrollbar({
     };
   }, [viewportId]);
 
+  useEffect(() => {
+    const onVolumeLoadingCompleted = evt => {
+      const { volumeId } = evt.detail;
+      const viewport = cornerstoneViewportService.getCornerstoneViewport(viewportId);
+      if (!viewport?.getActors) {
+        return;
+      }
+
+      const belongsToViewport = viewport.getActors().some(actor => actor.referencedId === volumeId);
+      if (!belongsToViewport) {
+        return;
+      }
+
+      activateAutoScroll({ servicesManager, viewportId });
+    };
+
+    eventTarget.addEventListener(
+      Enums.Events.IMAGE_VOLUME_LOADING_COMPLETED,
+      onVolumeLoadingCompleted
+    );
+
+    return () => {
+      eventTarget.removeEventListener(
+        Enums.Events.IMAGE_VOLUME_LOADING_COMPLETED,
+        onVolumeLoadingCompleted
+      );
+      stopAutoScroll({ servicesManager, viewportId });
+    };
+  }, [viewportId]);
+
   function updateCachedSlices() {
     if (!viewportData?.data) {
       return;
@@ -263,6 +302,11 @@ function SmartImageScrollbar({
 
   return (
     <>
+      {renderProgress !== null && (
+        <span className="text-primary-light absolute right-[20px] top-[15px] text-[14px] font-medium">
+          {renderProgress}%
+        </span>
+      )}
       {cachedImages.length && isStackViewport && (
         <span
           className="border-primary-light bg-secondary-active absolute right-[3px] top-[4px] w-3 overflow-hidden rounded-lg border"
