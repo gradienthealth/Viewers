@@ -5,3 +5,4 @@ export { useSynchronizersStore } from './useSynchronizersStore';
 export { useSelectedSegmentationsForViewportStore } from './useSelectedSegmentationsForViewportStore';
 export { useCachedSlicesPerDisplaysetStore } from './useCachedSlicesPerSeriesStore';
 export { useSegmentationSavingStatusStore } from './useSegmentationSavingStatusStore';
+export { useDynamicAutoScrollStore } from './useDynamicAutoScrollStore';
