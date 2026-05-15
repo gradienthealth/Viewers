@@ -21,6 +21,10 @@ type ViewportAutoScrollState = {
 
 const viewportStates = new Map<string, ViewportAutoScrollState>();
 
+/**
+ * @param viewport Types.IVolumeViewport
+ * @returns returns the first dynamic volume found in the viewport
+ */
 function getDynamicVolume(
   viewport: Types.IVolumeViewport
 ): StreamingDynamicImageVolume | undefined {
@@ -136,7 +140,7 @@ function moveToNextSlice({
 
   // If the slice didn't change, no event fires to clear the self-scroll flag,
   // so clear it here. Otherwise onVolumeNewImage handles it.
-  const newIndex = viewport.getCurrentImageIdIndex?.() ?? currentIndex;
+  const newIndex = viewport.getCurrentImageIdIndex?.();
   if (newIndex === currentIndex) {
     store.clearSelfScroll(viewportId);
   }
