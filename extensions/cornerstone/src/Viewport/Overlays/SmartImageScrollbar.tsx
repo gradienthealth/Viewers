@@ -169,6 +169,17 @@ function SmartImageScrollbar({
         return;
       }
 
+      if (
+        activeDialogVolumeIdRef.current === volumeId &&
+        dialogStateRef.current?.id === firstLoadedDialogId
+      ) {
+        const currentImageId = targetViewport.getCurrentImageId();
+        if (currentImageId && cache.isLoaded(currentImageId)) {
+          activeDialogVolumeIdRef.current = null;
+          uiViewportDialogService.hide();
+        }
+      }
+
       const actors = targetViewport.getActors();
       const belongsToViewport = actors.some(actor => actor.referencedId === volumeId);
 
@@ -179,17 +190,6 @@ function SmartImageScrollbar({
       if (numberOfFrames >= framesProcessed && numberOfFrames > 0) {
         const percent = Math.floor((framesProcessed / numberOfFrames) * 100);
         setRenderProgress(percent >= 100 ? null : percent);
-      }
-
-      if (
-        activeDialogVolumeIdRef.current === volumeId &&
-        dialogStateRef.current?.id === firstLoadedDialogId
-      ) {
-        const currentImageId = targetViewport.getCurrentImageId();
-        if (currentImageId && cache.isLoaded(currentImageId)) {
-          activeDialogVolumeIdRef.current = null;
-          uiViewportDialogService.hide();
-        }
       }
 
       if (handledVolumeIds.current.has(volumeId)) {
@@ -248,8 +248,9 @@ function SmartImageScrollbar({
 
     return () => {
       eventTarget.removeEventListener(Enums.Events.IMAGE_VOLUME_MODIFIED, handleVolumeModified);
+      setRenderProgress(null);
     };
-  }, [viewportId]);
+  }, [viewportId, viewportData]);
 
   useEffect(() => {
     const onVolumeLoadingCompleted = evt => {
