@@ -25,6 +25,13 @@ const frameView: Types.HangingProtocol.Protocol = {
             equals: true,
           },
         },
+        {
+          attribute: 'isDynamicVolume',
+          constraint: {
+            equals: { value: false },
+          },
+          required: true,
+        },
       ],
     },
   },
