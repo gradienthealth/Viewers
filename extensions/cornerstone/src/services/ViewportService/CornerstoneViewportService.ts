@@ -13,6 +13,7 @@ import {
   Enums as csEnums,
   BaseVolumeViewport,
   eventTarget,
+  imageLoader,
 } from '@cornerstonejs/core';
 
 import { utilities as csToolsUtils, Enums as csToolsEnums } from '@cornerstonejs/tools';
@@ -865,7 +866,9 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
       // bogus RescaleIntercept from de-identification, or missing WW/WC metadata),
       // recompute VOI from pixel data percentiles to prevent all-white/all-black images.
       if (!properties.voiRange) {
-        this._fixStackVoiIfNeeded(viewport);
+        this._fixStackVoiIfNeeded(viewport).catch(e => {
+          console.warn('Failed to execute auto-windowing fix:', e);
+        });
       }
 
       this.setPresentations(viewport.id, presentations, viewportInfo);
@@ -899,28 +902,61 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
    * Only applies to stack viewports — volume viewports handle bad metadata
    * correctly via cornerstone's internal VOI computation.
    */
-  private _fixStackVoiIfNeeded(viewport: Types.IStackViewport) {
+  private async _fixStackVoiIfNeeded(viewport: Types.IStackViewport): Promise<void> {
     try {
-      // 1. Get the pixel data from the loaded image. scalarData already has
-      //    the modality LUT (rescale slope/intercept) applied by cornerstone.
-      const imageData = viewport.getImageData();
-      if (!imageData?.scalarData) {
+      const imageIds = viewport.getImageIds();
+      if (!imageIds || imageIds.length === 0) {
         return;
       }
-      const scalarData = imageData.scalarData as
-        | Float32Array
-        | Int16Array
-        | Uint16Array
-        | Uint8Array
-        | Int8Array;
 
-      if (scalarData.length === 0) {
-        return;
+      let currentImageIndex = viewport.getCurrentImageIdIndex();
+      let targetScalarData: Types.PixelDataTypedArray | undefined;
+      let validSliceFound = false;
+      const fastSampleSize = 100;
+
+      // 1. Scan through imageIds in memory starting from the current index to find a non-flat slice.
+      //    scalarData already has the modality LUT (rescale slope/intercept) applied by cornerstone.
+      while (currentImageIndex < imageIds.length) {
+        const nextImageId = imageIds[currentImageIndex];
+        const loadedImage = await imageLoader.loadAndCacheImage(nextImageId);
+        const scalarData = loadedImage?.getPixelData ? loadedImage.getPixelData() : null;
+
+        if (!scalarData || scalarData.length === 0) {
+          currentImageIndex++;
+          continue;
+        }
+
+        const length = scalarData.length;
+        const fastStep = Math.floor(length / fastSampleSize);
+        const firstPixelVal = scalarData[0];
+        let isAllSameValues = true;
+
+        // Fast pre-flight check to see if the slice consists entirely of background/padding
+        for (let i = 1; i < fastSampleSize; i++) {
+          if (scalarData[i * fastStep] !== firstPixelVal) {
+            isAllSameValues = false;
+            break;
+          }
+        }
+
+        if (!isAllSameValues) {
+          targetScalarData = scalarData;
+          validSliceFound = true;
+          break;
+        }
+
+        currentImageIndex++;
+      }
+
+      if (!validSliceFound || !targetScalarData) {
+        throw new Error(
+          'Entire series consists of uniform padding pixels. No anatomical data found.'
+        );
       }
 
       // 2. Compute the 0.5th/99.5th percentiles of the pixel data to get a
       //    robust data range that excludes outliers.
-      const percentiles = this._computePercentiles(scalarData);
+      const percentiles = this._computePercentiles(targetScalarData);
       if (!percentiles) {
         return;
       }
@@ -1062,7 +1098,7 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
    * Samples up to 100k pixels for performance on large datasets.
    */
   private _computePercentiles(
-    scalarData: Float32Array | Int16Array | Uint16Array | Uint8Array | Int8Array
+    scalarData: Types.PixelDataTypedArray
   ): { pLow: number; pHigh: number } | null {
     const length = scalarData.length;
     if (length === 0) {
