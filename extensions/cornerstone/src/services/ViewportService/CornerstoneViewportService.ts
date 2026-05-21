@@ -909,20 +909,23 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
         return;
       }
 
-      let currentImageIndex = viewport.getCurrentImageIdIndex();
+      const totalImages = imageIds.length;
+      const startIndex = viewport.getCurrentImageIdIndex();
+
       let targetScalarData: Types.PixelDataTypedArray | undefined;
       let validSliceFound = false;
       const fastSampleSize = 100;
 
       // 1. Scan through imageIds in memory starting from the current index to find a non-flat slice.
       //    scalarData already has the modality LUT (rescale slope/intercept) applied by cornerstone.
-      while (currentImageIndex < imageIds.length) {
+      for (let i = 0; i < totalImages; i++) {
+        const currentImageIndex = (startIndex + i) % totalImages;
+
         const nextImageId = imageIds[currentImageIndex];
         const loadedImage = await imageLoader.loadAndCacheImage(nextImageId);
         const scalarData = loadedImage?.getPixelData ? loadedImage.getPixelData() : null;
 
         if (!scalarData || scalarData.length === 0) {
-          currentImageIndex++;
           continue;
         }
 
@@ -932,8 +935,8 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
         let isAllSameValues = true;
 
         // Fast pre-flight check to see if the slice consists entirely of background/padding
-        for (let i = 1; i < fastSampleSize; i++) {
-          if (scalarData[i * fastStep] !== firstPixelVal) {
+        for (let j = 1; j < fastSampleSize; j++) {
+          if (scalarData[j * fastStep] !== firstPixelVal) {
             isAllSameValues = false;
             break;
           }
@@ -944,8 +947,6 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
           validSliceFound = true;
           break;
         }
-
-        currentImageIndex++;
       }
 
       if (!validSliceFound || !targetScalarData) {
