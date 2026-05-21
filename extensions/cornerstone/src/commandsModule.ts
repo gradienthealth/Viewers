@@ -2496,8 +2496,8 @@ function commandsModule({
       const { mean, stdDev } = BasicStatsCalculator.getStatistics();
       actions.setViewportWindowLevel({
         viewportId: activeViewportId,
-        window: 2 * stdDev.value,
-        level: mean.value,
+        windowWidth: 2 * stdDev.value,
+        windowCenter: mean.value,
       });
     },
     showOPFSManagementTool: () => {
