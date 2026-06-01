@@ -114,14 +114,19 @@ function structureData(routerBasename: string, fileDetails: FileDetails[]): Stud
       metadataFile.path
     );
 
-    if (!studyUID || !seriesUID || !Object.keys(metadataFile.data?.cod.instances)?.length) {
+    if (
+      !studyUID ||
+      !seriesUID ||
+      !metadataFile.data ||
+      !Object.keys(metadataFile.data?.cod.instances)?.length
+    ) {
       return;
     }
 
     const firstInstance = Object.values(metadataFile.data.cod.instances)[0];
-    const studyDescription = firstInstance.metadata['00081030']?.Value?.[0];
-    const seriesDescription = firstInstance.metadata['0008103E']?.Value?.[0];
-    const seriesModality = firstInstance.metadata['00080060']?.Value?.[0];
+    const studyDescription = firstInstance.metadata['00081030']?.Value?.[0] as string;
+    const seriesDescription = firstInstance.metadata['0008103E']?.Value?.[0] as string;
+    const seriesModality = firstInstance.metadata['00080060']?.Value?.[0] as string;
 
     let totalSeriesSize = 0;
     let seriesMostRecentModified = 0;
@@ -265,9 +270,9 @@ export async function deleteFoldersFromOPFS(folderPaths: string[]) {
       for (let i = 0; i < pathParts.length - 1; i++) {
         currentDir = await currentDir.getDirectoryHandle(pathParts[i], { create: true });
       }
-      currentDir.removeEntry(pathParts.at(-1), { recursive: true });
+      currentDir.removeEntry(pathParts.at(-1) as string, { recursive: true });
     } catch (error) {
-      console.warn(`Error in deleting folder in OPFS: ${path}: ${error.message}`);
+      console.warn(`Error in deleting folder in OPFS: ${path}: ${(error as Error).message}`);
       throw error;
     }
   }
@@ -279,10 +284,10 @@ export async function purgeOldFilesFromOPFS(maxAgeMs?: number): Promise<void> {
   if (!maxAgeMs) {
     try {
       const rootHandle = await getOPFSRootHandle();
-      // @ts-ignore
+      // @ts-expect-error - remove is a newer File System API method missing from standard TypeScript DOM types
       await rootHandle.remove({ recursive: true });
     } catch (error) {
-      console.warn(`Error purging files: ${error.message}`);
+      console.warn(`Error purging files: ${(error as Error).message}`);
     }
     return;
   }
@@ -291,7 +296,6 @@ export async function purgeOldFilesFromOPFS(maxAgeMs?: number): Promise<void> {
 
   async function traverseAndClean(dirHandle: FileSystemDirectoryHandle): Promise<void> {
     const entries: (FileSystemFileHandle | FileSystemDirectoryHandle)[] = [];
-    // @ts-ignore
     for await (const subDirHandle of dirHandle.values()) {
       entries.push(subDirHandle);
     }
@@ -312,7 +316,6 @@ export async function purgeOldFilesFromOPFS(maxAgeMs?: number): Promise<void> {
         } else if (subDirHandle.kind === 'directory') {
           await traverseAndClean(subDirHandle);
 
-          // @ts-ignore
           if ((await subDirHandle.values().next()).done) {
             // Subdirectory is empty: DELETE it from the parent
             await dirHandle.removeEntry(subDirHandle.name);
@@ -326,7 +329,7 @@ export async function purgeOldFilesFromOPFS(maxAgeMs?: number): Promise<void> {
     const rootHandle = await getOPFSRootHandle();
     await traverseAndClean(rootHandle);
   } catch (error) {
-    console.warn(`Error clearing partial files: ${error.message}`);
+    console.warn(`Error clearing partial files: ${(error as Error).message}`);
   }
 }
 
@@ -345,8 +348,8 @@ export function hybridGlobalFilter(
       const regex = new RegExp(filterValueString.slice(1, -1), 'i');
 
       return regex.test(String(cellValue));
-    } catch (e) {
-      console.log('Regex filtering in OPFS tool failed:', e.message);
+    } catch (error) {
+      console.log('Regex filtering in OPFS tool failed:', (error as Error).message);
     }
   }
 

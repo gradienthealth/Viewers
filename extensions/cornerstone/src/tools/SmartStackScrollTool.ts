@@ -1,13 +1,17 @@
-import { getEnabledElement, getEnabledElementByIds } from '@cornerstonejs/core';
-import { StackScrollTool, Types } from '@cornerstonejs/tools';
+import {
+  getEnabledElement,
+  getEnabledElementByIds,
+  Types as csCoreTypes,
+} from '@cornerstonejs/core';
+import { StackScrollTool, Types as csToolsTypes } from '@cornerstonejs/tools';
 
 class SmartStackScrollTool extends StackScrollTool {
   static toolName = 'SmartStackScroll';
 
-  parentDragCallback: (evt: Types.EventTypes.InteractionEventType) => void;
-  parentMouseWheelCallback: (evt: Types.EventTypes.MouseWheelEventType) => void;
+  parentDragCallback: (evt: csToolsTypes.EventTypes.InteractionEventType) => void;
+  parentMouseWheelCallback: (evt: csToolsTypes.EventTypes.MouseWheelEventType) => void;
 
-  constructor(toolProps, defaultToolProps) {
+  constructor(toolProps: csToolsTypes.PublicToolProps, defaultToolProps: csToolsTypes.ToolProps) {
     super(toolProps, defaultToolProps);
     this.parentDragCallback = this.mouseDragCallback;
     this.parentMouseWheelCallback = this.mouseWheelCallback;
@@ -15,7 +19,7 @@ class SmartStackScrollTool extends StackScrollTool {
     this.mouseWheelCallback = this.smartMouseWheelCallback;
   }
 
-  smartMouseDragCallback(evt: Types.EventTypes.InteractionEventType) {
+  smartMouseDragCallback(evt: csToolsTypes.EventTypes.InteractionEventType) {
     const { deltaPoints, viewportId, renderingEngineId } = evt.detail;
     const { viewport } = getEnabledElementByIds(viewportId, renderingEngineId);
     const { invert, shouldPreventScroll } = this.configuration;
@@ -32,11 +36,11 @@ class SmartStackScrollTool extends StackScrollTool {
     return this.parentDragCallback(evt);
   }
 
-  smartMouseWheelCallback(evt: Types.EventTypes.MouseWheelEventType): void {
+  smartMouseWheelCallback(evt: csToolsTypes.EventTypes.MouseWheelEventType): void {
     const { wheel, element } = evt.detail;
     const { direction } = wheel;
     const { invert, shouldPreventScroll } = this.configuration;
-    const { viewport } = getEnabledElement(element);
+    const { viewport } = getEnabledElement(element) as csCoreTypes.IEnabledElement;
     const delta = direction * (invert ? -1 : 1);
 
     if (shouldPreventScroll(evt.detail.event.ctrlKey, viewport.getCurrentImageIdIndex() + delta)) {

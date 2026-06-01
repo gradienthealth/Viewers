@@ -60,10 +60,10 @@ export function createStudyBrowserTabs(
     // sort them by seriesInstanceUID
     const sortCriteria = shouldSortBySeriesUID
       ? seriesSortCriteria.compareSeriesUID
-      : (customizationService.getCustomization('sortingCriteria') as (a, b) => number);
+      : (customizationService!.getCustomization('sortingCriteria') as (a, b) => number);
     const sortedDisplaySets = displaySetsForStudy.sort((a, b) => {
-      const displaySetA = displaySetService.getDisplaySetByUID(a.displaySetInstanceUID);
-      const displaySetB = displaySetService.getDisplaySetByUID(b.displaySetInstanceUID);
+      const displaySetA = displaySetService!.getDisplaySetByUID(a.displaySetInstanceUID);
+      const displaySetB = displaySetService!.getDisplaySetByUID(b.displaySetInstanceUID);
       return sortCriteria(displaySetA, displaySetB);
     });
 
@@ -99,7 +99,7 @@ export function createStudyBrowserTabs(
         GoogleSheetsService.getHasHandledInvalidSeriesFiltering();
 
       if (!hasHandledInvalidSeriesFiltering) {
-        uiNotificationService.show({
+        uiNotificationService!.show({
           title: 'Series filter',
           message: `Each of the series in filter: ${seriesUIdsToFilter.toString()} are not part of the current study. The entire study is being displayed`,
           type: 'error',

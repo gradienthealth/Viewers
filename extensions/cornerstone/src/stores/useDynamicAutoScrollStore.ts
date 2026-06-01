@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
+import type { StateCreator } from 'zustand';
 
 const PRESENTATION_TYPE_ID = 'dynamicAutoScrollStoreId';
 const DEBUG_STORE = false;
@@ -50,29 +51,24 @@ type DynamicAutoScrollState = {
   clearDynamicAutoScrollStore: () => void;
 };
 
-const createDynamicAutoScrollStore = (set, get): DynamicAutoScrollState => ({
+const createDynamicAutoScrollStore: StateCreator<DynamicAutoScrollState> = (
+  set,
+  get
+): DynamicAutoScrollState => ({
   type: PRESENTATION_TYPE_ID,
   autoActive: {},
   permanentlyDisabled: {},
   selfScroll: {},
 
   markAutoActive: viewportId =>
-    set(
-      state => ({ autoActive: { ...state.autoActive, [viewportId]: true } }),
-      false,
-      'markAutoActive'
-    ),
+    set(state => ({ autoActive: { ...state.autoActive, [viewportId]: true } }), false),
 
   clearAutoActive: viewportId =>
-    set(
-      state => {
-        const next = { ...state.autoActive };
-        delete next[viewportId];
-        return { autoActive: next };
-      },
-      false,
-      'clearAutoActive'
-    ),
+    set(state => {
+      const next = { ...state.autoActive };
+      delete next[viewportId];
+      return { autoActive: next };
+    }, false),
 
   isAutoActive: viewportId => !!get().autoActive[viewportId],
 
@@ -81,8 +77,7 @@ const createDynamicAutoScrollStore = (set, get): DynamicAutoScrollState => ({
       state => ({
         permanentlyDisabled: { ...state.permanentlyDisabled, [viewportId]: true },
       }),
-      false,
-      'markPermanentlyDisabled'
+      false
     ),
 
   isPermanentlyDisabled: viewportId => !!get().permanentlyDisabled[viewportId],
@@ -92,33 +87,24 @@ const createDynamicAutoScrollStore = (set, get): DynamicAutoScrollState => ({
       state => ({
         selfScroll: { ...state.selfScroll, [viewportId]: true },
       }),
-      false,
-      'markSelfScroll'
+      false
     ),
 
   clearSelfScroll: viewportId =>
-    set(
-      state => {
-        const next = { ...state.selfScroll };
-        delete next[viewportId];
-        return { selfScroll: next };
-      },
-      false,
-      'clearSelfScroll'
-    ),
+    set(state => {
+      const next = { ...state.selfScroll };
+      delete next[viewportId];
+      return { selfScroll: next };
+    }, false),
 
   isSelfScroll: viewportId => !!get().selfScroll[viewportId],
 
   clearDynamicAutoScrollStore: () =>
-    set(
-      { autoActive: {}, permanentlyDisabled: {}, selfScroll: {} },
-      false,
-      'clearDynamicAutoScrollStore'
-    ),
+    set({ autoActive: {}, permanentlyDisabled: {}, selfScroll: {} }, false),
 });
 
 export const useDynamicAutoScrollStore = create<DynamicAutoScrollState>()(
-  DEBUG_STORE
+  (DEBUG_STORE
     ? devtools(createDynamicAutoScrollStore, { name: 'DynamicAutoScrollStore' })
-    : createDynamicAutoScrollStore
+    : createDynamicAutoScrollStore) as StateCreator<DynamicAutoScrollState, [], []>
 );

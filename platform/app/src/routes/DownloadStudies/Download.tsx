@@ -2,8 +2,33 @@ import React, { useEffect, useState } from 'react';
 import { codDownload } from 'cod-retrieve';
 import { useSystem } from '@ohif/core';
 
+type BucketDetails = {
+  bucket: string;
+  bucketPrefix: string;
+  studyUIDs: string[];
+  token: string;
+  zip: boolean;
+};
+
+type DownloadProgress = {
+  fetchCount: number;
+  fetchedSize: number;
+  savedCount: number;
+  savedTotal: number;
+  progressing: boolean;
+};
+
+type DownloadStats = {
+  totalSeriesCount: number;
+  totalSavedSeriesCount: number;
+  totalSizeBytes: number;
+  totalSavedSizeBytes: number;
+  series: string[];
+  items: string[];
+};
+
 const Download: React.FC = () => {
-  const [bucketDetails, setBucketDetails] = useState({
+  const [bucketDetails, setBucketDetails] = useState<BucketDetails>({
     bucket: '',
     bucketPrefix: 'dicomweb',
     studyUIDs: [],
@@ -13,14 +38,14 @@ const Download: React.FC = () => {
   const [loadingMessage, setLoadingMessage] = useState('');
   const [confirmationMessage, setConfirmationMessage] = useState('');
   const [seriesList, setSeriesList] = useState<string[]>([]);
-  const [progress, setProgress] = useState({
+  const [progress, setProgress] = useState<DownloadProgress>({
     fetchCount: 0,
     fetchedSize: 0,
     savedCount: 0,
     savedTotal: 0,
     progressing: false,
   });
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<DownloadStats>({
     totalSeriesCount: 0,
     totalSavedSeriesCount: 0,
     totalSizeBytes: 0,
@@ -33,7 +58,7 @@ const Download: React.FC = () => {
 
   const { servicesManager } = useSystem();
   const { userAuthenticationService } = servicesManager.services;
-  const headers: unknown = userAuthenticationService.getAuthorizationHeader();
+  const headers: unknown = userAuthenticationService!.getAuthorizationHeader();
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -42,7 +67,7 @@ const Download: React.FC = () => {
     const bucketPrefix = pathParts.slice(3).join('/');
     const params = url.searchParams;
     const studyUIDs = params.getAll('StudyInstanceUIDs');
-    const token = params.get('token');
+    const token = params.get('token') || '';
     const zip = (params.get('zip') || '').toLowerCase() !== 'false';
 
     setBucketDetails({
@@ -93,7 +118,7 @@ const Download: React.FC = () => {
             return;
           }
         } catch (error) {
-          alert('Error validating token: ' + error.message);
+          alert('Error validating token: ' + (error as Error).message);
           setLoadingMessage('');
           return;
         }
@@ -112,6 +137,11 @@ const Download: React.FC = () => {
 
       setLoadingMessage('Fetching Medatata and calculating Stats...');
 
+      const stats = await codDownload.getStats(studyUIDs);
+      if (!stats) {
+        return;
+      }
+
       const {
         totalSeriesCount,
         totalSavedSeriesCount,
@@ -119,7 +149,7 @@ const Download: React.FC = () => {
         totalSavedSizeBytes,
         series,
         items,
-      } = await codDownload.getStats(studyUIDs);
+      } = stats;
 
       let sizeUnit = 'GB';
       let totalSizeDisplay = (totalSizeBytes / 1024 ** 3).toFixed(2) + ' GB';
@@ -161,7 +191,7 @@ const Download: React.FC = () => {
       });
       setSeriesList(series);
     } catch (e) {
-      alert('Invalid URL format. ' + e.message);
+      alert('Invalid URL format. ' + (e as Error).message);
       console.warn(e);
       setLoadingMessage('');
     }

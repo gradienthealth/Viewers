@@ -10,13 +10,25 @@ import { useDynamicAutoScrollStore } from '../stores/useDynamicAutoScrollStore';
 
 const DEFAULT_FRAME_RATE = 24;
 
+interface DyanmicVolumeDimensionalGroupChangedEventDetail {
+  volumeId: string;
+  dimensionGroupNumber: number;
+  numDimensionGroups: number;
+  imageIdGroupIndex: number;
+  numImageIdGroups: number;
+  splittingTag: string;
+}
+
+type DyanmicVolumeDimensionalGroupChangedEvent =
+  Types.CustomEventType<DyanmicVolumeDimensionalGroupChangedEventDetail>;
+
 type ViewportAutoScrollState = {
   volumeId: string;
   lastDimensionGroup: number | null;
   numDimensionGroups: number;
   element: HTMLElement;
-  onDimensionGroupChange: (evt: any) => void;
-  onVolumeNewImage: (evt: any) => void;
+  onDimensionGroupChange: (evt: DyanmicVolumeDimensionalGroupChangedEvent) => void;
+  onVolumeNewImage: (evt: Types.EventTypes.VolumeNewImageEvent) => void;
 };
 
 const viewportStates = new Map<string, ViewportAutoScrollState>();
@@ -47,7 +59,7 @@ export function activateAutoScroll({
   }
 
   const { cineService, cornerstoneViewportService } = servicesManager.services;
-  const viewport = cornerstoneViewportService.getCornerstoneViewport(
+  const viewport = cornerstoneViewportService!.getCornerstoneViewport(
     viewportId
   ) as Types.IVolumeViewport;
   if (!viewport) {
@@ -59,7 +71,7 @@ export function activateAutoScroll({
     return;
   }
 
-  const onDimensionGroupChange = (evt: any) => {
+  const onDimensionGroupChange = (evt: DyanmicVolumeDimensionalGroupChangedEvent) => {
     const state = viewportStates.get(viewportId);
     if (!state || evt.detail.volumeId !== state.volumeId) {
       return;
@@ -78,7 +90,7 @@ export function activateAutoScroll({
     }
   };
 
-  const onVolumeNewImage = () => {
+  const onVolumeNewImage = (evt: Types.EventTypes.VolumeNewImageEvent) => {
     const store = useDynamicAutoScrollStore.getState();
     if (store.isSelfScroll(viewportId)) {
       store.clearSelfScroll(viewportId);
@@ -93,7 +105,7 @@ export function activateAutoScroll({
     Enums.Events.DYNAMIC_VOLUME_DIMENSION_GROUP_CHANGED,
     onDimensionGroupChange
   );
-  element.addEventListener(Enums.Events.VOLUME_NEW_IMAGE, onVolumeNewImage);
+  element.addEventListener(Enums.Events.VOLUME_NEW_IMAGE, onVolumeNewImage as EventListener);
 
   viewportStates.set(viewportId, {
     volumeId: volume.volumeId,
@@ -106,8 +118,8 @@ export function activateAutoScroll({
 
   store.markAutoActive(viewportId);
 
-  cineService.setIsCineEnabled(true);
-  cineService.setCine({ id: viewportId, isPlaying: true, frameRate: DEFAULT_FRAME_RATE });
+  cineService!.setIsCineEnabled(true);
+  cineService!.setCine({ id: viewportId, isPlaying: true, frameRate: DEFAULT_FRAME_RATE });
 }
 
 function moveToNextSlice({
@@ -118,7 +130,7 @@ function moveToNextSlice({
   viewportId: string;
 }) {
   const { cornerstoneViewportService } = servicesManager.services;
-  const viewport = cornerstoneViewportService.getCornerstoneViewport(
+  const viewport = cornerstoneViewportService!.getCornerstoneViewport(
     viewportId
   ) as Types.IVolumeViewport;
   if (!viewport) {
@@ -161,7 +173,10 @@ function deactivateAutoScroll({
       Enums.Events.DYNAMIC_VOLUME_DIMENSION_GROUP_CHANGED,
       state.onDimensionGroupChange
     );
-    state.element.removeEventListener(Enums.Events.VOLUME_NEW_IMAGE, state.onVolumeNewImage);
+    state.element.removeEventListener(
+      Enums.Events.VOLUME_NEW_IMAGE,
+      state.onVolumeNewImage as EventListener
+    );
     viewportStates.delete(viewportId);
   }
 
@@ -172,7 +187,7 @@ function deactivateAutoScroll({
   }
 
   const { cineService } = servicesManager.services;
-  cineService.setCine({ id: viewportId, isPlaying: false, frameRate: DEFAULT_FRAME_RATE });
+  cineService!.setCine({ id: viewportId, isPlaying: false, frameRate: DEFAULT_FRAME_RATE });
 }
 
 export function stopAutoScroll({
@@ -191,7 +206,10 @@ export function stopAllAutoScroll() {
       Enums.Events.DYNAMIC_VOLUME_DIMENSION_GROUP_CHANGED,
       state.onDimensionGroupChange
     );
-    state.element.removeEventListener(Enums.Events.VOLUME_NEW_IMAGE, state.onVolumeNewImage);
+    state.element.removeEventListener(
+      Enums.Events.VOLUME_NEW_IMAGE,
+      state.onVolumeNewImage as EventListener
+    );
   }
   viewportStates.clear();
 }
