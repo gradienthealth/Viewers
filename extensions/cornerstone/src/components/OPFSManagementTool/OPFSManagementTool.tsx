@@ -76,8 +76,8 @@ const columns: ColumnDef<Study>[] = [
     },
     cell: ({ row }) => <div>{row.getValue('study-uid')}</div>,
   },
-  columnHelper.accessor('study-description', {
-    accessorFn: row => row['study-description'] || '',
+  columnHelper.accessor(row => row['study-description'], {
+    id: 'study-description',
     header: ({ column }) => {
       return (
         <Button
@@ -99,9 +99,9 @@ const columns: ColumnDef<Study>[] = [
         </Tooltip>
       );
     },
-  }),
-  columnHelper.accessor('study-modalities', {
-    accessorFn: row => row['study-modalities'].sort().join(', '),
+  }) as ColumnDef<Study>,
+  columnHelper.accessor(row => row['study-modalities'].sort().join(', '), {
+    id: 'study-modalities',
     header: ({ column }) => {
       return (
         <Button
@@ -123,39 +123,43 @@ const columns: ColumnDef<Study>[] = [
         </Tooltip>
       );
     },
-  }),
-  columnHelper.accessor('study-size', {
-    accessorFn: row => {
+  }) as ColumnDef<Study>,
+  columnHelper.accessor(
+    row => {
       const size: number = row['study-size'];
       return formatSize(size);
     },
-    sortingFn: (rowA, rowB, columnId) => {
-      const sizeA = rowA.original[columnId];
-      const sizeB = rowB.original[columnId];
+    {
+      id: 'study-size',
+      sortingFn: (rowA, rowB) => {
+        // Directly use the known key instead of columnId
+        const sizeA = rowA.original['study-size'];
+        const sizeB = rowB.original['study-size'];
 
-      if (sizeA < sizeB) {
-        return -1;
-      }
-      if (sizeA > sizeB) {
-        return 1;
-      }
-      return 0;
-    },
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Size <ArrowUpDown className="h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => <div>{row.getValue('study-size')}</div>,
-  }),
-  columnHelper.accessor('study-last-modified', {
-    accessorFn: row => new Date(row['study-last-modified']),
+        if (sizeA < sizeB) {
+          return -1;
+        }
+        if (sizeA > sizeB) {
+          return 1;
+        }
+        return 0;
+      },
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          >
+            Size <ArrowUpDown className="h-4 w-4" />
+          </Button>
+        );
+      },
+      cell: ({ row }) => <div>{row.getValue('study-size')}</div>,
+    }
+  ) as ColumnDef<Study>,
+  columnHelper.accessor(row => new Date(row['study-last-modified']), {
     sortingFn: 'datetime',
+    id: 'study-last-modified',
     header: ({ column }) => {
       return (
         <Button
@@ -171,7 +175,7 @@ const columns: ColumnDef<Study>[] = [
       const formattedDate = value.toDateString() + ', ' + value.toLocaleTimeString();
       return <div>{formattedDate}</div>;
     },
-  }),
+  }) as ColumnDef<Study>,
   {
     id: 'actions',
     enableHiding: false,
@@ -211,7 +215,7 @@ export default function OPFSManagementTool() {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = React.useState({});
+  const [rowSelection, setRowSelection] = React.useState<Record<number, boolean>>({});
   const table = useReactTable({
     columns,
     data,
@@ -231,7 +235,10 @@ export default function OPFSManagementTool() {
       rowSelection,
     },
   });
-  const [appConfig] = useAppConfig();
+  const [appConfig] = useAppConfig() as unknown as [
+    AppTypes.Config,
+    React.Dispatch<React.SetStateAction<AppTypes.Config>>,
+  ];
 
   useEffect(() => {
     const initialize = async () => {
@@ -243,7 +250,7 @@ export default function OPFSManagementTool() {
   }, []);
 
   const refreshOPFSData = async () => {
-    const fetchedData = await getOPFSData(appConfig.routerBasename);
+    const fetchedData = await getOPFSData(appConfig.routerBasename as string);
     table.toggleAllPageRowsSelected(false);
     setData(fetchedData);
   };
@@ -263,7 +270,7 @@ export default function OPFSManagementTool() {
     }
   };
 
-  const purgeOldFiles = async (time: number) => {
+  const purgeOldFiles = async (time?: number) => {
     await purgeOldFilesFromOPFS(time);
     refreshOPFSData();
   };

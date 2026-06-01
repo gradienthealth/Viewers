@@ -4,12 +4,12 @@ import {
   PHIAnnotationInput,
 } from './buildRedactionPayload';
 
+import { utilities as csUtils, metaData } from '@cornerstonejs/core';
+
 jest.mock('@cornerstonejs/core', () => ({
   utilities: { worldToImageCoords: jest.fn() },
   metaData: { get: jest.fn() },
 }));
-
-import { utilities as csUtils, metaData } from '@cornerstonejs/core';
 
 const worldToImageCoords = csUtils.worldToImageCoords as jest.Mock;
 const metaDataGet = metaData.get as jest.Mock;
@@ -19,7 +19,9 @@ const SERIES = 'series-1';
 
 function setImageDims({ rows, columns }: { rows: number; columns: number }) {
   metaDataGet.mockImplementation((moduleId: string) => {
-    if (moduleId === 'imagePixelModule') return { rows, columns };
+    if (moduleId === 'imagePixelModule') {
+      return { rows, columns };
+    }
     return {};
   });
 }

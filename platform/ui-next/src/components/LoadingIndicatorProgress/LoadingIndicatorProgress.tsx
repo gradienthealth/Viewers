@@ -3,13 +3,20 @@ import classNames from 'classnames';
 
 import ProgressLoadingBar from '../ProgressLoadingBar';
 import { Icons } from '../Icons';
+
+interface Props {
+  className?: string;
+  textBlock?: React.JSX.Element;
+  progress?: number;
+}
+
 /**
  *  A React component that renders a loading indicator.
  * if progress is not provided, it will render an infinite loading indicator
  * if progress is provided, it will render a progress bar
  * Optionally a textBlock can be provided to display a message
  */
-function LoadingIndicatorProgress({ className, textBlock, progress }) {
+function LoadingIndicatorProgress({ className, textBlock, progress }: Props) {
   return (
     <div
       className={classNames(
@@ -18,6 +25,7 @@ function LoadingIndicatorProgress({ className, textBlock, progress }) {
       )}
     >
       <Icons.GradientHealthLogo
+        // @ts-expect-error: IconProps uses HTMLAttributes instead of SVGAttributes
         viewBox="2470 0 733 191"
         width="191"
         height="40"

@@ -1,9 +1,8 @@
 import { internal } from '@cornerstonejs/dicom-image-loader';
-import { data as dcmjsData, normalizers } from 'dcmjs';
+import { data as dcmjsData } from 'dcmjs';
 import pako from 'pako';
 
-const { DicomMessage, DicomMetaDictionary, datasetToBlob } = dcmjsData;
-const { Normalizer } = normalizers;
+const { DicomMetaDictionary, datasetToBlob } = dcmjsData;
 
 const Properties = {
   StudyUID: '0020000D',
@@ -12,23 +11,89 @@ const Properties = {
 
 const DEFAULT_USER_PROJECT = 'laplace-viewer';
 
+/**
+ * @typedef {Object} DicomTag
+ * @property {string[]} Value
+ */
+
+/**
+ * @typedef {Record<string, DicomTag> & { StudyInstanceUID?: string, SeriesInstanceUID?: string, SOPInstanceUID?: string, SeriesDescription?: string, url?: string }} DicomInstance
+ */
+
+/**
+ * @typedef {Object} SeriesMetadata
+ * @property {string} deidSeriesInstanceUID
+ * @property {DicomInstance[]} instances
+ */
+
+/**
+ * @typedef {Object} StudyMetadata
+ * @property {string} deidStudyInstanceUID
+ * @property {SeriesMetadata[]} series
+ */
+
+/**
+ * @typedef {Object} OmittedSeries
+ * @property {string} studyInstanceUID
+ * @property {string} seriesInstanceUID
+ * @property {string} error
+ */
+
+/**
+ * @typedef {Object} BucketConfig
+ * @property {string} bucketName
+ * @property {string | null} bucketPrefix
+ */
+
+/**
+ * @typedef {Object} DisplaySetInstance
+ * @property {string} SOPInstanceUID
+ * @property {string} url
+ */
+
+/**
+ * @typedef {Object} DisplaySet
+ * @property {string} SeriesInstanceUID
+ * @property {DisplaySetInstance} instance
+ */
+
+/**
+ * @typedef {AppTypes.DisplaySetService} DisplaySetService
+ */
+
+/**
+ * @typedef {{
+ * url?: string,
+ * staticWado?: boolean,
+ * singlepart?: boolean | string,
+ * headers?:Record<string, string>,
+ * errorInterceptor?:(function(Error): void) | null
+ * [key: string]: any  // This correctly allows any extra properties
+ * }} CodServerConfig
+ */
+
 class CodDicomWebServerClient {
   /**
-   * @param {Object} config
+   * @param {CodServerConfig} config
    * @param {URLSearchParams} [query]
    */
   constructor(config, query) {
-    this.baseURL = config.url;
+    this.baseURL = config.url || '';
     this.qidoURL = this.baseURL;
     this.wadoURL = this.baseURL;
     this.config = config;
-    this.headers = config.headers;
+    this.headers = config.headers || {};
     this.errorInterceptor = config.errorInterceptor;
 
     this._codServer = internal.getWadoRsWebServer();
+    /** @type {Map<string, string>} */
     this.deidStudyInstanceUIDMap = new Map(); // Map of study instance UIDs to deid study instance UIDs
+    /** @type {StudyMetadata[]} */
     this._studiesMetadata = [];
+    /** @type {OmittedSeries[]} */
     this._errorSeries = [];
+    /** @type {BucketConfig[]} */
+    this.buckets = [];
 
     internal.setCodHeaders({
       'X-Goog-User-Project': query?.get('userProject') || DEFAULT_USER_PROJECT,
@@ -37,8 +102,13 @@ class CodDicomWebServerClient {
 
   /**
    * @param {URLSearchParams} queryParams
+   * @returns {Promise<void>}
    */
   async fetchStudiesMetadata(queryParams) {
+    if (!this.wadoURL) {
+      return;
+    }
+
     const bucketNames = queryParams.getAll('bucket');
     const bucketPrefix = queryParams.get('bucket-prefix');
 
@@ -91,7 +161,7 @@ class CodDicomWebServerClient {
             });
           })
           .catch(error => {
-            this.errorInterceptor(error);
+            this.errorInterceptor?.(error);
             return [];
           });
       })
@@ -108,7 +178,8 @@ class CodDicomWebServerClient {
   }
 
   /**
-   * @param {{ bucketName: string, bucketPrefix: string }[]} buckets
+   * @param {BucketConfig[]} buckets
+   * @returns {void}
    */
   setBuckets(buckets) {
     this.buckets = buckets;
@@ -116,6 +187,7 @@ class CodDicomWebServerClient {
 
   /**
    * @param {string} deidStudyInstanceUID
+   * @returns {string | undefined}
    */
   getStudyUIDForDeidStudyUID(deidStudyInstanceUID) {
     const studyWithDeidStudyUID = this._studiesMetadata.find(
@@ -125,31 +197,37 @@ class CodDicomWebServerClient {
     return this._getProperty(studyWithDeidStudyUID, Properties.StudyUID);
   }
 
+  /**
+   * @returns {OmittedSeries[]}
+   */
   getOmittedSeries() {
     return this._errorSeries;
   }
 
   /**
-   * @param {Object} data
+   * @param {StudyMetadata | SeriesMetadata | DicomInstance | undefined} data
    * @param {string} property
+   * @returns {string | undefined}
    */
   _getProperty(data, property) {
     if (!data) {
-      return;
+      return undefined;
     }
 
     return (
-      data[property]?.Value[0] ||
-      data.instances?.[0][property]?.Value[0] ||
-      data.series?.[0].instances[0][property]?.Value[0]
+      data[property]?.Value?.[0] ||
+      data.instances?.[0]?.[property]?.Value?.[0] ||
+      data.series?.[0]?.instances?.[0]?.[property]?.Value?.[0]
     );
   }
 
   /**
-   * @param {Object[]} studies
-   * @param {{ 'StudyInstanceUID':string, [s: string]: any; }} queryParams
+   * @param {StudyMetadata[]} [studies=[]]
+   * @param {Object} [queryParams={}]
+   * @param {string} [queryParams.StudyInstanceUID]
+   * @returns {StudyMetadata | undefined}
    */
-  _findStudy(studies = [], queryParams) {
+  _findStudy(studies = [], queryParams = {}) {
     return studies.find(study => {
       if (this._getProperty(study, Properties.StudyUID) === queryParams.StudyInstanceUID) {
         return true;
@@ -162,10 +240,11 @@ class CodDicomWebServerClient {
   }
 
   /**
-   * @param {Object[]} series
    * @param {string} seriesInstanceUID
+   * @param {SeriesMetadata[]} [series=[]]
+   * @returns {SeriesMetadata | undefined}
    */
-  _findSeries(series = [], seriesInstanceUID) {
+  _findSeries(seriesInstanceUID, series = []) {
     return series.find(
       series => this._getProperty(series, Properties.SeriesUID) === seriesInstanceUID
     );
@@ -175,6 +254,7 @@ class CodDicomWebServerClient {
    * @param {Object} options
    * @param {string} options.studyInstanceUID
    * @param {string} options.seriesInstanceUID
+   * @returns {Promise<DicomInstance[]>}
    */
   async retrieveSeriesMetadata({ studyInstanceUID, seriesInstanceUID }) {
     let studyFound = this._findStudy(this._studiesMetadata, { StudyInstanceUID: studyInstanceUID });
@@ -184,13 +264,13 @@ class CodDicomWebServerClient {
       studyFound = this._findStudy(this._studiesMetadata, { StudyInstanceUID: studyInstanceUID });
     }
 
-    const seriesFound = this._findSeries(studyFound?.series, seriesInstanceUID);
+    const seriesFound = this._findSeries(seriesInstanceUID, studyFound?.series);
 
     return new Promise((resolve, reject) => {
       if (seriesFound) {
         resolve(seriesFound.instances);
       } else {
-        reject();
+        reject(new Error('Series not found'));
       }
     });
   }
@@ -198,6 +278,7 @@ class CodDicomWebServerClient {
   /**
    * @param {Object} options
    * @param {string} options.studyInstanceUID
+   * @returns {Promise<DicomInstance[]>}
    */
   async retrieveStudyMetadata({ studyInstanceUID }) {
     let studyFound = this._findStudy(this._studiesMetadata, { StudyInstanceUID: studyInstanceUID });
@@ -211,7 +292,7 @@ class CodDicomWebServerClient {
       if (studyFound) {
         resolve(studyFound.series.flatMap(aSeries => aSeries.instances));
       } else {
-        reject();
+        reject(new Error('Study not found'));
       }
     });
   }
@@ -219,8 +300,9 @@ class CodDicomWebServerClient {
   /**
    * @param {Object} options
    * @param {string} options.studyInstanceUID
-   * @param {Object} options.queryParams
-   * @param {string} options.queryParams.SeriesInstanceUID
+   * @param {Object} [options.queryParams]
+   * @param {string | string[]} [options.queryParams.SeriesInstanceUID]
+   * @returns {Promise<DicomInstance[]>}
    */
   async searchForSeries({ studyInstanceUID, queryParams }) {
     let studyFound = this._findStudy(this._studiesMetadata, { StudyInstanceUID: studyInstanceUID });
@@ -253,7 +335,8 @@ class CodDicomWebServerClient {
   /**
    * @param {Object} options
    * @param {Object} options.queryParams
-   * @param {string} options.queryParams.StudyInstanceUID
+   * @param {string} [options.queryParams.StudyInstanceUID]
+   * @returns {Promise<DicomInstance[]>}
    */
   async searchForStudies({ queryParams }) {
     let studyFound = this._studiesMetadata.find(study => {
@@ -285,6 +368,12 @@ class CodDicomWebServerClient {
     });
   }
 
+  /**
+   * @param {Object} options
+   * @param {DicomInstance[]} options.datasets
+   * @param {DisplaySetService} options.displaySetService
+   * @returns {Promise<void>}
+   */
   async storeInstances({ datasets, displaySetService }) {
     const mapSegSeriesFromDataSet = (dataset, dicomData, fileSize) => {
       return {
@@ -312,7 +401,12 @@ class CodDicomWebServerClient {
       const dataset = datasets[index];
       const denaturalized = DicomMetaDictionary.denaturalizeDataset(dataset);
 
-      const { StudyInstanceUID, SeriesInstanceUID, SOPInstanceUID, SeriesDescription } = dataset;
+      const {
+        StudyInstanceUID,
+        SeriesInstanceUID,
+        SOPInstanceUID,
+        SeriesDescription = `Seg_${index + 1}`,
+      } = dataset;
 
       const params = new URLSearchParams(window.location.search);
       const { bucketName, bucketPrefix } = this.buckets[1] || this.buckets[0];
@@ -330,7 +424,7 @@ class CodDicomWebServerClient {
           ds.instance.SOPInstanceUID === SOPInstanceUID
       )[0];
       if (segDisplaySet) {
-        const url = segDisplaySet.instance.url;
+        const url = String(segDisplaySet.instance?.url);
         segBucket = url.split('https://storage.googleapis.com/')[1].split('/')[0];
         fileName = url.split(`https://storage.googleapis.com/${segBucket}/`)[1];
       }
@@ -388,6 +482,7 @@ class CodDicomWebServerClient {
 
   /**
    * @param {string} studyInstanceUID
+   * @returns {Promise<void>}
    */
   async _fetchStudyMetadataByUID(studyInstanceUID) {
     const search = new URLSearchParams({
@@ -396,7 +491,7 @@ class CodDicomWebServerClient {
     if (this.buckets) {
       this.buckets.forEach(({ bucketName, bucketPrefix }) => {
         search.append('bucket', bucketName);
-        if (search.get('bucket-prefix') !== bucketPrefix) {
+        if (bucketPrefix && search.get('bucket-prefix') !== bucketPrefix) {
           search.append('bucket-prefix', bucketPrefix);
         }
       });
@@ -408,10 +503,11 @@ class CodDicomWebServerClient {
   /**
    * @param {Object} params
    * @param {string} params.wadoURL
-   * @param {string} params.bucketName
+   * @param {string} [params.bucketName]
+   * @param {string | null} [params.prefix]
    * @param {string[]} params.studyuids
-   * @param {string} params.prefix
-   * @param {Object} params.headers
+   * @param {Record<string, string>} params.headers
+   * @returns {Promise<StudyMetadata[]>}
    */
   async filesFromStudyInstanceUID({ wadoURL, bucketName, prefix, studyuids, headers }) {
     const delimiter = '/';
@@ -434,7 +530,7 @@ class CodDicomWebServerClient {
           .fetchCod(wadoUrl, headers)
           .then(instances => ({
             deidSeriesInstanceUID,
-            instances: instances.map(instance => ({
+            instances: instances?.map(instance => ({
               ...instance,
               BucketPath: { Value: [`${bucket}/${bucketPrefix}`] },
             })),
@@ -467,6 +563,7 @@ class CodDicomWebServerClient {
 
 /**
  * @param {string} baseRoot
+ * @returns {string}
  */
 function parseDomainFromBaseURL(baseRoot) {
   const [firstPart, secondPart] = baseRoot.split('://');

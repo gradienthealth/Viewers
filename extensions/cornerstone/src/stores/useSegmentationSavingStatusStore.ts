@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create, StateCreator } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
 /**
@@ -49,7 +49,9 @@ type SegmentationSavingStatusState = {
  * @param set - The zustand set function.
  * @returns The Segmentation Saving Status store state and actions.
  */
-const createSegmentationSavingStatusStore = (set): SegmentationSavingStatusState => ({
+const createSegmentationSavingStatusStore: StateCreator<SegmentationSavingStatusState> = (
+  set
+): SegmentationSavingStatusState => ({
   type: PRESENTATION_TYPE_ID,
   segmentationSavingStatusMap: {},
 
@@ -67,15 +69,13 @@ const createSegmentationSavingStatusStore = (set): SegmentationSavingStatusState
           [segmentationUID]: status,
         },
       }),
-      false,
-      'setSegmentationSavingStatus'
+      false
     ),
 
   /**
    * Clears the entire Segmentation Saving Status map.
    */
-  clearSegmentationSavingStatusMap: () =>
-    set({ segmentationSavingStatusMap: {} }, false, 'clearSegmentationSavingStatusMap'),
+  clearSegmentationSavingStatusMap: () => set({ segmentationSavingStatusMap: {} }, false),
 });
 
 /**
@@ -83,7 +83,7 @@ const createSegmentationSavingStatusStore = (set): SegmentationSavingStatusState
  * Applies devtools middleware when DEBUG_STORE is enabled.
  */
 export const useSegmentationSavingStatusStore = create<SegmentationSavingStatusState>()(
-  DEBUG_STORE
+  (DEBUG_STORE
     ? devtools(createSegmentationSavingStatusStore, { name: 'SegmentationSavingStatusStore' })
-    : createSegmentationSavingStatusStore
+    : createSegmentationSavingStatusStore) as StateCreator<SegmentationSavingStatusState, [], []>
 );

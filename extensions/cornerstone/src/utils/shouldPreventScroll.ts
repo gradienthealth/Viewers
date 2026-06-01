@@ -1,16 +1,17 @@
 import { Enums } from '@cornerstonejs/core';
 
 import { useCachedSlicesPerDisplaysetStore } from '../stores';
+import { GridViewport } from '@ohif/core/src/types/ViewportGridType';
 
 export default function shouldPreventScroll(
   keyPressed: boolean,
   imageIdIndex: number,
-  servicesManager
+  servicesManager: AppTypes.ServicesManager
 ): boolean {
   const { cachedState } = useCachedSlicesPerDisplaysetStore.getState();
   const { viewportGridService } = servicesManager.services;
-  const { activeViewportId, viewports } = viewportGridService.getState();
-  const activeViewport = viewports.get(activeViewportId);
+  const { activeViewportId, viewports } = viewportGridService!.getState();
+  const activeViewport = viewports.get(activeViewportId as string) as GridViewport;
   const cachedSlices = cachedState[activeViewport.displaySetInstanceUIDs[0]] as number[];
   const isStackViewport = activeViewport.viewportOptions.viewportType === Enums.ViewportType.STACK;
 

@@ -4,7 +4,7 @@ export const CURRENT_OPFS_VERSION = 1;
 export const OPFS_PURGE_METADATA = [
   {
     label: 'All',
-    time: null,
+    time: undefined,
   },
   {
     label: '1 Hour',

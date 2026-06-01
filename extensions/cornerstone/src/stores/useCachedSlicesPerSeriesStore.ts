@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create, StateCreator } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
 /**
@@ -48,7 +48,9 @@ type CachedSlicesPerDisplaysetState = {
  * @param set - The zustand set function.
  * @returns The Cached slices per Displayset store state and actions.
  */
-const createCachedSlicesPerDisplaysetStore = (set): CachedSlicesPerDisplaysetState => ({
+const createCachedSlicesPerDisplaysetStore: StateCreator<CachedSlicesPerDisplaysetState> = (
+  set
+): CachedSlicesPerDisplaysetState => ({
   type: PRESENTATION_TYPE_ID,
   cachedState: {},
 
@@ -60,11 +62,9 @@ const createCachedSlicesPerDisplaysetStore = (set): CachedSlicesPerDisplaysetSta
           [displaySetInstanceUID]: imageIdIndices,
         },
       }),
-      false,
-      'setCachedSlices'
+      false
     ),
-  clearCachedSlicesPerDisplaysetStore: () =>
-    set({ cachedState: {} }, false, 'clearCachedSlicesPerDisplaysetStore'),
+  clearCachedSlicesPerDisplaysetStore: () => set({ cachedState: {} }, false),
 });
 
 /**
@@ -72,7 +72,7 @@ const createCachedSlicesPerDisplaysetStore = (set): CachedSlicesPerDisplaysetSta
  * Applies devtools middleware when DEBUG_STORE is enabled.
  */
 export const useCachedSlicesPerDisplaysetStore = create<CachedSlicesPerDisplaysetState>()(
-  DEBUG_STORE
+  (DEBUG_STORE
     ? devtools(createCachedSlicesPerDisplaysetStore, { name: 'CachedSlicesPerDisplaysetStore' })
-    : createCachedSlicesPerDisplaysetStore
+    : createCachedSlicesPerDisplaysetStore) as StateCreator<CachedSlicesPerDisplaysetState, [], []>
 );

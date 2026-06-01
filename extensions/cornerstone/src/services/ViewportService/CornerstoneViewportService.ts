@@ -1018,10 +1018,7 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
       if (evt?.detail?.volumeId !== volumeId) {
         return;
       }
-      eventTarget.removeEventListener(
-        csEnums.Events.IMAGE_VOLUME_LOADING_COMPLETED,
-        loadedHandler
-      );
+      eventTarget.removeEventListener(csEnums.Events.IMAGE_VOLUME_LOADING_COMPLETED, loadedHandler);
 
       try {
         const [min, max] = this._sampleVolumePixelRange(volumeId);
@@ -1053,10 +1050,7 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
       }
     };
 
-    eventTarget.addEventListener(
-      csEnums.Events.IMAGE_VOLUME_LOADING_COMPLETED,
-      loadedHandler
-    );
+    eventTarget.addEventListener(csEnums.Events.IMAGE_VOLUME_LOADING_COMPLETED, loadedHandler);
   }
 
   /**
@@ -1130,7 +1124,7 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
   private _getInitialImageIndexForViewport(
     viewportInfo: ViewportInfo,
     imageIds?: string[]
-  ): number {
+  ): number | void {
     const initialImageOptions = viewportInfo.getInitialImageOptions();
     if (!initialImageOptions) {
       return;
@@ -1140,9 +1134,9 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
 
     let numberOfSlices;
     if (viewportType === csEnums.ViewportType.STACK) {
-      numberOfSlices = imageIds.length;
+      numberOfSlices = imageIds!.length;
     } else if (viewportType === csEnums.ViewportType.ORTHOGRAPHIC) {
-      const viewport = this.getCornerstoneViewport(viewportInfo.getViewportId());
+      const viewport = this.getCornerstoneViewport(viewportInfo.getViewportId()) as VolumeViewport;
       const imageSliceData = csUtils.getImageSliceDataForVolumeViewport(viewport);
 
       if (!imageSliceData) {
