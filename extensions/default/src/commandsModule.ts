@@ -777,7 +777,7 @@ const commandsModule = ({
       setTimeout(() => actions.scrollActiveThumbnailIntoView(), 0);
     },
 
-    downloadSeriesFile: async ({ displaySetInstanceUID }) => {
+    downloadSeriesFile: async ({ displaySetInstanceUID }: { displaySetInstanceUID: string }) => {
       const displaySet = displaySetService.getDisplaySetByUID(displaySetInstanceUID);
       const codServer = internal.getWadoRsWebServer();
       const deidSeriesInstanceUID = displaySet.instance.DeidSeriesInstanceUID;

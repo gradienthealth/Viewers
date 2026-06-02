@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { EVENTS } from '@cornerstonejs/core';
+import * as csCore from '@cornerstonejs/core';
 
 /** Message posted to the parent frame when the viewer has rendered a series' first image. */
 interface SeriesReadyMessage {
@@ -77,7 +77,7 @@ export function usePostMessageSeriesSwitching({
       // via iframe and switched repeatedly via postMessage — without purging,
       // Cornerstone retains decoded pixel data from every previously loaded series.
       if (clearCache) {
-        (window as any).cornerstone?.cache?.purgeCache();
+        (window as Window & { cornerstone?: typeof csCore }).cornerstone?.cache?.purgeCache();
       }
 
       // Check if we already have display sets for this series (cache hit).
@@ -116,20 +116,20 @@ export function usePostMessageSeriesSwitching({
       }
 
       try {
-        const { activeViewportId } = viewportGridService.getState();
+        const { activeViewportId } = viewportGridService!.getState();
 
         // Stop cine before swapping to avoid inconsistent state.
-        const cineState = cineService.getState();
+        const cineState = cineService!.getState();
         const currentCine = cineState.cines?.[activeViewportId];
         if (currentCine?.isPlaying) {
-          cineService.setCine({
+          cineService!.setCine({
             id: activeViewportId,
             frameRate: currentCine.frameRate ?? cineState.default?.frameRate ?? 24,
             isPlaying: false,
           });
         }
 
-        viewportGridService.setDisplaySetsForViewports([
+        viewportGridService!.setDisplaySetsForViewports([
           {
             viewportId: activeViewportId,
             displaySetInstanceUIDs: [displaySets[0].displaySetInstanceUID],
@@ -156,7 +156,9 @@ export function usePostMessageSeriesSwitching({
   // Post seriesReady to parent when the viewer renders its first image.
   // Fires on both initial iframe.src loads and postMessage-based series switches.
   useEffect(() => {
-    if (!enabled || !window.parent || window.parent === window) return;
+    if (!enabled || !window.parent || window.parent === window) {
+      return;
+    }
 
     // Track the current series UID from the iframe URL (initial load) and update
     // it when a loadSeries postMessage arrives. This avoids a race condition where
@@ -167,7 +169,9 @@ export function usePostMessageSeriesSwitching({
     const notifiedSeries = new Set<string>();
 
     function handleImageRendered(evt: Event) {
-      if (!currentSeriesUID || notifiedSeries.has(currentSeriesUID)) return;
+      if (!currentSeriesUID || notifiedSeries.has(currentSeriesUID)) {
+        return;
+      }
 
       notifiedSeries.add(currentSeriesUID);
       const message: SeriesReadyMessage = { type: 'seriesReady', seriesUID: currentSeriesUID };
@@ -183,10 +187,10 @@ export function usePostMessageSeriesSwitching({
 
     // IMAGE_RENDERED fires on viewport DOM elements; capture at document level
     // to avoid tracking individual element lifecycles.
-    document.addEventListener(EVENTS.IMAGE_RENDERED, handleImageRendered, true);
+    document.addEventListener(csCore.EVENTS.IMAGE_RENDERED, handleImageRendered, true);
     window.addEventListener('message', handleMessage);
     return () => {
-      document.removeEventListener(EVENTS.IMAGE_RENDERED, handleImageRendered, true);
+      document.removeEventListener(csCore.EVENTS.IMAGE_RENDERED, handleImageRendered, true);
       window.removeEventListener('message', handleMessage);
     };
   }, [enabled]);

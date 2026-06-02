@@ -133,8 +133,8 @@ export default function ModeRoute({
 
   usePostMessageSeriesSwitching({
     enabled: ExtensionDependenciesLoaded,
-    servicesManager,
-    displaySetService,
+    servicesManager: servicesManager!,
+    displaySetService: displaySetService!,
     dataSource,
   });
 
@@ -158,12 +158,12 @@ export default function ModeRoute({
         const leftPanelEnabled = lowerCaseSearchParams.get('leftpanelenabled') !== 'false';
         const rightPanelEnabled = lowerCaseSearchParams.get('rightpanelenabled') !== 'false';
 
-        panelService.reset();
+        panelService!.reset();
         if (leftPanelEnabled) {
-          panelService.addPanels(panelService.PanelPosition.Left, leftPanels);
+          panelService!.addPanels(panelService!.PanelPosition.Left, leftPanels, {});
         }
         if (rightPanelEnabled) {
-          panelService.addPanels(panelService.PanelPosition.Right, rightPanels);
+          panelService!.addPanels(panelService!.PanelPosition.Right, rightPanels, {});
         }
 
         // layoutProps contains all props but leftPanels and rightPanels

@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import {
   Enums,
@@ -8,14 +7,16 @@ import {
   utilities as csCoreUtils,
   StreamingDynamicImageVolume,
   VolumeViewport,
+  Types as csCoreTypes,
 } from '@cornerstonejs/core';
 import { ImageScrollbar, useViewportDialog } from '@ohif/ui-next';
 import classNames from 'classnames';
 import { useCachedSlicesPerDisplaysetStore } from '../../stores';
 import { getFirstRenderedSliceIndex } from '../../utils/getFirstRenderedSliceIndex';
 import { activateAutoScroll, stopAutoScroll } from '../../utils/dynamicVolumeAutoScroll';
+import { StackViewportData, VolumeViewportData } from '../../types/CornerstoneCacheService';
 
-const KEYS = { Ctrl: 17 };
+const KEYS = { Ctrl: 'Control' };
 
 function SmartImageScrollbar({
   viewportData,
@@ -25,18 +26,31 @@ function SmartImageScrollbar({
   setImageSliceData,
   scrollbarHeight,
   servicesManager,
-}: withAppTypes<{
-  element: HTMLElement;
+}: {
+  viewportData: StackViewportData | VolumeViewportData | null;
   viewportId: string;
-}>) {
+  element: HTMLElement;
+  imageSliceData: {
+    imageIndex: number;
+    numberOfSlices: number;
+  };
+  setImageSliceData: React.Dispatch<
+    React.SetStateAction<{
+      imageIndex: number;
+      numberOfSlices: number;
+    }>
+  >;
+  scrollbarHeight: string;
+  servicesManager: AppTypes.ServicesManager;
+}) {
   const { t } = useTranslation('Common');
-  const [cachedImages, setCachedImages] = useState([]);
+  const [cachedImages, setCachedImages] = useState<number[]>([]);
   const [isKeyPressed, setIsKeyPressed] = useState(false);
   const [renderProgress, setRenderProgress] = useState<number | null>(null);
   const handledVolumeIds = useRef<Set<string>>(new Set());
   const activeDialogVolumeIdRef = useRef<string | null>(null);
   const [viewportDialogState] = useViewportDialog() || [];
-  const dialogStateRef = useRef(viewportDialogState);
+  const dialogStateRef = useRef<{ id: string }>(viewportDialogState);
 
   const firstLoadedDialogId = `jump-to-loaded-slice-${viewportId}`;
 
@@ -46,19 +60,21 @@ function SmartImageScrollbar({
   const scrollbarHeightValue = +scrollbarHeight.split('px')[0] + 2;
   const isStackViewport = viewportData?.viewportType === Enums.ViewportType.STACK;
 
-  const onImageScrollbarChange = (imageIndex, viewportId) => {
+  const onImageScrollbarChange = (imageIndex: number, viewportId: string) => {
     if (!isKeyPressed && !cachedImages.includes(imageIndex) && isStackViewport) {
       return;
     }
 
-    const viewport = cornerstoneViewportService.getCornerstoneViewport(viewportId);
+    const viewport = cornerstoneViewportService!.getCornerstoneViewport(
+      viewportId
+    ) as csCoreTypes.IViewport;
 
-    const { isCineEnabled } = cineService.getState();
+    const { isCineEnabled } = cineService!.getState();
 
     if (isCineEnabled) {
       // on image scrollbar change, stop the CINE if it is playing
-      cineService.stopClip(element, { viewportId });
-      cineService.setCine({ id: viewportId, frameRate: 24, isPlaying: false });
+      cineService!.stopClip(element, { viewportId });
+      cineService!.setCine({ id: viewportId, frameRate: 24, isPlaying: false });
     }
 
     csCoreUtils.jumpToSlice(viewport.element, {
@@ -76,7 +92,7 @@ function SmartImageScrollbar({
       return;
     }
 
-    const viewport = cornerstoneViewportService.getCornerstoneViewport(viewportId);
+    const viewport = cornerstoneViewportService!.getCornerstoneViewport(viewportId);
 
     if (!viewport || !viewport.getActorUIDs().length) {
       return;
@@ -97,25 +113,38 @@ function SmartImageScrollbar({
     }
     const { viewportType } = viewportData;
     const eventId =
-      (viewportType === Enums.ViewportType.STACK && Enums.Events.STACK_VIEWPORT_SCROLL) ||
-      (viewportType === Enums.ViewportType.ORTHOGRAPHIC && Enums.Events.VOLUME_NEW_IMAGE) ||
-      Enums.Events.IMAGE_RENDERED;
+      viewportType === Enums.ViewportType.STACK
+        ? Enums.Events.STACK_VIEWPORT_SCROLL
+        : viewportType === Enums.ViewportType.ORTHOGRAPHIC
+          ? Enums.Events.VOLUME_NEW_IMAGE
+          : undefined;
 
-    const updateIndex = event => {
-      const viewport = cornerstoneViewportService.getCornerstoneViewport(viewportId);
+    if (!eventId) {
+      return;
+    }
+
+    const updateIndex = (
+      event: CustomEvent<
+        | { imageIndex: number; newImageIdIndex: undefined }
+        | { imageIndex: undefined; newImageIdIndex: number }
+      >
+    ) => {
+      const viewport = cornerstoneViewportService!.getCornerstoneViewport(
+        viewportId
+      ) as csCoreTypes.IViewport;
       const { imageIndex, newImageIdIndex = imageIndex } = event.detail;
       const numberOfSlices = viewport.getNumberOfSlices();
       // find the index of imageId in the imageIds
       setImageSliceData({
-        imageIndex: newImageIdIndex,
+        imageIndex: newImageIdIndex as number,
         numberOfSlices,
       });
     };
 
-    element.addEventListener(eventId, updateIndex);
+    element.addEventListener(eventId, updateIndex as EventListener);
 
     return () => {
-      element.removeEventListener(eventId, updateIndex);
+      element.removeEventListener(eventId, updateIndex as EventListener);
     };
   }, [viewportData, element]);
 
@@ -136,14 +165,14 @@ function SmartImageScrollbar({
   }, [viewportData, numOfSlices]);
 
   useEffect(() => {
-    const onKeyDown = evt => {
+    const onKeyDown = (evt: KeyboardEvent) => {
       //  Checking the pressed key is Ctrl key
-      evt.keyCode === KEYS.Ctrl && setIsKeyPressed(true);
+      evt.key === KEYS.Ctrl && setIsKeyPressed(true);
     };
 
-    const onKeyUp = evt => {
+    const onKeyUp = (evt: KeyboardEvent) => {
       //  Checking the pressed key is Ctrl key
-      evt.keyCode === KEYS.Ctrl && setIsKeyPressed(false);
+      evt.key === KEYS.Ctrl && setIsKeyPressed(false);
     };
 
     window.addEventListener('keydown', onKeyDown);
@@ -156,10 +185,10 @@ function SmartImageScrollbar({
   }, []);
 
   useEffect(() => {
-    const handleVolumeModified = evt => {
+    const handleVolumeModified = (evt: csCoreTypes.EventTypes.ImageVolumeModifiedEvent) => {
       const { volumeId, numberOfFrames, framesProcessed } = evt.detail;
 
-      const renderingEngine = cornerstoneViewportService.getRenderingEngine();
+      const renderingEngine = cornerstoneViewportService!.getRenderingEngine();
       if (!renderingEngine) {
         return;
       }
@@ -176,7 +205,7 @@ function SmartImageScrollbar({
         const currentImageId = targetViewport.getCurrentImageId();
         if (currentImageId && cache.isLoaded(currentImageId)) {
           activeDialogVolumeIdRef.current = null;
-          uiViewportDialogService.hide();
+          uiViewportDialogService!.hide();
         }
       }
 
@@ -219,7 +248,7 @@ function SmartImageScrollbar({
       handledVolumeIds.current.add(volumeId);
       activeDialogVolumeIdRef.current = volumeId;
 
-      uiViewportDialogService.show({
+      uiViewportDialogService!.show({
         id: firstLoadedDialogId,
         viewportId,
         type: 'info',
@@ -230,7 +259,7 @@ function SmartImageScrollbar({
         ],
         onSubmit: (result: boolean) => {
           activeDialogVolumeIdRef.current = null;
-          uiViewportDialogService.hide();
+          uiViewportDialogService!.hide();
           if (result) {
             csCoreUtils.jumpToSlice(targetViewport.element, {
               imageIndex: firstSliceIndex,
@@ -253,9 +282,11 @@ function SmartImageScrollbar({
   }, [viewportId, viewportData]);
 
   useEffect(() => {
-    const onVolumeLoadingCompleted = evt => {
+    const onVolumeLoadingCompleted = (
+      evt: csCoreTypes.EventTypes.ImageVolumeLoadingCompletedEvent
+    ) => {
       const { volumeId } = evt.detail;
-      const viewport = cornerstoneViewportService.getCornerstoneViewport(viewportId);
+      const viewport = cornerstoneViewportService!.getCornerstoneViewport(viewportId);
       if (!viewport?.getActors) {
         return;
       }
@@ -290,8 +321,8 @@ function SmartImageScrollbar({
     const { imageIds, displaySetInstanceUID } = viewportData.data[0];
     const { setCachedSlices } = useCachedSlicesPerDisplaysetStore.getState();
 
-    const cachedImageIndices = [];
-    imageIds.forEach((imageId, index) => {
+    const cachedImageIndices: number[] = [];
+    imageIds?.forEach((imageId, index) => {
       if (cache.isLoaded(imageId)) {
         cachedImageIndices.push(index);
       }
@@ -339,15 +370,5 @@ function SmartImageScrollbar({
     </>
   );
 }
-
-SmartImageScrollbar.propTypes = {
-  viewportData: PropTypes.object,
-  viewportId: PropTypes.string.isRequired,
-  element: PropTypes.instanceOf(Element),
-  scrollbarHeight: PropTypes.string,
-  imageSliceData: PropTypes.object.isRequired,
-  setImageSliceData: PropTypes.func.isRequired,
-  servicesManager: PropTypes.object.isRequired,
-};
 
 export default SmartImageScrollbar;

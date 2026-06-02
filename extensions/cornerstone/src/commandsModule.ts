@@ -49,10 +49,7 @@ import { toolNames } from './initCornerstoneTools';
 import CornerstoneViewportDownloadForm from './utils/CornerstoneViewportDownloadForm';
 import { updateSegmentBidirectionalStats } from './utils/updateSegmentationStats';
 import { generateSegmentationCSVReport } from './utils/generateSegmentationCSVReport';
-import {
-  buildRedactionPayload,
-  RedactionOutOfBoundsError,
-} from './utils/buildRedactionPayload';
+import { buildRedactionPayload, RedactionOutOfBoundsError } from './utils/buildRedactionPayload';
 import { getUpdatedViewportsForSegmentation } from './utils/hydrationUtils';
 import { SegmentationRepresentations } from '@cornerstonejs/tools/enums';
 import { isMeasurementWithinViewport } from './utils/isMeasurementWithinViewport';
@@ -2475,8 +2472,10 @@ function commandsModule({
       renderingEngine.render();
     },
     reCalibrateWindowLevel: () => {
-      const { activeViewportId } = viewportGridService.getState();
-      const viewport = cornerstoneViewportService.getCornerstoneViewport(activeViewportId);
+      const { activeViewportId } = viewportGridService!.getState();
+      const viewport = cornerstoneViewportService!.getCornerstoneViewport(
+        activeViewportId as string
+      );
       const { BasicStatsCalculator } = cstUtils.math.BasicStatsCalculator;
 
       let voxelManager;
@@ -2495,13 +2494,13 @@ function commandsModule({
       voxelManager.forEach(BasicStatsCalculator.statsCallback);
       const { mean, stdDev } = BasicStatsCalculator.getStatistics();
       actions.setViewportWindowLevel({
-        viewportId: activeViewportId,
-        windowWidth: 2 * stdDev.value,
-        windowCenter: mean.value,
+        viewportId: activeViewportId as string,
+        windowWidth: 2 * (stdDev.value as number),
+        windowCenter: mean.value as number,
       });
     },
     showOPFSManagementTool: () => {
-      uiModalService.show({
+      uiModalService!.show({
         content: OPFSManagementTool,
         contentProps: {},
         title: 'OPFSManagementTool',
@@ -2512,17 +2511,17 @@ function commandsModule({
     submitRedactionPayload: () => {
       const NOTIFY_TITLE = 'Submit PHI Redaction';
 
-      const activeViewportId = viewportGridService.getActiveViewportId();
+      const activeViewportId = viewportGridService!.getActiveViewportId();
       const activeDisplaySet = (
         activeViewportId
-          ? viewportGridService.getDisplaySetsUIDsForViewport(activeViewportId) ?? []
+          ? (viewportGridService!.getDisplaySetsUIDsForViewport(activeViewportId) ?? [])
           : []
       )
-        .map(uid => displaySetService.getDisplaySetByUID(uid))
+        .map(uid => displaySetService!.getDisplaySetByUID(uid))
         .find(ds => !!ds?.StudyInstanceUID);
 
       if (!activeDisplaySet) {
-        uiNotificationService.show({
+        uiNotificationService!.show({
           title: NOTIFY_TITLE,
           message: 'No active viewport / study to submit redactions for.',
           type: 'error',
@@ -2534,12 +2533,12 @@ function commandsModule({
       // Scope to the whole study, not a single series: in multi-viewport
       // layouts the user may have drawn PHI on series they aren't currently
       // focused on, and we don't want to silently drop those.
-      const allPhi = measurementService.getMeasurements(m => m.toolName === 'PHIBoundingBox');
+      const allPhi = measurementService!.getMeasurements(m => m.toolName === 'PHIBoundingBox');
       const inStudy = allPhi.filter(m => m.referenceStudyUID === studyUid);
       const skippedOtherStudies = allPhi.length - inStudy.length;
 
       if (inStudy.length === 0) {
-        uiNotificationService.show({
+        uiNotificationService!.show({
           title: NOTIFY_TITLE,
           message: 'No PHI bounding boxes drawn in the active study.',
           type: 'warning',
@@ -2578,7 +2577,7 @@ function commandsModule({
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to build redaction payload.';
-        uiNotificationService.show({
+        uiNotificationService!.show({
           title: NOTIFY_TITLE,
           message:
             err instanceof RedactionOutOfBoundsError
@@ -2591,7 +2590,7 @@ function commandsModule({
       }
 
       if (!window.parent || window.parent === window) {
-        uiNotificationService.show({
+        uiNotificationService!.show({
           title: NOTIFY_TITLE,
           message: 'Viewer is not embedded — no parent frame to submit to.',
           type: 'error',
@@ -2610,7 +2609,7 @@ function commandsModule({
         skippedOtherStudies > 0
           ? ` (${skippedOtherStudies} PHI box${skippedOtherStudies === 1 ? '' : 'es'} on other studies were skipped.)`
           : '';
-      uiNotificationService.show({
+      uiNotificationService!.show({
         title: NOTIFY_TITLE,
         message:
           `Submitted ${totalRedactions} redaction${totalRedactions === 1 ? '' : 's'} ` +

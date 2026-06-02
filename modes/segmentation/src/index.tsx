@@ -45,16 +45,16 @@ function modeFactory({ modeConfiguration }) {
         customizationService,
         CacheAPIService,
         GoogleSheetsService,
-      } = servicesManager.services;
+      } = servicesManager!.services;
 
-      measurementService.clearMeasurements();
+      measurementService!.clearMeasurements();
 
       // Init Default and SR ToolGroups
       initToolGroups(extensionManager, toolGroupService, commandsManager);
 
-      toolbarService.register(toolbarButtons);
+      toolbarService!.register(toolbarButtons);
 
-      toolbarService.updateSection(toolbarService.sections.primary, [
+      toolbarService!.updateSection(toolbarService!.sections.primary, [
         'WindowLevel',
         'Pan',
         'Zoom',
@@ -65,16 +65,16 @@ function modeFactory({ modeConfiguration }) {
         'MoreTools',
       ]);
 
-      toolbarService.updateSection(toolbarService.sections.viewportActionMenu.topLeft, [
+      toolbarService!.updateSection(toolbarService!.sections.viewportActionMenu.topLeft, [
         'orientationMenu',
         'dataOverlayMenu',
       ]);
 
-      toolbarService.updateSection(toolbarService.sections.viewportActionMenu.bottomMiddle, [
+      toolbarService!.updateSection(toolbarService!.sections.viewportActionMenu.bottomMiddle, [
         'AdvancedRenderingControls',
       ]);
 
-      toolbarService.updateSection('AdvancedRenderingControls', [
+      toolbarService!.updateSection('AdvancedRenderingControls', [
         'windowLevelMenuEmbedded',
         'voiManualControlMenu',
         'Colorbar',
@@ -82,17 +82,17 @@ function modeFactory({ modeConfiguration }) {
         'thresholdMenu',
       ]);
 
-      toolbarService.updateSection(toolbarService.sections.viewportActionMenu.topRight, [
+      toolbarService!.updateSection(toolbarService!.sections.viewportActionMenu.topRight, [
         'modalityLoadBadge',
         'trackingStatus',
         'navigationComponent',
       ]);
 
-      toolbarService.updateSection(toolbarService.sections.viewportActionMenu.bottomLeft, [
+      toolbarService!.updateSection(toolbarService!.sections.viewportActionMenu.bottomLeft, [
         'windowLevelMenu',
       ]);
 
-      toolbarService.updateSection('MoreTools', [
+      toolbarService!.updateSection('MoreTools', [
         'Reset',
         'rotate-right',
         'flipHorizontal',
@@ -108,14 +108,14 @@ function modeFactory({ modeConfiguration }) {
         'SubmitRedaction',
       ]);
 
-      toolbarService.updateSection(toolbarService.sections.labelMapSegmentationToolbox, [
+      toolbarService!.updateSection(toolbarService!.sections.labelMapSegmentationToolbox, [
         'LabelMapTools',
       ]);
-      toolbarService.updateSection(toolbarService.sections.contourSegmentationToolbox, [
+      toolbarService!.updateSection(toolbarService!.sections.contourSegmentationToolbox, [
         'ContourTools',
       ]);
 
-      toolbarService.updateSection('LabelMapTools', [
+      toolbarService!.updateSection('LabelMapTools', [
         'LabelmapSlicePropagation',
         'BrushTools',
         'MarkerLabelmap',
@@ -123,41 +123,41 @@ function modeFactory({ modeConfiguration }) {
         'Shapes',
         'LabelMapEditWithContour',
       ]);
-      toolbarService.updateSection('ContourTools', [
+      toolbarService!.updateSection('ContourTools', [
         'PlanarFreehandContourSegmentationTool',
         'SculptorTool',
         'SplineContourSegmentationTool',
         'LivewireContourSegmentationTool',
       ]);
 
-      toolbarService.updateSection(toolbarService.sections.labelMapSegmentationUtilities, [
+      toolbarService!.updateSection(toolbarService!.sections.labelMapSegmentationUtilities, [
         'LabelMapUtilities',
       ]);
-      toolbarService.updateSection(toolbarService.sections.contourSegmentationUtilities, [
+      toolbarService!.updateSection(toolbarService!.sections.contourSegmentationUtilities, [
         'ContourUtilities',
       ]);
 
-      toolbarService.updateSection('LabelMapUtilities', [
+      toolbarService!.updateSection('LabelMapUtilities', [
         'InterpolateLabelmap',
         'SegmentBidirectional',
       ]);
-      toolbarService.updateSection('ContourUtilities', [
+      toolbarService!.updateSection('ContourUtilities', [
         'LogicalContourOperations',
         'SimplifyContours',
         'SmoothContours',
       ]);
 
-      toolbarService.updateSection('BrushTools', ['Brush', 'Eraser', 'Threshold']);
+      toolbarService!.updateSection('BrushTools', ['Brush', 'Eraser', 'Threshold']);
 
-      toolbarService.updateSection('PHIBoundingBox', ['PHIBoundingBox']);
+      toolbarService!.updateSection('PHIBoundingBox', ['PHIBoundingBox']);
 
       // Making the 'cornerstone.panelTool' the default/first right panel will automaically
       // handle the evaluate functions for segmentation panel tools through the toolbox components.
       // But since we changed the order, we need to call this here to handle the evaluate functions.
-      const sectionToolProps = toolbarService.getButtonPropsInButtonSection('segmentationToolbox');
-      sectionToolProps.forEach(props => toolbarService.handleEvaluateNested(props));
+      const sectionToolProps = toolbarService!.getButtonPropsInButtonSection('segmentationToolbox');
+      sectionToolProps.forEach(props => toolbarService!.handleEvaluateNested(props));
 
-      customizationService.setCustomizations({
+      customizationService!.setCustomizations({
         'panelSegmentation.tableMode': {
           $set: 'expanded',
         },
@@ -166,6 +166,7 @@ function modeFactory({ modeConfiguration }) {
       CacheAPIService.init();
       GoogleSheetsService.init();
 
+      // @ts-expect-error The getModuleEntry function will not specify the exported module types
       const { addSegmentationBrushSizesHandler } = extensionManager.getModuleEntry(
         '@gradienthealth/ohif-gradienthealth-extension.utilityModule.common'
       ).exports;
@@ -189,17 +190,17 @@ function modeFactory({ modeConfiguration }) {
         uiModalService,
         CacheAPIService,
         GoogleSheetsService,
-      } = servicesManager.services;
+      } = servicesManager!.services;
 
       _unsubscriptions.forEach(unsubscribe => unsubscribe());
       _unsubscriptions.length = 0;
 
-      uiDialogService.hideAll();
-      uiModalService.hide();
-      toolGroupService.destroy();
-      syncGroupService.destroy();
-      segmentationService.destroy();
-      cornerstoneViewportService.destroy();
+      uiDialogService!.hideAll();
+      uiModalService!.hide();
+      toolGroupService!.destroy();
+      syncGroupService!.destroy();
+      segmentationService!.destroy();
+      cornerstoneViewportService!.destroy();
       CacheAPIService.destroy();
       GoogleSheetsService.destroy();
     },

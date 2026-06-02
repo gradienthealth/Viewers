@@ -215,7 +215,7 @@ const commandsModule = ({
       modality = 'SEG',
       skipLabelDialog = false,
     }) => {
-      const segmentation = segmentationService.getSegmentation(segmentationId);
+      const segmentation = segmentationService!.getSegmentation(segmentationId);
 
       if (!segmentation) {
         throw new Error('No segmentation found');
@@ -223,15 +223,15 @@ const commandsModule = ({
 
       const { label, predecessorImageId } = segmentation;
       // If DisplaySet of the segmentation exists, then over write it.
-      const displaySet = displaySetService.getDisplaySetByUID(segmentationId);
+      const displaySet = displaySetService!.getDisplaySetByUID(segmentationId);
       const defaultDataSource = dataSource ?? extensionManager.getActiveDataSource()[0];
       const shouldOverWrite = !!displaySet?.StudyInstanceUID && !!displaySet.SeriesInstanceUID;
 
       let reportName: string,
         selectedDataSource: string,
         action: number,
-        series: any,
-        priorSeriesNumber: any;
+        series: string,
+        priorSeriesNumber: number;
 
       if (skipLabelDialog && displaySet) {
         action = PROMPT_RESPONSES.CREATE_REPORT;

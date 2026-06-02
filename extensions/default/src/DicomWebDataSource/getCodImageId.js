@@ -3,8 +3,13 @@ import getWADORSImageId from './utils/getWADORSImageId';
 /**
  * @param {Object} params
  * @param {Object} params.instance
+ * @param {string} params.instance.imageId
+ * @param {string} params.instance.url
+ * @param {string} [params.instance.BucketPath]
  * @param {number} [params.frame]
  * @param {Object} params.config
+ * @param {boolean} params.config.useURLParams
+ * @param {string} params.config.wadoRoot
  */
 export default function getCodImageId({ instance, frame, config }) {
   if (!instance) {
