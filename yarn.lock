@@ -8579,6 +8579,11 @@ eslint-plugin-cypress@2.15.2:
   dependencies:
     globals "^13.20.0"
 
+eslint-plugin-diff@2.1.7:
+  version "2.1.7"
+  resolved "https://registry.yarnpkg.com/eslint-plugin-diff/-/eslint-plugin-diff-2.1.7.tgz#a1a86af2f659f37c9357753d2529fdc745880d48"
+  integrity sha512-F0EP5knbELQRPX7A4ogFFty+Pyru6CtUFmt52VSJ+7I84UsOj5s+BtY/ZhQFdvmPkFzKqVy+g5IHP+iiaUu/Aw==
+
 eslint-plugin-es@^3.0.0:
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/eslint-plugin-es/-/eslint-plugin-es-3.0.1.tgz#75a7cdfdccddc0589934aeeb384175f221c57893"
