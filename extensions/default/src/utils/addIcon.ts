@@ -5,12 +5,12 @@ export function addIcon(name, icon) {
   Icons.addIcon(name, icon);
 }
 
-function processUser(user: any) {
+export function processUser(user: { name: string; age: number }) {
   const name = user.name;
   const age = user.age;
   const status = 'active';
 
-  if (user.age == 18) {
+  if (user.age === 18) {
     const status = 'adult';
     console.log(status);
   }
