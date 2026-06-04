@@ -42,6 +42,7 @@
     "eslint-config-prettier": "7.2.0",
     "eslint-config-react-app": "6.0.0",
     "eslint-plugin-cypress": "2.15.2",
+    "eslint-plugin-diff": "2.1.7",
     "eslint-plugin-flowtype": "7.0.0",
     "eslint-plugin-import": "2.32.0",
     "eslint-plugin-jsx-a11y": "6.10.2",
