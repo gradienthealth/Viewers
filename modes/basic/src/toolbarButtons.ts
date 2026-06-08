@@ -533,7 +533,7 @@ const toolbarButtons: Button[] = [
     id: 'SubmitRedaction',
     uiType: 'ohif.toolButton',
     props: {
-      icon: 'Upload',
+      icon: 'tool-upload',
       label: i18n.t('Buttons:Submit Redaction'),
       tooltip: i18n.t('Buttons:Submit PHI Redaction'),
       commands: 'submitRedactionPayload',
