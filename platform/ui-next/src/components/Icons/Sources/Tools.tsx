@@ -3595,3 +3595,29 @@ export const ToolLabelmapEditWithContour = (props: IconProps) => (
     />
   </svg>
 );
+
+export const ToolUpload = (props: IconProps) => (
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}
+  >
+    <g
+      transform="translate(1 1)"
+      stroke="currentColor"
+      fill="none"
+      fillRule="evenodd"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle
+        cx="11"
+        cy="11"
+        r="10"
+      />
+      <path d="M11 5 v13 M5.5 10.5 l 5.5-5.5 5.5 5.5" />
+    </g>
+  </svg>
+);

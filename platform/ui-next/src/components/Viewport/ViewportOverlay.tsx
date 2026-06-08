@@ -13,7 +13,7 @@ import './ViewportOverlay.css';
 const classes = {
   topLeft: 'overlay-top left-viewport',
   topRight: 'overlay-top right-viewport-scrollbar',
-  bottomRight: 'overlay-bottom right-viewport-scrollbar',
+  bottomRight: 'overlay-bottom right-viewport-scrollbar pr-1',
   bottomLeft: 'overlay-bottom left-viewport',
 };
 

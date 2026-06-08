@@ -78,6 +78,22 @@ const columns: ColumnDef<Study>[] = [
   },
   columnHelper.accessor(row => row['study-description'], {
     id: 'study-description',
+    sortingFn: (rowA, rowB) => {
+      const valA = rowA.original['study-description'];
+      const valB = rowB.original['study-description'];
+
+      if (!valA && !valB) {
+        return 0;
+      }
+      if (!valA) {
+        return 1;
+      }
+      if (!valB) {
+        return -1;
+      }
+
+      return valA.localeCompare(valB);
+    },
     header: ({ column }) => {
       return (
         <Button
@@ -88,8 +104,8 @@ const columns: ColumnDef<Study>[] = [
         </Button>
       );
     },
-    cell: ({ row }) => {
-      const value: string = row.getValue('study-description');
+    cell: ({ getValue }) => {
+      const value = getValue<string>();
       return (
         <Tooltip>
           <TooltipTrigger asChild>
@@ -157,25 +173,33 @@ const columns: ColumnDef<Study>[] = [
       cell: ({ row }) => <div>{row.getValue('study-size')}</div>,
     }
   ) as ColumnDef<Study>,
-  columnHelper.accessor(row => new Date(row['study-last-modified']), {
-    sortingFn: 'datetime',
-    id: 'study-last-modified',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Last Modified <ArrowUpDown className="h-4 w-4" />
-        </Button>
-      );
+  columnHelper.accessor(
+    row => {
+      const value = new Date(row['study-last-modified']);
+      return `${value.toDateString()}, ${value.toLocaleTimeString()}`;
     },
-    cell: ({ row }) => {
-      const value: Date = row.getValue('study-last-modified');
-      const formattedDate = value.toDateString() + ', ' + value.toLocaleTimeString();
-      return <div>{formattedDate}</div>;
-    },
-  }) as ColumnDef<Study>,
+    {
+      sortingFn: (rowA, rowB) => {
+        const dateA = new Date(rowA.original['study-last-modified']).getTime();
+        const dateB = new Date(rowB.original['study-last-modified']).getTime();
+        return dateA < dateB ? -1 : dateA > dateB ? 1 : 0;
+      },
+      id: 'study-last-modified',
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          >
+            Last Modified <ArrowUpDown className="h-4 w-4" />
+          </Button>
+        );
+      },
+      cell: ({ getValue }) => {
+        return <div>{getValue<string>()}</div>;
+      },
+    }
+  ) as ColumnDef<Study>,
   {
     id: 'actions',
     enableHiding: false,
@@ -211,6 +235,7 @@ const columns: ColumnDef<Study>[] = [
 
 export default function OPFSManagementTool() {
   const [data, setData] = useState<Study[]>([]);
+  const [loading, setLoading] = useState(false);
 
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
@@ -250,9 +275,12 @@ export default function OPFSManagementTool() {
   }, []);
 
   const refreshOPFSData = async () => {
+    setLoading(true);
+    setData([]);
     const fetchedData = await getOPFSData(appConfig.routerBasename as string);
     table.toggleAllPageRowsSelected(false);
     setData(fetchedData);
+    setLoading(false);
   };
 
   const deleteSelectedStudies = async () => {
@@ -386,7 +414,7 @@ export default function OPFSManagementTool() {
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
+            {table.getRowModel().rows?.length && !loading ? (
               table.getRowModel().rows.map(row => (
                 <TableRow
                   key={row.id}
@@ -407,7 +435,13 @@ export default function OPFSManagementTool() {
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No results.
+                  {loading ? (
+                    <div className="flex justify-center">
+                      <Icons.LoadingSpinner className="h-10 w-10 animate-spin" />
+                    </div>
+                  ) : (
+                    'No results.'
+                  )}
                 </TableCell>
               </TableRow>
             )}
