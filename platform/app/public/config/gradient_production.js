@@ -1412,6 +1412,24 @@ window.config = {
       },
     },
     {
+      namespace: '@ohif/extension-default.dataSourcesModule.dicomweb',
+      sourceName: 'laplace-pacs/v1.0',
+      configuration: {
+        friendlyName: 'Cloud Optimized wado proxy server for Laplace',
+        name: 'cod-laplace',
+        qidoRoot: 'https://storage.googleapis.com/laplace-pacs/v1.0/dicomweb',
+        wadoRoot: 'https://storage.googleapis.com/laplace-pacs/v1.0/dicomweb',
+        useCod: true,
+        imageRendering: 'wadors',
+        thumbnailRendering: 'wadors',
+        enableStudyLazyLoad: true,
+        staticWado: false,
+        bulkDataURI: {
+          enabled: false,
+        },
+      },
+    },
+    {
       friendlyName: 'dicom json',
       namespace: '@gradienthealth/ohif-gradienthealth-extension.dataSourcesModule.bq',
       sourceName: 'bq',
