@@ -519,7 +519,12 @@ class CodDicomWebServerClient {
 
     const studyMetadata = studyuids.map(async (/** @type {string} */ deidStudyInstanceuid) => {
       const folderPath = `${bucketPrefix}/studies/${deidStudyInstanceuid}/series/`;
-      const apiUrl = `${domain}/storage/v1/b/${bucket}/o?prefix=${folderPath}&delimiter=${delimiter}`;
+      // Encode the prefix: a custom-export bucketPrefix can contain a literal '+'
+      // (e.g. a flag-set like "disable-document-detection+no_header_footer"), which
+      // GCS would otherwise decode to a space in the query string and never match.
+      const apiUrl = `${domain}/storage/v1/b/${bucket}/o?prefix=${encodeURIComponent(
+        folderPath
+      )}&delimiter=${delimiter}`;
       const response = await fetch(apiUrl, { headers });
       const res = await response.json();
       const folders = res.prefixes || [];
