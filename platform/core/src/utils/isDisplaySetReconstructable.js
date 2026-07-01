@@ -87,7 +87,14 @@ function hasPosition(multiFrameInstance) {
 
 function isNMReconstructable(multiFrameInstance) {
   const imageSubType = multiFrameInstance.ImageType?.[2];
-  return imageSubType === 'RECON TOMO' || imageSubType === 'RECON GATED TOMO';
+  const isTomo = imageSubType === 'RECON TOMO' || imageSubType === 'RECON GATED TOMO';
+  // A gated study packs one volume per gate (NumberOfTimeSlots) into a single
+  // multiframe instance that carries only one position/orientation, so its
+  // frames repeat the same slice positions per gate and can't form one volume.
+  // Render it as a stack instead; only non-gated tomo is a single volume.
+  const isGated =
+    imageSubType === 'RECON GATED TOMO' || Number(multiFrameInstance.NumberOfTimeSlots) > 1;
+  return isTomo && !isGated;
 }
 
 function processMultiframe(multiFrameInstance) {
