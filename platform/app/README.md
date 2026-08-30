@@ -109,19 +109,19 @@ It allow us to write different types of tests:
 - Integration tests
 - Unit tets
 
-All tests must be in `./cypress/integration` folder.
+The Cypress specs are discovered under `./cypress/integration/**/*.spec.[jt]s`.
 
-Commands to run the tests:
+Run the commands below from `platform/app`:
 
-```js
-// Open Cypress Dashboard that provides insight into what happened when your tests ran
-yarn run cy
+```console
+# Start the viewer with the E2E configuration in a separate terminal
+yarn test:e2e:serve
 
-// Run all tests using Electron browser headless
-yarn run cy:run
+# Open the local Cypress runner
+yarn test:e2e
 
-// Run all tests in CI mode
-yarn run cy:run:ci
+# Run all discovered specs in headless Chrome with video disabled
+yarn test:e2e:local
 ```
 
 ### Contributing

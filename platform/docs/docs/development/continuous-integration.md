@@ -2,12 +2,14 @@
 sidebar_position: 8
 sidebar_label: Continuous Integration
 title: Continuous Integration
-summary: Overview of OHIF's CI/CD setup using CircleCI and Netlify, detailing workflows for pull request checks, optional Docker image publishing, deployment to development/staging/production environments, and the release process for npm packages and documentation.
+summary: Overview of OHIF's CI/CD setup using CircleCI, GitHub Actions, and Netlify, including application checks and releases plus the documentation build and deployment workflow.
 ---
 
 # Continuous Integration (CI)
 
-This repository uses `CircleCI` and `Netlify` for Continuous integration.
+This repository uses `CircleCI` for application checks and package and image
+releases. GitHub Actions builds the Docusaurus documentation and deploys it to
+Netlify.
 
 ## Deploy Previews
 
@@ -61,20 +63,20 @@ promote the build to `STAGING` and `PRODUCTION` environments.
 | Staging     | For manual testing before promotion to prod. Keeps development workflow unblocked. | [Netlify][netlify-stage] / [OHIF][ohif-stage] |
 | Production  | Stable, tested, updated less frequently.                                           | [Netlify][netlify-prod] / [OHIF][ohif-prod]   |
 
-### Workflow: RELEASE
+### Workflow: BUILD_AND_DEPLOY_DOCS
 
-The RELEASE workflow publishes our `npm` packages, updated documentation, and
-`docker` image when changes are merged to master. `Lerna` and "Semantic Commit
-Syntax" are used to independently version and publish the many packages in our
-monorepository. If a new version is cut/released, a Docker image is created.
-Documentation is generated with `gitbook` and pushed to our `gh-pages` branch.
-GitHub hosts the `gh-pages` branch with GitHub Pages.
+The `Build and Deploy Docs` GitHub Actions workflow in
+`.github/workflows/build-docs.yml` runs for pushes to `master`, as configured in
+the workflow file. It finds the merged pull request's `Playwright Tests` run,
+downloads its `coverage-report-pr` artifact, installs the documentation
+dependencies, builds Docusaurus from `platform/docs`, and deploys the resulting
+`build` directory to Netlify using the `NETLIFY_AUTH_TOKEN` and
+`NETLIFY_SITE_ID` secrets.
 
-- Platform Packages: https://github.com/ohif/viewers/#platform
-- Extension Packages: https://github.com/ohif/viewers/#extensions
-- Documentation: https://docs.ohif.org/
-
-![WORKFLOW_RELEASE](../assets/img/WORKFLOW_RELEASE.png)
+The production viewer deployment is separate and is handled by
+`.github/workflows/deploy_production_ghpages.yml` after a pull request is merged
+to `production`. Documentation is built with Docusaurus and deployed to
+Netlify; it is not generated with GitBook or pushed to `gh-pages`.
 
 <!--
   LINKS
