@@ -120,9 +120,11 @@ yarn test:e2e:serve
 # Open the local Cypress runner
 yarn test:e2e
 
-# Run all discovered specs in headless Chrome with video disabled
-yarn test:e2e:local
 ```
+
+The package also defines `test:e2e:local`, but its current spec filter refers
+to legacy directories that are not present in this checkout. It is not listed
+as a working command until that script is separately validated.
 
 ### Contributing
 
