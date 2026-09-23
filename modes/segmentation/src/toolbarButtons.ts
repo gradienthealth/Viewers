@@ -267,6 +267,22 @@ export const toolbarButtons: Button[] = [
     },
   },
   {
+    id: 'ThreeDOnly',
+    uiType: 'ohif.toolButton',
+    props: {
+      icon: 'layout-advanced-3d-only',
+      label: i18n.t('Buttons:3D'),
+      tooltip: i18n.t('Buttons:Switch to 3D only layout'),
+      commands: {
+        commandName: 'setHangingProtocol',
+        commandOptions: {
+          protocolId: 'only3D',
+        },
+      },
+      evaluate: 'evaluate.action',
+    },
+  },
+  {
     id: 'Layout',
     uiType: 'ohif.layoutSelector',
     props: {
