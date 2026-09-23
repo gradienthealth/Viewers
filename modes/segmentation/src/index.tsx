@@ -56,6 +56,7 @@ function modeFactory({ modeConfiguration }) {
 
       toolbarService!.updateSection(toolbarService!.sections.primary, [
         'WindowLevel',
+        'windowLevelMenu',
         'Pan',
         'Zoom',
         'TrackballRotate',
