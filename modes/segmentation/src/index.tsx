@@ -61,6 +61,7 @@ function modeFactory({ modeConfiguration }) {
         'Zoom',
         'TrackballRotate',
         'Capture',
+        'ThreeDOnly',
         'Layout',
         'Crosshairs',
         'MoreTools',
