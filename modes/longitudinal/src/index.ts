@@ -39,7 +39,7 @@ export function onModeEnter({
   panelService,
   segmentationService,
 }: withAppTypes) {
-  const { CacheAPIService, GoogleSheetsService } = servicesManager.services;
+  const { CacheAPIService, GoogleSheetsService, toolbarService } = servicesManager.services;
 
   basicOnModeEnter.bind(this)({
     servicesManager,
@@ -48,6 +48,39 @@ export function onModeEnter({
     panelService,
     segmentationService,
   });
+
+  toolbarService.register([
+    {
+      id: 'ThreeDOnly',
+      uiType: 'ohif.toolButton',
+      props: {
+        icon: 'layout-advanced-3d-only',
+        label: i18n.t('Buttons:3D'),
+        tooltip: i18n.t('Buttons:Switch to 3D only layout'),
+        commands: {
+          commandName: 'setHangingProtocol',
+          commandOptions: {
+            protocolId: 'only3D',
+          },
+        },
+        evaluate: 'evaluate.action',
+      },
+    },
+  ]);
+
+  toolbarService.updateSection(toolbarService.sections.primary, [
+    'MeasurementTools',
+    'Zoom',
+    'Pan',
+    'TrackballRotate',
+    'WindowLevel',
+    'windowLevelMenu',
+    'Capture',
+    'ThreeDOnly',
+    'Layout',
+    'Crosshairs',
+    'MoreTools',
+  ]);
 
   /*measurementService.clearMeasurements();
 
