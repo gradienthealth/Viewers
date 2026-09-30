@@ -94,6 +94,8 @@ function modeFactory({ modeConfiguration }) {
         'Zoom',
         'Pan',
         'WindowLevel',
+        'windowLevelMenu',
+        'ThreeDOnly',
         'Crosshairs',
       ]);
 
