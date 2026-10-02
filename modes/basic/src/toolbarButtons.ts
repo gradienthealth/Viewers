@@ -661,12 +661,12 @@ const toolbarButtons: Button[] = [
       label: i18n.t('Buttons:3D'),
       tooltip: i18n.t('Buttons:Switch to 3D only layout'),
       commands: {
-        commandName: 'setHangingProtocol',
+        commandName: 'toggleHangingProtocol',
         commandOptions: {
           protocolId: 'only3D',
         },
       },
-      evaluate: 'evaluate.action',
+      evaluate: 'evaluate.displaySetIsReconstructable',
     },
   },
   {
