@@ -147,6 +147,23 @@ export function onModeEnter({
     toolbarService.updateSection(key, section);
   }
 
+  customizationService.setCustomizations(
+    {
+      'ohif.hotkeyBindings': {
+        $push: [
+          {
+            commandName: 'toggleHangingProtocol',
+            commandOptions: { protocolId: 'only3D' },
+            label: '3D Only',
+            keys: ['d'],
+            isEditable: true,
+          },
+        ],
+      },
+    },
+    'mode'
+  );
+
   if (!this.enableSegmentationEdit) {
     customizationService.setCustomizations({
       'panelSegmentation.disableEditing': {
@@ -215,7 +232,9 @@ export const toolbarSections = {
     'Pan',
     'TrackballRotate',
     'WindowLevel',
+    'windowLevelMenu',
     'Capture',
+    'ThreeDOnly',
     'Layout',
     'Crosshairs',
     'MoreTools',
