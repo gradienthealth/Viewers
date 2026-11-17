@@ -1,0 +1,54 @@
+name: Lint
+
+on:
+  pull_request:
+    branches: [production]
+    # `edited` covers a stacked pull request retargeted to production after its
+    # parent merges.
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  eslint:
+    # A promotion from nightly carries code this check never saw.
+    if: github.head_ref != 'nightly'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: yarn
+
+      - run: yarn install --frozen-lockfile
+        env:
+          # ESLint does not use Cypress, so skip downloading its binary.
+          CYPRESS_INSTALL_BINARY: 0
+
+      # Only the files a pull request adds or modifies are linted: the code
+      # inherited from upstream OHIF has never passed ESLint, and rewriting it
+      # wholesale would conflict with later upstream syncs. Pure renames are
+      # left out for the same reason.
+      - name: List changed files
+        id: changed
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git diff -z --name-only --diff-filter=AM "$BASE_SHA"...HEAD \
+            -- '*.js' '*.jsx' '*.ts' '*.tsx' > changed-files
+          tr '\0' '\n' < changed-files
+          echo "count=$(tr -cd '\0' < changed-files | wc -c | tr -d ' ')" >> "$GITHUB_OUTPUT"
+
+      - name: Lint changed files
+        if: steps.changed.outputs.count != '0'
+        run: xargs -0 yarn lint < changed-files

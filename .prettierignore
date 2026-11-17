@@ -1,1 +1,5 @@
 *.md
+# Vendored or generated files that the pre-commit hook must not reformat
+*.min.js
+.netlify/
+platform/i18n/src/locales/
