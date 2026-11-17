@@ -9,6 +9,22 @@ import combineFrameInstance from '../utils/combineFrameInstance';
 
 const { calibratedPixelSpacingMetadataProvider, getPixelSpacingInformation } = utilities;
 
+/**
+ * Whether an ImageOrientationPatient value spans a plane. An orientation whose
+ * row and column cosines are zero or parallel gives the viewport camera no
+ * direction, and the image renders black. Images from several modalities and
+ * vendors carry an all-zero orientation, so callers treat an unusable value as
+ * absent.
+ */
+function isUsableImageOrientation(orientation: number[] | undefined): boolean {
+  if (orientation?.length !== 6 || !orientation.every(Number.isFinite)) {
+    return false;
+  }
+  const [rx, ry, rz, cx, cy, cz] = orientation;
+  const normal = [ry * cz - rz * cy, rz * cx - rx * cz, rx * cy - ry * cx];
+  return Math.hypot(...normal) > 1e-3;
+}
+
 class MetadataProvider {
   private readonly imageURIToUIDs: Map<string, any> = new Map();
   // Can be used to store custom metadata for a specific type.
@@ -586,10 +602,11 @@ const WADO_IMAGE_LOADER = {
       usingDefaultValues = true;
     }
 
-    if (ImageOrientationPatient) {
-      rowCosines = toNumber(ImageOrientationPatient.slice(0, 3));
-      columnCosines = toNumber(ImageOrientationPatient.slice(3, 6));
-      imageOrientationPatient = toNumber(ImageOrientationPatient);
+    const orientation = toNumber(ImageOrientationPatient);
+    if (isUsableImageOrientation(orientation)) {
+      rowCosines = orientation.slice(0, 3);
+      columnCosines = orientation.slice(3, 6);
+      imageOrientationPatient = orientation;
     } else {
       rowCosines = [1, 0, 0];
       columnCosines = [0, 1, 0];
