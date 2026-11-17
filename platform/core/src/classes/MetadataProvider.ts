@@ -12,8 +12,9 @@ const { calibratedPixelSpacingMetadataProvider, getPixelSpacingInformation } = u
 /**
  * Whether an ImageOrientationPatient value spans a plane. An orientation whose
  * row and column cosines are zero or parallel gives the viewport camera no
- * direction, and the image renders black. Some secondary captures carry an
- * all-zero orientation, so callers treat an unusable value as absent.
+ * direction, and the image renders black. Images from several modalities and
+ * vendors carry an all-zero orientation, so callers treat an unusable value as
+ * absent.
  */
 function isUsableImageOrientation(orientation: number[] | undefined): boolean {
   if (orientation?.length !== 6 || !orientation.every(Number.isFinite)) {
