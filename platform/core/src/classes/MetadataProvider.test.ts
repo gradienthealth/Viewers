@@ -20,18 +20,24 @@ const imagePlaneModule = (instance: Record<string, unknown>) =>
   });
 
 describe('MetadataProvider imagePlaneModule orientation', () => {
-  it('keeps a valid ImageOrientationPatient', () => {
-    const plane = imagePlaneModule({ ImageOrientationPatient: [0, 1, 0, 0, 0, -1] });
+  it.each([
+    ['numbers', [0, 1, 0, 0, 0, -1]],
+    ['numeric strings', ['0', '1', '0', '0', '0', '-1']],
+  ])('keeps a valid ImageOrientationPatient given as %s', (_, orientation) => {
+    const plane = imagePlaneModule({ ImageOrientationPatient: orientation });
 
     expect(plane.rowCosines).toEqual([0, 1, 0]);
     expect(plane.columnCosines).toEqual([0, 0, -1]);
+    expect(plane.imageOrientationPatient).toEqual([0, 1, 0, 0, 0, -1]);
     expect(plane.isDefaultValueSetForRowCosine).toBe(false);
+    expect(plane.isDefaultValueSetForColumnCosine).toBe(false);
   });
 
   it.each([
     ['all zeros', [0, 0, 0, 0, 0, 0]],
     ['parallel row and column', [1, 0, 0, 1, 0, 0]],
-    ['non-numeric', ['', '', '', '', '', '']],
+    ['non-numeric', ['a', 0, 0, 0, 1, 0]],
+    ['infinite', [Infinity, 0, 0, 0, 1, 0]],
     ['too short', [1, 0, 0]],
     ['missing', undefined],
   ])('falls back to the axial default when the orientation is %s', (_, orientation) => {
