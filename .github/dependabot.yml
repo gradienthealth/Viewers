@@ -4,6 +4,9 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # The org pr-title check requires a Linear issue ID or NO-ISSUE.
+    commit-message:
+      prefix: NO-ISSUE
     groups:
       actions-minor:
         update-types:
@@ -14,6 +17,9 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # The org pr-title check requires a Linear issue ID or NO-ISSUE.
+    commit-message:
+      prefix: NO-ISSUE
     groups:
       npm-minor:
         update-types:

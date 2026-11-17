@@ -24,5 +24,8 @@ jobs:
           cache: yarn
 
       - run: yarn install --frozen-lockfile
+        env:
+          # Jest does not use Cypress, so skip downloading its binary.
+          CYPRESS_INSTALL_BINARY: 0
 
       - run: npx jest --ci
