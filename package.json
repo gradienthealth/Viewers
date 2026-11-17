@@ -41,6 +41,7 @@
     "dev:fast": "cd platform/app && yarn run dev:fast",
     "show:config": "echo Config is $APP_CONFIG on $PUBLIC_URL",
     "dev": "lerna run dev:viewer --stream",
+    "lint": "eslint --ext .js,.jsx,.ts,.tsx",
     "dev:no:cache": "lerna run dev:no:cache --stream",
     "dev:project": ".scripts/dev.sh",
     "dev:orthanc": "lerna run dev:orthanc --stream",
@@ -133,7 +134,7 @@
     }
   },
   "lint-staged": {
-    "src/**/*.{js,json,css}": [
+    "*.{js,jsx,ts,tsx,json,css}": [
       "prettier --write",
       "git add"
     ]

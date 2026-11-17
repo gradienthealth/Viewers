@@ -19,8 +19,20 @@
   "rules": {
     // Enforce consistent brace style for all control statements for readability
     "curly": "error",
-    "import/no-anonymous-default-export": "off"
+    "import/no-anonymous-default-export": "off",
+    // Untyped values are common in code inherited from upstream OHIF, so `any`
+    // is flagged without failing the lint check
+    "@typescript-eslint/no-explicit-any": "warn"
   },
+  "overrides": [
+    {
+      // TypeScript props are checked by their types, not by propTypes
+      "files": ["*.ts", "*.tsx"],
+      "rules": {
+        "react/prop-types": "off"
+      }
+    }
+  ],
   "globals": {
     "cy": true,
     "before": true,
