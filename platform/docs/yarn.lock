@@ -11180,6 +11180,11 @@ shepherd.js@13.0.3:
     "@scarf/scarf" "^1.3.0"
     deepmerge-ts "^5.1.0"
 
+shepherd.js@16.0.0:
+  version "16.0.0"
+  resolved "https://registry.yarnpkg.com/shepherd.js/-/shepherd.js-16.0.0.tgz#97a2ea81776ff688b255dbc19527462b9c986f24"
+  integrity sha512-UvOpWdO57KBAKa5WoNsgpTBKDQNcbeSuMrSOrHgbMIhF7V/10t19aBidewUqpLukm9KQDbcAP9zReMvDlAvWlg==
+
 side-channel-list@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/side-channel-list/-/side-channel-list-1.0.0.tgz#10cb5984263115d3b7a0e336591e290a830af8ad"
