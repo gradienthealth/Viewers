@@ -39,7 +39,6 @@ import { useLutPresentationStore } from '../../stores/useLutPresentationStore';
 import { usePositionPresentationStore } from '../../stores/usePositionPresentationStore';
 import { useSynchronizersStore } from '../../stores/useSynchronizersStore';
 import { useSegmentationPresentationStore } from '../../stores/useSegmentationPresentationStore';
-import getClosestOrientationFromIOP from '../../utils/isReferenceViewable';
 import { BlendModes } from '@cornerstonejs/core/enums';
 
 const EVENTS = {
@@ -965,16 +964,56 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
 
       // 3. Check if the viewport's current VOI range overlaps with the actual
       //    pixel data. If it does, the image is rendering correctly — bail out.
+      //    A zero-width range (a stored window width of 1, or a flat first
+      //    image) thresholds the image to black and white, so it counts as bad.
       const voiRange = viewport.getProperties()?.voiRange;
-      if (voiRange && pLow < voiRange.upper && pHigh > voiRange.lower) {
+      if (
+        voiRange &&
+        voiRange.upper > voiRange.lower &&
+        pLow < voiRange.upper &&
+        pHigh > voiRange.lower
+      ) {
         return;
       }
 
-      // 4. No overlap (or no VOI set) — override with percentile-based window.
-      const windowWidth = Math.max(1, pHigh - pLow);
-      const windowCenter = (pHigh + pLow) / 2;
-      const { lower, upper } = csUtils.windowLevel.toLowHighRange(windowWidth, windowCenter);
+      // 4. No overlap (or no VOI set) — override with a percentile-based
+      //    window. Widen it with slices sampled across the stack, because the
+      //    first non-flat slice can be a dim edge slice (e.g. NM short-axis)
+      //    whose range saturates the rest. Use the range as-is: rescaled data
+      //    can span less than 1, and a width of 1 would collapse it.
+      const sampleCount = Math.min(totalImages, 8);
+      const sampleRanges = await Promise.all(
+        Array.from({ length: sampleCount }, (_, i) =>
+          imageLoader
+            .loadAndCacheImage(imageIds[Math.floor(((i + 0.5) * totalImages) / sampleCount)])
+            .then(image => this._computePercentiles(image.getPixelData()))
+            .catch(() => null)
+        )
+      );
+      // The stack or its window may have changed while the slices loaded.
+      const currentVoiRange = viewport.getProperties()?.voiRange;
+      if (
+        viewport.getImageIds() !== imageIds ||
+        currentVoiRange?.lower !== voiRange?.lower ||
+        currentVoiRange?.upper !== voiRange?.upper
+      ) {
+        return;
+      }
+
+      const ranges = [percentiles, ...sampleRanges.filter(Boolean)];
+      let lower = Math.min(...ranges.map(range => range.pLow));
+      let upper = Math.max(...ranges.map(range => range.pHigh));
+      // Sparse images can be more than 99% background, collapsing the
+      // percentiles to one value; fall back to the sampled extremes.
+      if (upper <= lower) {
+        lower = Math.min(...ranges.map(range => range.min));
+        upper = Math.max(...ranges.map(range => range.max));
+      }
+      if (upper <= lower) {
+        upper = lower + 1;
+      }
       viewport.setProperties({ voiRange: { lower, upper } });
+      viewport.render();
 
       // 5. Warn the user so they know the metadata is suspect.
       const { uiNotificationService } = this.servicesManager.services;
@@ -1089,12 +1128,13 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
   }
 
   /**
-   * Computes the 0.5th and 99.5th percentiles from a typed pixel data array.
-   * Samples up to 100k pixels for performance on large datasets.
+   * Computes the 0.5th and 99.5th percentiles, and the minimum and maximum,
+   * of a typed pixel data array. Samples up to 100k pixels for performance on
+   * large datasets.
    */
   private _computePercentiles(
     scalarData: Types.PixelDataTypedArray
-  ): { pLow: number; pHigh: number } | null {
+  ): { pLow: number; pHigh: number; min: number; max: number } | null {
     const length = scalarData.length;
     if (length === 0) {
       return null;
@@ -1118,6 +1158,8 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
     return {
       pLow: samples[Math.floor(samples.length * 0.005)],
       pHigh: samples[Math.floor(samples.length * 0.995)],
+      min: samples[0],
+      max: samples[samples.length - 1],
     };
   }
 

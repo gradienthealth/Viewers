@@ -100,7 +100,7 @@ export default function PanelStudyBrowserTracking({
           countIcon: ds.countIcon,
           messages: ds.messages,
           StudyInstanceUID: ds.StudyInstanceUID,
-          DeidSeriesInstanceUID: ds.instance.DeidSeriesInstanceUID,
+          DeidSeriesInstanceUID: ds.instance?.DeidSeriesInstanceUID,
           componentType,
           imageSrc: thumbnailSrc || thumbnailImageSrcMap[displaySetInstanceUID],
           dragData: {
