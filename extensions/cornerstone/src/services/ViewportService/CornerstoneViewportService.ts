@@ -990,13 +990,24 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
             .catch(() => null)
         )
       );
-      let lower = pLow;
-      let upper = pHigh;
-      for (const range of sampleRanges) {
-        if (range) {
-          lower = Math.min(lower, range.pLow);
-          upper = Math.max(upper, range.pHigh);
-        }
+      // The stack or its window may have changed while the slices loaded.
+      const currentVoiRange = viewport.getProperties()?.voiRange;
+      if (
+        viewport.getImageIds() !== imageIds ||
+        currentVoiRange?.lower !== voiRange?.lower ||
+        currentVoiRange?.upper !== voiRange?.upper
+      ) {
+        return;
+      }
+
+      const ranges = [percentiles, ...sampleRanges.filter(Boolean)];
+      let lower = Math.min(...ranges.map(range => range.pLow));
+      let upper = Math.max(...ranges.map(range => range.pHigh));
+      // Sparse images can be more than 99% background, collapsing the
+      // percentiles to one value; fall back to the sampled extremes.
+      if (upper <= lower) {
+        lower = Math.min(...ranges.map(range => range.min));
+        upper = Math.max(...ranges.map(range => range.max));
       }
       if (upper <= lower) {
         upper = lower + 1;
@@ -1117,12 +1128,13 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
   }
 
   /**
-   * Computes the 0.5th and 99.5th percentiles from a typed pixel data array.
-   * Samples up to 100k pixels for performance on large datasets.
+   * Computes the 0.5th and 99.5th percentiles, and the minimum and maximum,
+   * of a typed pixel data array. Samples up to 100k pixels for performance on
+   * large datasets.
    */
   private _computePercentiles(
     scalarData: Types.PixelDataTypedArray
-  ): { pLow: number; pHigh: number } | null {
+  ): { pLow: number; pHigh: number; min: number; max: number } | null {
     const length = scalarData.length;
     if (length === 0) {
       return null;
@@ -1146,6 +1158,8 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
     return {
       pLow: samples[Math.floor(samples.length * 0.005)],
       pHigh: samples[Math.floor(samples.length * 0.995)],
+      min: samples[0],
+      max: samples[samples.length - 1],
     };
   }
 
