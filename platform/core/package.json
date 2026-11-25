@@ -45,19 +45,19 @@
   },
   "dependencies": {
     "@babel/runtime": "7.28.2",
-    "dcmjs": "0.49.4",
-    "dicomweb-client": "0.10.4",
-    "gl-matrix": "3.4.3",
+    "dcmjs": "0.52.3",
+    "dicomweb-client": "0.11.3",
+    "gl-matrix": "3.4.4",
     "immutability-helper": "3.1.1",
     "isomorphic-base64": "1.0.2",
     "lodash.clonedeep": "4.5.0",
     "lodash.isequal": "4.5.0",
-    "moment": "2.30.1",
+    "moment": "2.31.0",
     "object-hash": "2.1.1",
     "query-string": "6.14.1",
     "react-shepherd": "6.1.1",
     "shepherd.js": "13.0.3",
-    "validate.js": "0.12.0"
+    "validate.js": "0.13.1"
   },
   "devDependencies": {
     "webpack-merge": "5.10.0"
